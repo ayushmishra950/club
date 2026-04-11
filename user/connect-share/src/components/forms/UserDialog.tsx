@@ -1,0 +1,545 @@
+
+import { useEffect, useRef, useState } from "react";
+import { Eye, EyeOff, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { getSingleUser, updateUser } from "@/service/auth";
+import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "../ui/select";
+
+
+export default function UserPage() {
+    const { toast } = useToast();
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const dateRef = useRef<HTMLInputElement>(null);
+
+    const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showBusiness, setShowBusiness] = useState(false);
+
+    const [accountType, setAccountType] = useState("user");
+
+    const [formData, setFormData] = useState<any>({
+        accountType: "user",
+        type:"public"
+    });
+    const [errors, setErrors] = useState({
+    skills: "",
+    hobbies: "",
+});
+
+    const [preview, setPreview] = useState<any>({
+        profileImage: "",
+        coverImage: "",
+        businessCoverImage: "",
+    });
+
+    const handleChange = (e: any) => {
+    const { name, value, files, type, checked } = e.target;
+
+    if (files) {
+        const file = files[0];
+        setFormData({ ...formData, [name]: file });
+
+        setPreview({
+            ...preview,
+            [name]: URL.createObjectURL(file),
+        });
+    } else if (type === "checkbox") {
+        setFormData({ ...formData, [name]: checked });
+    } else {
+        // Split the input by commas and trim each item
+        const items = value.split(",").map((item: string) => item.trim()).filter(Boolean);
+
+        // Check if items exceed 5
+        if (items.length > 5) {
+            setErrors({ ...errors, [name]: "Maximum 5 items allowed" });
+        } else {
+            setErrors({ ...errors, [name]: "" });
+            setFormData({ ...formData, [name]: value });
+        }
+    }
+};
+
+    const handleSubmit = async (e: any) => {
+        e.preventDefault();
+        try {
+            setIsLoading(true);
+            let obj = { ...formData, userId: user?._id };
+            const convertFormData = new FormData();
+            Object.keys(obj).forEach((key) => {
+                convertFormData.append(key, obj[key]);
+            });
+            const res = await updateUser(convertFormData);
+            console.log(res);
+            if (res.status === 200) {
+                // localStorage.setItem("user", JSON.stringify(res?.data?.data));
+                toast({ title: "Profile Updated Successfully.", description: res?.data?.message });
+            }
+        }
+        catch (err) {
+            console.log(err);
+            toast({ title: "Profile Update Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGetUser = async () => {
+        try {
+            const res = await getSingleUser(user?._id);
+            console.log(res);
+            if (res.status === 200) {
+                const data = res?.data?.data || {};
+                setFormData(data);
+                setAccountType(data?.accountType || "user");
+                if (data.accountType === "business") setShowBusiness(true);
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
+    useEffect(() => {
+        handleGetUser();
+    }, []);
+
+    return (
+        <div className="w-full min-h-screen bg-gray-50 py-8 px-4 md:px-8">
+            <div className="max-w-5xl mx-auto">
+                {/* Header */}
+                <div className="mb-8">
+                    <h1 className="text-3xl font-semibold text-gray-900">Profile Settings</h1>
+                    <p className="text-gray-600 mt-1">Update your personal and business information</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* Cover + Profile Image Section */}
+                    <div className="relative rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-200">
+                        {/* Cover Image */}
+                        <div className="h-48 md:h-64 bg-gradient-to-r from-blue-600 to-indigo-600 relative">
+                            {preview.coverImage || formData.coverImage ? (
+                                <img
+                                    src={preview.coverImage || formData.coverImage}
+                                    alt="Cover"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="absolute inset-0 bg-[radial-gradient(#ffffff33_1px,transparent_1px)] [background-size:20px_20px]"></div>
+                            )}
+
+                            {/* Profile Image Overlay */}
+                            <div className="absolute -bottom-12 left-8">
+                                <div className="relative">
+                                    <div className="w-28 h-28 rounded-2xl border-4 border-white overflow-hidden bg-white shadow-md">
+                                        {(preview.profileImage || formData.profileImage) ? (
+                                            <img
+                                                src={preview.profileImage || formData.profileImage}
+                                                alt="Profile"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+                                                No Photo
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Upload Buttons */}
+                                    <label htmlFor="profileImage" className="absolute bottom-1 right-1 bg-white p-1.5 rounded-full shadow cursor-pointer hover:bg-gray-100">
+                                        <input
+                                            id="profileImage"
+                                            type="file"
+                                            name="profileImage"
+                                            onChange={handleChange}
+                                            className="hidden"
+                                        />
+                                        📸
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Cover Upload */}
+                            <label htmlFor="coverImage" className="absolute top-4 right-4 bg-white/90 hover:bg-white px-4 py-2 rounded-xl text-sm font-medium cursor-pointer shadow flex items-center gap-2">
+                                <input
+                                    id="coverImage"
+                                    type="file"
+                                    name="coverImage"
+                                    onChange={handleChange}
+                                    className="hidden"
+                                />
+                                Change Cover
+                            </label>
+                        </div>
+
+                        {/* Spacer for profile image */}
+                        <div className="h-14"></div>
+                    </div>
+
+                    {/* Account Type */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                        <label className="text-sm font-semibold text-gray-700 mb-3 block">Account Type</label>
+                        <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setAccountType("user");
+                                    setFormData({ ...formData, accountType: "user" });
+                                }}
+                                className={`px-6 py-2.5 rounded-[10px] text-sm font-medium transition-all ${accountType === "user"
+                                    ? "bg-white shadow text-gray-900"
+                                    : "text-gray-600 hover:text-gray-900"
+                                    }`}
+                            >
+                                Personal User
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setAccountType("business");
+                                    setFormData({ ...formData, accountType: "business" });
+                                    setShowBusiness(true);
+                                }}
+                                className={`px-6 py-2.5 rounded-[10px] text-sm font-medium transition-all ${accountType === "business"
+                                    ? "bg-white shadow text-gray-900"
+                                    : "text-gray-600 hover:text-gray-900"
+                                    }`}
+                            >
+                                Business Account
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Basic Information */}
+                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                        <h2 className="text-xl font-semibold mb-6 text-gray-900">Basic Information</h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Full Name</label>
+                                <input
+                                    name="fullName"
+                                    value={formData.fullName || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Enter full name"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Father's Name</label>
+                                <input
+                                    name="fatherName"
+                                    value={formData.fatherName || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Father's name"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Mother's Name</label>
+                                <input
+                                    name="motherName"
+                                    value={formData.motherName || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Mother's name"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Date of Birth</label>
+                                <input
+                                    type="date"
+                                    ref={dateRef}
+                                    name="dob"
+                                    value={formData?.dob ? new Date(formData.dob).toISOString().split("T")[0] : ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Gender</label>
+                                <select
+                                    name="gender"
+                                    value={formData.gender || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value="">Select Gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Marital Status</label>
+                                <select
+                                    name="maritalStatus"
+                                    value={formData.maritalStatus || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value="">Select</option>
+                                    <option value="single">Single</option>
+                                    <option value="married">Married</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Contact & Location */}
+                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                        <h2 className="text-xl font-semibold mb-6 text-gray-900">Contact & Location</h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Email Address</label>
+                                <input
+                                    name="email"
+                                    type="email"
+                                    value={formData.email || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="your@email.com"
+                                    disabled
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                                <input
+                                    name="phone"
+                                    value={formData.phone || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="+91 98765 43210"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-6">
+                            <label className="text-sm font-medium text-gray-700">Full Address</label>
+                            <input
+                                name="address"
+                                value={formData.address || ""}
+                                onChange={handleChange}
+                                className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="House no, Street, Area"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">City</label>
+                                <input name="city" value={formData.city || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">State</label>
+                                <input name="state" value={formData.state || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Occupation</label>
+                                <input name="occupation" value={formData.occupation || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Skills & Hobbies */}
+                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label className="text-sm font-medium text-gray-700">Skills</label>
+                            <textarea
+                                name="skills"
+                                value={formData.skills}
+                                onChange={handleChange}
+                                rows={4}
+                                className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                                placeholder="e.g. React, Tailwind, UI/UX..."
+                            />
+                            {errors?.skills && <p className="text-red-500 text-sm mt-1">{errors.skills}</p>}
+                        </div>
+                        <div>
+                            <label className="text-sm font-medium text-gray-700">Hobbies</label>
+                            <textarea
+                                name="hobbies"
+                                value={formData.hobbies}
+                                onChange={handleChange}
+                                rows={4}
+                                className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                                placeholder="e.g. Reading, Travelling, Photography..."
+                            />
+                            {errors?.hobbies && <p className="text-red-500 text-sm mt-1">{errors.hobbies}</p>}
+                        </div>
+
+                        <div>
+                            <label>Type</label>
+                            <Select  value={formData?.type} onValueChange={(value)=> {setFormData({...formData, type:value})}}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="public">Public</SelectItem>
+                                    <SelectItem value="private">Private</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            
+                        </div>
+                    </div>
+
+                    {/* Verified Checkbox */}
+
+                    <div className="flex items-center gap-3 bg-white px-6 py-4 rounded-2xl border border-gray-200">
+                        <div className="pointer-events-none flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                checked={formData.isVerified || false}
+                                className="w-5 h-5 text-blue-600 rounded border-gray-300"
+                            />
+                            <label className="text-sm font-medium text-gray-700">
+                                Mark this profile as Verified
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Business Details - Toggleable */}
+                    {accountType === "business" && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => setShowBusiness(!showBusiness)}
+                                className="w-full flex items-center justify-between px-8 py-6 text-left hover:bg-gray-50 transition-colors"
+                            >
+                                <div>
+                                    <h2 className="text-xl font-semibold text-gray-900">Business Details</h2>
+                                    <p className="text-sm text-gray-500">Add information about your business</p>
+                                </div>
+                                {showBusiness ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                            </button>
+
+                            {showBusiness && (
+                                <div className="px-8 pb-8 space-y-6 border-t pt-6">
+                                    {/* Business Name + Image Upload */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                                        {/* Business Name (width automatically half ho jayegi) */}
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700">Business Name</label>
+                                            <input
+                                                name="businessName"
+                                                value={formData.businessName || ""}
+                                                onChange={handleChange}
+                                                className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
+
+                                        {/* Business Cover Image */}
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700">Business Cover Image</label>
+
+                                            <input
+                                                name="businessCoverImage"
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleChange}
+                                                className="mt-1 w-full text-sm"
+                                            />
+
+                                            {/* Preview */}
+                                            {(preview.businessCoverImage || formData.businessCoverImage) && (
+                                                <img
+                                                    src={preview.businessCoverImage || formData.businessCoverImage}
+                                                    alt="preview"
+                                                    className="mt-3 h-24 w-full object-cover rounded-lg border"
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700">Category</label>
+                                            <input name="businessCategory" value={formData.businessCategory || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Restaurant, IT Services" />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700">Website</label>
+                                            <input name="website" value={formData.website || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Business Description</label>
+                                        <textarea name="businessDescription" value={formData.businessDescription || ""} onChange={handleChange} rows={4} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700">Business Phone</label>
+                                            <input name="businessPhone" value={formData.businessPhone || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700">Working Hours</label>
+                                            <input name="workingHours" value={formData.workingHours || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="9:00 AM - 7:00 PM" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Business Address</label>
+                                        <input name="businessAddress" value={formData.businessAddress || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Password Section */}
+                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                        <h2 className="text-xl font-semibold mb-6 text-gray-900">Security</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="relative">
+                                <label className="text-sm font-medium text-gray-700">New Password</label>
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    name="password"
+                                    value={formData.password || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="••••••••"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-10 text-gray-500 hover:text-gray-700"
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Confirm New Password</label>
+                                <input
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="flex justify-end pt-4">
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="bg-blue-600 hover:bg-blue-700 transition-colors text-white px-10 py-3.5 rounded-2xl font-medium flex items-center gap-3 shadow-lg shadow-blue-500/30 disabled:opacity-70"
+                        >
+                            {isLoading && <Loader2 className="animate-spin w-5 h-5" />}
+                            Save All Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}

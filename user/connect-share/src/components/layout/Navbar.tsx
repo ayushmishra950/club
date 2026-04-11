@@ -1,0 +1,307 @@
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Search, Home, Users, Calendar, Briefcase, Bell, MessageCircle,Megaphone , UserPlus, Menu, X } from 'lucide-react';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
+import { useConnections } from '@/hooks/useConnections';
+import socket from '@/socket/socket';
+import { useAppDispatch } from '@/redux-toolkit/customHook/hook';
+import { setSearchQuery } from '@/redux-toolkit/slice/searchSlice';
+import {getAllNotifications} from "@/service/notification";
+
+interface NavbarProps {
+  onChatToggle: () => void;
+  chatUnread: number;
+}
+
+export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
+  const navigate = useNavigate();
+   const user = JSON.parse(localStorage.getItem("user"));
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const { incomingCount } = useConnections();
+  const [chatUnRead, setChatUnRead] = useState(0);
+  const [friendUnRead, setFriendUnRead] = useState(0);
+  const [notficationUnRead, setNotificatonUnRead] = useState(null);
+    const [notificationList, setNotificationList] = useState([]);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const filterUnReadNotifications = notificationList.filter((n)=> n?.isRead === false);
+
+  const dispatch = useAppDispatch();
+
+  const navItems = [
+    { to: '/home', icon: Home, label: 'Feed' },
+    { to: '/groups', icon: Users, label: 'Groups' },
+    { to: '/events', icon: Calendar, label: 'Events' },
+    { to: '/directory', icon: Briefcase, label: 'Directory' },
+    { to: '/announcements', icon: Megaphone , label: 'Announcement' },
+  ];
+
+  const isActive = (path: string) => location.pathname === path;
+
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setNotifOpen(false);
+      }
+    }
+
+    if (notifOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [notifOpen]);
+
+
+  useEffect(()=>{
+    if(user?._id){
+      socket.emit("getUnreadCount", user?._id);
+      socket.emit("unSeenFriendRequest", {from:user?._id});
+    }
+  },[user?._id]);
+
+
+
+  useEffect(()=>{
+    socket.on("totalUnReadChat", (count) => {
+     setChatUnRead(count);
+    });
+
+    socket.on("unSeenFriendRequest", (total)=>{
+      console.log(total);
+     setFriendUnRead(total);
+    });
+
+   socket.on("notification", (data) => {
+    console.log("data", data)
+    setNotificationList(prevList => [...prevList, data]);
+});
+
+socket.on("notificationSeen", (data)=>{
+  console.log("seen", data);
+ 
+})
+
+    socket.on("friendRequestSeen", () => {
+       socket.emit("unSeenFriendRequest", {from:user?._id});
+    })
+
+    return () => {
+      socket.off("totalUnReadChat");
+      socket.off("unSeenFriendRequest");
+      socket.off("friendRequestSeen");
+       socket.off("notification");
+       socket.off("notificationSeen");
+    }
+  },[chatUnRead]);
+
+   const handleSeenRequests = () => {
+      socket.emit("friendRequestSeen", user?._id);
+    }
+
+    
+  const  handleGetAllNotifications = async() => {
+    if(!user?._id) return;
+    try{
+    const res = await getAllNotifications(user?._id);
+    console.log(res);
+    if(res.status === 200){
+      setNotificationList(res?.data?.data);
+    }
+    }
+    catch(err){
+      console.log(err)
+    }
+  };
+
+  useEffect(()=>{
+    handleGetAllNotifications()
+  },[])
+
+
+  return (
+    <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="flex h-14 items-center justify-between gap-4">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
+              <span className="text-sm font-bold text-primary-foreground">S</span>
+            </div>
+            <span className="font-heading font-bold text-lg text-foreground hidden sm:block">Sociio</span>
+          </Link>
+
+          {/* Search */}
+          <div className="hidden md:flex flex-1 max-w-md">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+              onChange={(e)=>{dispatch(setSearchQuery(e.target.value))}}
+                type="text"
+                placeholder="Search people, posts, events..."
+                className="w-full rounded-full bg-muted py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-1">
+            {navItems.map(item => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive(item.to)
+                    ? 'text-primary bg-primary/10'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="hidden lg:inline">{item.label}</span>
+              </Link>
+            ))}
+          </div>  
+
+          {/* Actions */}
+          <div className="flex items-center gap-1">
+            {/* Mobile search */}
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="md:hidden p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+
+            {/* Friend Requests */}
+            <Link
+              to="/friends"
+              onClick={handleSeenRequests}
+              className={`relative p-2 rounded-full hover:bg-muted transition-colors ${
+                isActive('/friends') ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              <UserPlus className="h-5 w-5" />
+              {friendUnRead > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
+                  {friendUnRead}
+                </span>
+              )}
+            </Link>
+
+            {/* Chat */}
+            <button
+              onClick={onChatToggle}
+              className="relative p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+            >
+              <MessageCircle className="h-5 w-5" />
+              {chatUnRead > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
+                  {chatUnRead}
+                </span>
+              )}
+            </button>
+
+            {/* Notifications */}
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="relative p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+              >
+                <Bell className="h-5 w-5" />
+                {filterUnReadNotifications?.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
+                    {filterUnReadNotifications?.length}
+                  </span>
+                )}
+              </button>
+              {notifOpen &&<div ref={dropdownRef}> <NotificationDropdown notifOpen={notifOpen} notifications={notificationList} onClose={() => setNotifOpen(false)} /></div>}
+            </div>
+
+            {/* Profile */}
+        
+            <div className='shrink-0 cursor-pointer' onClick={()=>{navigate(`/profile/${user?._id}`)}} >
+              <img
+                src={user?.profileImage}
+                alt="Profile"
+                className="h-8 w-8 rounded-full object-cover ring-2 ring-transparent hover:ring-primary/30 transition-all"
+              />
+              </div>
+         
+
+            {/* Mobile menu */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile search bar */}
+        {searchOpen && (
+          <div className="md:hidden pb-3 animate-fade-in">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+              onChange={(e)=>{dispatch(setSearchQuery(e.target.value))}}
+                type="text"
+                placeholder="Search..."
+                className="w-full rounded-full bg-muted py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                autoFocus
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Mobile nav */}
+        {mobileMenuOpen && (
+          <div className="md:hidden pb-3 animate-fade-in border-t border-border pt-3">
+            {navItems.map(item => (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  isActive(item.to)
+                    ? 'text-primary bg-primary/10'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.label}</span>
+              </Link>
+            ))}
+            <Link
+              to="/friends"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                isActive('/friends')
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              <UserPlus className="h-5 w-5" />
+              <span>Friend Requests</span>
+              {incomingCount > 0 && (
+                <span className="ml-auto h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
+                  {incomingCount}
+                </span>
+              )}
+            </Link>
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+}

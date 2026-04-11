@@ -1,0 +1,168 @@
+import Event from "../../models/event.model.js";
+import User from "../../models/user.model.js";
+import type { Request, Response } from "express";
+import mongoose from "mongoose";
+import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
+
+
+export const addEvent = async (req: Request, res: Response) => {
+    try {
+        const { title, description, date, location, userId, category, type } = req.body;
+
+        const files = (req as any).files;
+        const file = files?.coverImage?.[0];
+
+        if (!title || !description || !date || !location || !userId || !category || !type) return res.status(400).json({ message: "title, description, date, location, type and userId field are required." });
+        if (!file) return res.status(400).json({ message: "coverImage is required." });
+
+        let imageUrl = null;
+        if (file && file.buffer) {
+            imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "coverImage")
+        }
+        if (imageUrl === null || !imageUrl) return res.status(404).json({ message: "coverImage uploaded failed." })
+
+        const event = await Event.create({
+            title, description, date, location, createdBy: userId, createdAt: new Date(),
+            category: category,
+            coverImage: imageUrl,
+            type: type
+        });
+
+
+
+        res.status(201).json({ message: "Event Created Sucessfully." })
+    }
+    catch (err: unknown) {
+        if (err instanceof Error) {
+            res.status(500).json({ message: err.message });
+        } else {
+            res.status(500).json({ message: "Server Error" });
+        }
+    }
+};
+
+export const getAllEvent = async (req: Request, res: Response) => {
+    try {
+        const event = await Event.find().populate("gallery");
+        res.status(200).json({ event, success: true })
+    }
+    catch (err: unknown) {
+        if (err instanceof Error) {
+            res.status(500).json({ message: err?.message, success: false })
+        }
+        else {
+            res.status(500).json({ message: "Server error." })
+        }
+    }
+};
+
+
+export const getSingleEvent = async (req: Request, res: Response) => {
+    try {
+        const eventId = req.params.id;
+        if (!eventId) return res.status(400).json({ message: "eventId not Found." });
+
+        const event = await Event.findById(eventId);
+        if (!event) return res.status(404).json({ message: "event not found." });
+
+        res.status(200).json({ event, success: true })
+    }
+    catch (err: unknown) {
+        if (err instanceof Error) {
+            res.status(500).json({ message: err?.message });
+        }
+        else {
+            res.status(500).json({ message: "Server error." })
+        }
+    }
+}
+
+export const updateEvent = async (req: Request, res: Response) => {
+    try {
+        const { id, title, description, date, location, userId, category, type, coverImage } = req.body;
+        const files = (req as any).files;
+        const file = files?.coverImage?.[0];
+
+        if (!id || !title || !description || !date || !location || !userId || !category || !type) return res.status(400).json({ message: "eventId title, description, date, location, type and userId field are required." });
+
+        let imageUrl: string = coverImage;
+
+        if (file && file.buffer) {
+            imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "coverImage");
+        }
+
+        const event = await Event.findByIdAndUpdate(id, { title, description, date, type, location, createdBy: userId, category: category, coverImage: imageUrl }, { new: true });
+        if (!event) return res.status(404).json({ message: "Event not Found." });
+
+        res.status(200).json({ message: "Event Update Successfully." })
+    }
+    catch (err: unknown) {
+        if (err instanceof Error) {
+            res.status(500).json({ message: err?.message })
+        }
+        else {
+            res.status(500).json({ message: "Server Error" });
+        }
+    }
+};
+
+
+
+export const deleteEvent = async (req: Request, res: Response) => {
+    try {
+        const eventId = req.params.id;
+        if (!eventId) return res.status(400).json({ message: "eventId not found." });
+
+        const event = await Event.findByIdAndDelete(eventId);
+        if (!event) return res.status(404).json({ message: "Event not found." });
+
+        res.status(200).json({ message: "Event Delete Successfully." })
+    }
+    catch (err: unknown) {
+        if (err instanceof Error) {
+            res.status(500).json({ message: err?.message })
+        }
+        else {
+            res.status(500).json({ message: "Server error." })
+        }
+    }
+};
+
+export const addAndRemoveCandidateFromEvent = async (req: Request, res: Response) => {
+    try {
+        const { eventId, userId } = req.body;
+        if (!userId || !eventId) return res.status(400).json({ message: "eventId or  userId not Found." });
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: "User not found." });
+
+        const event = await Event.findById(eventId);
+        if (!event) return res.status(404).json({ message: "Event not found." });
+
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
+        if (event.interestedCandidate.some(id => id.equals(userObjectId))) {
+            //  (event.interestedCandidate as mongoose.Types.Array<mongoose.Types.ObjectId>).pull(userObjectId);
+            //   y upar wala standerd format hai
+            event.interestedCandidate = event.interestedCandidate.filter(
+                id => !id.equals(userObjectId)
+            );
+            // y normal format hai  
+
+            await event.save();
+            return res.status(200).json({ message: "User removed from event." });
+        } else {
+            event.interestedCandidate.push(user._id);
+            await event.save();
+            return res.status(200).json({ message: "User marked as interested in event." });
+        }
+    }
+    catch (err: unknown) {
+        if (err instanceof Error) {
+            res.status(500).json({ message: err?.message })
+        }
+        else {
+            res.status(500).json({ message: "Server error." })
+        }
+    }
+}

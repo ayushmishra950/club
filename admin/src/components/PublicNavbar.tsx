@@ -43,7 +43,7 @@ export function PublicNavbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-2">
-          <Link to="/login">
+          <Link to="/admin/login">
             <Button variant="ghost" size="sm">Log In</Button>
           </Link>
           <Link to="/admin/login">

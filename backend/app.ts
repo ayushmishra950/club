@@ -40,7 +40,7 @@ const app = express();
 connectDb();
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({origin:["http://localhost:8080", "http://localhost:8081"], credentials:true}))
+app.use(cors({origin:["http://localhost:8080", "http://localhost:8081", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"], credentials:true}))
 
 // admin route
 app.use("/api/admin/auth", adminAuthRoutes);

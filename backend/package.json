@@ -1,8 +1,10 @@
 {
   "type": "module",
   "scripts": {
-    "dev": "nodemon --exec tsx app.ts"
-  },
+  "dev": "nodemon --exec tsx app.ts",
+  "build": "tsc",
+  "start": "node dist/app.js"
+},
   "devDependencies": {
     "@types/node": "^25.5.0",
     "nodemon": "^3.1.14",

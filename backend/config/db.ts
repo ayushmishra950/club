@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 
 const connectDb = async () => {
   const mongoUrl = process.env.MONGO_URI;
-  console.log(mongoUrl);
 
   if (!mongoUrl) {
     console.log("Mongo URL not found");

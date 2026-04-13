@@ -4,7 +4,8 @@ import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 const initialState =  {
     userList : [],
     userCount:0,
-    adminData:null
+    adminData:null,
+    businessList:[]
 
 };
 
@@ -23,10 +24,15 @@ const userSlice = createSlice({
 
         setAdminData: (state, action) => {
             state.adminData = action.payload;
-        }
+        },
+       
+        setBusinessList:(state, action)=>{
+          state.userList = action.payload;
+        },
+
     }
 });
 
-export const {setUserList, setUserCount, setAdminData} = userSlice.actions;
+export const {setUserList, setUserCount, setAdminData, setBusinessList} = userSlice.actions;
 
 export default userSlice.reducer;

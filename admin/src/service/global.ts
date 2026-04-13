@@ -11,3 +11,22 @@ export const formatDateTimeLocal = (date) => {
 
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
+
+
+
+
+
+export const getCurrentMonthCount = (list, dateKey = "createdAt") => {
+  if (!Array.isArray(list)) return 0;
+
+  const now = new Date();
+
+  return list.filter((item) => {
+    const date = new Date(item?.[dateKey]);
+
+    return (
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear()
+    );
+  }).length;
+};

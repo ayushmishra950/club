@@ -9,6 +9,8 @@ import { getEvent, deleteEvent } from "@/service/event";
 import DeleteCard from "@/components/cards/DeleteCard";
 import { useToast } from "@/hooks/use-toast";
 import socket from "@/socket/socket";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
+import { setEventList, setInterestedAndNotCandidate } from "@/redux-toolkit/slice/eventSlice";
 
 
 
@@ -18,30 +20,29 @@ export default function EventsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [initialData, setIntialData] = useState(null);
-  const [eventList, setEventList] = useState([]);
   const [eventListRefresh, setEventListRefresh] = useState(false);
   const [deleteEvents, setDeleteEvents] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const dispatch = useAppDispatch();
+  const eventList = useAppSelector((state)=> state?.event?.eventList);
 
   
  useEffect(() => {
   socket.on("interestedcandidateFromEvent", (data) => {
-    console.log(data);
-    const { eventId, userId } = data;
+     dispatch(setInterestedAndNotCandidate(data));
+    // setEventList((prevList) =>
+    //   prevList.map((event) => {
+    //     if (event._id === eventId) {
+    //       const alreadyExists = event.interestedCandidate.includes(userId);
 
-    setEventList((prevList) =>
-      prevList.map((event) => {
-        if (event._id === eventId) {
-          const alreadyExists = event.interestedCandidate.includes(userId);
-
-          return {
-            ...event, interestedCandidate: alreadyExists ? event.interestedCandidate.filter((id) => id !== userId) : [...event.interestedCandidate, userId],
-          };
-        }
-        return event;
-      })
-    );
+    //       return {
+    //         ...event, interestedCandidate: alreadyExists ? event.interestedCandidate.filter((id) => id !== userId) : [...event.interestedCandidate, userId],
+    //       };
+    //     }
+    //     return event;
+    //   })
+    // );
   });
   return () => {
     socket.off("interestedcandidateFromEvent");
@@ -76,7 +77,7 @@ export default function EventsPage() {
       const res = await getEvent();
       console.log(res);
       if (res.status === 200) {
-        setEventList(res?.data?.event);
+        dispatch(setEventList(res?.data?.event))
         setEventListRefresh(false);
       }
     }

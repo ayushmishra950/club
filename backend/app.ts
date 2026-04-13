@@ -68,6 +68,12 @@ app.use("/api/user/notification", userNotificationRoutes);
 app.use("/api/user/announcement", userAnnouncementRoutes);
 app.use("/api/user/suggestion", userSuggestionRoutes);
 
+
+
+app.get("/", (req, res) => {
+    res.send("server is running.")
+})
+
 const port = process.env.PORT;
 
 

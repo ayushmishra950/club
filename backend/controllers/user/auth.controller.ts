@@ -321,6 +321,7 @@ export const updateUser = async (req: Request, res: Response) => {
       businessAddress,
       workingHours,
     } = req.body;
+    const io = getIO();
 
     if (!userId) {
       return res.status(400).json({ success: false, message: "UserId is required." });
@@ -397,6 +398,8 @@ export const updateUser = async (req: Request, res: Response) => {
     await user.save();
 
     const updatedUser = await User.findById(userId).select("-password");
+
+    io.emit("updateProfileFromUser")
 
     return res.status(200).json({
       success: true,

@@ -46,7 +46,7 @@ export function PublicNavbar() {
           <Link to="/login">
             <Button variant="ghost" size="sm">Log In</Button>
           </Link>
-          <Link to="/login">
+          <Link to="/admin/login">
             <Button size="sm" className="gradient-gold text-secondary-foreground font-semibold shadow-gold">
               Join Now
             </Button>

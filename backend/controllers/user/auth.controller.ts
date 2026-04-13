@@ -6,6 +6,7 @@ import {verifyUser} from "../../middlewares/user.js";
 import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
 import Post from "../../models/post.model.js";
 import FriendRequest from "../../models/friendRequest.model.js";
+import { getIO } from "../../utils/socketHelper.js";
 
 
 // REGISTER USER
@@ -28,6 +29,8 @@ export const registerUser = async (req: Request, res: Response) => {
       password,
       confirmPassword
     } = req.body;
+
+    const io = getIO();
 
     // password match check
     if (password !== confirmPassword) {
@@ -65,6 +68,7 @@ export const registerUser = async (req: Request, res: Response) => {
       password
     });
 
+    io.emit("newUser");
     res.status(201).json({
       success: true,
       message: "User registered successfully",

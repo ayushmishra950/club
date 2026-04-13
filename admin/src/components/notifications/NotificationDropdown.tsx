@@ -1,6 +1,4 @@
 import { Heart, MessageSquare, Share2, UserPlus, Calendar, Shield, Check, X } from 'lucide-react';
-import { mockNotifications } from '@/data/mockData';
-import { useConnections } from '@/hooks/useConnections';
 import { Link } from 'react-router-dom';
 import socket from '@/socket/socket';
 import { useEffect, useState } from 'react';
@@ -31,7 +29,6 @@ interface Props {
 
 export function NotificationDropdown({notifOpen, onClose, notifications }: Props) {
   const user = JSON.parse(localStorage.getItem("user"));
-  const { incomingRequests, acceptRequest, rejectRequest, incomingCount } = useConnections();
   const [notificationList, setNotificationList] = useState(notifications);
   
   useEffect(()=>{
@@ -120,13 +117,13 @@ export function NotificationDropdown({notifOpen, onClose, notifications }: Props
                 {n.status === "pending" ? (
                   <div className="flex gap-1 shrink-0">
                     <button
-                      onClick={() => acceptRequest(n._id)}
+                      // onClick={() => acceptRequest(n._id)}
                       className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center text-primary-foreground hover:opacity-90 transition-opacity"
                     >
                       <Check className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      onClick={() => rejectRequest(n._id)}
+                      // onClick={() => rejectRequest(n._id)}
                       className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     >
                       <X className="h-3.5 w-3.5" />

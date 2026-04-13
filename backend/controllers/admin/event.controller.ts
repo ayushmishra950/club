@@ -3,6 +3,9 @@ import User from "../../models/user.model.js";
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
 import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
+import { createNotificationInternal } from "../user/notification.controller.js";
+import {NotificationType} from "../../models/notification.model.js";
+
 
 
 export const addEvent = async (req: Request, res: Response) => {
@@ -28,7 +31,7 @@ export const addEvent = async (req: Request, res: Response) => {
             type: type
         });
 
-
+       await createNotificationInternal(userId, userId, NotificationType.EVENT, undefined, `Admin sent a new Event.`);
 
         res.status(201).json({ message: "Event Created Sucessfully." })
     }

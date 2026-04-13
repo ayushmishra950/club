@@ -6,8 +6,8 @@ const router = express.Router();
 router.post("/register", createAdmin);
 router.post("/login", adminLogin);
 router.post("/get", getAdmins);
-router.post("/getbyid", getAdminById);
-router.post("/update", updateAdmin);
+router.get("/getbyid/:id", getAdminById);
+router.put("/update/:id", updateAdmin);
 router.post("/delete", deleteAdmin);
 
 export default router;

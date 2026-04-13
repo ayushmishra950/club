@@ -51,6 +51,7 @@ const Events = () => {
       const res = await interestedOrNotInterestedFromEvent(obj);
       if(res.status === 200){
         dispatch(setInterestedOrNotInterestedCandidate(obj));
+        socket.emit("interestedcandidateFromEvent", obj);
 
       }
     }
@@ -73,7 +74,9 @@ const Events = () => {
       <div className="mx-auto max-w-4xl px-4 py-6">
         <h1 className="font-heading text-2xl font-bold text-foreground mb-6">Events</h1>
         <div className="space-y-4">
-          {eventList?.filter((e)=> e?.type === "public").map(event => (
+          {
+            eventList?.length > 0 ?
+           eventList?.map(event => (
             <div key={event._id} className="bg-card rounded-xl shadow-card overflow-hidden">
               <img src={event?.coverImage} alt="" className="w-full h-48 object-cover" />
               <div className="p-5">
@@ -103,7 +106,14 @@ const Events = () => {
                 </div>
               </div>
             </div>
-          ))}
+          ))
+        :
+       <div className="flex justify-center items-center mt-20">
+  <span className="text-muted-foreground text-sm">
+    No Event Found.
+  </span>
+</div>
+        }
         </div>
       </div>
       <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />

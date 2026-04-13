@@ -24,6 +24,30 @@ export default function EventsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  
+ useEffect(() => {
+  socket.on("interestedcandidateFromEvent", (data) => {
+    console.log(data);
+    const { eventId, userId } = data;
+
+    setEventList((prevList) =>
+      prevList.map((event) => {
+        if (event._id === eventId) {
+          const alreadyExists = event.interestedCandidate.includes(userId);
+
+          return {
+            ...event, interestedCandidate: alreadyExists ? event.interestedCandidate.filter((id) => id !== userId) : [...event.interestedCandidate, userId],
+          };
+        }
+        return event;
+      })
+    );
+  });
+  return () => {
+    socket.off("interestedcandidateFromEvent");
+  };
+}, []);
+
 
 
   const handleDeleteEvent = async () => {

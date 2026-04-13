@@ -1,12 +1,19 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Calendar, Megaphone, Link2, CheckSquare,
   DollarSign, CreditCard, ClipboardList,FileText ,  BarChart3, Settings, Menu,
-  X, Bell, LogOut, ChevronLeft,
+  X, Bell, LogOut, ChevronLeft,Lightbulb,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
+import {getAllNotifications} from "@/service/notification";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
+import { setNotificationList } from "@/redux-toolkit/slice/notificationSlice";
+import DeleteCard from "./cards/DeleteCard";
+import socket from "@/socket/socket";
+
 
 const menuItems = [
   { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -16,26 +23,84 @@ const menuItems = [
   { label: "Groups", path: "/dashboard/groups", icon: FileText  },
   { label: "Business Directory", path: "/dashboard/businessDirectory", icon: FileText  },
   { label: "Announcements", path: "/dashboard/announcements", icon: Megaphone },
-  { label: "Referrals", path: "/dashboard/referrals", icon: Link2 },
-  { label: "Tasks", path: "/dashboard/tasks", icon: CheckSquare },
-  { label: "Finance", path: "/dashboard/finance", icon: DollarSign },
-  { label: "Payments", path: "/dashboard/payments", icon: CreditCard },
-  { label: "Attendance", path: "/dashboard/attendance", icon: ClipboardList },
-  { label: "Polls", path: "/dashboard/polls", icon: BarChart3 },
+  { label: "Suggestions", path: "/dashboard/suggestions", icon: Lightbulb },
+  // { label: "Referrals", path: "/dashboard/referrals", icon: Link2 },
+  // { label: "Tasks", path: "/dashboard/tasks", icon: CheckSquare },
+  // { label: "Finance", path: "/dashboard/finance", icon: DollarSign },
+  // { label: "Payments", path: "/dashboard/payments", icon: CreditCard },
+  // { label: "Attendance", path: "/dashboard/attendance", icon: ClipboardList },
+  // { label: "Polls", path: "/dashboard/polls", icon: BarChart3 },
   { label: "Settings", path: "/dashboard/settings", icon: Settings },
 ];
 
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+    const [logoutLoading, setLogoutLoading] = useState(false);
+        const dropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
 
   const isActive = (path: string) =>
     path === "/dashboard" ? location.pathname === path : location.pathname.startsWith(path);
 
+  useEffect(()=>{
+    socket.on("adminNotification", (data) => {
+     
+    });
+
+    return () => {
+      socket.off("adminNotification");
+    }
+  },[]);
+   const handleLogout = () => {
+    try{
+      setLogoutLoading(true);
+       localStorage.removeItem("user");
+    navigate("/admin/login");
+
+    }catch(err){
+      console.log(err)
+    }finally{
+      setLogoutLoading(false);
+    }
+   
+  }
+
+  const handleGetAllNotifications = async() => {
+    try{
+       const res = await getAllNotifications();
+       console.log(res);
+       if(res.status === 200){
+        dispatch(setNotificationList(res?.data))
+       }
+    }
+    catch(err){
+      console.log(err);
+    }
+  };
+
+  useEffect(()=>{
+    handleGetAllNotifications();
+  },[])
+
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <>
+     <DeleteCard
+        isOpen={logoutDialogOpen}
+        onOpenChange={setLogoutDialogOpen}
+        isLoading={logoutLoading}
+        buttonName="Logout"
+        title={`Admin Logout`} // Dynamic title
+        description={`Are you sure you want to Logout.`} // Dynamic description
+        onConfirm={handleLogout}
+      />
+
+        <div className="flex flex-col h-full">
       <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
         {!collapsed && (
           <Link to="/" className="flex items-center gap-2">
@@ -73,7 +138,7 @@ export function DashboardLayout() {
 
       <div className="p-3 border-t border-sidebar-border">
         <button
-          onClick={() => navigate("/")}
+          onClick={()=> {setLogoutDialogOpen(true)}}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 w-full"
         >
           <LogOut className="h-4.5 w-4.5 shrink-0" />
@@ -81,6 +146,7 @@ export function DashboardLayout() {
         </button>
       </div>
     </div>
+    </>
   );
 
   return (
@@ -126,10 +192,11 @@ export function DashboardLayout() {
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative" onClick={() => setNotifOpen(!notifOpen)}>
               <Bell className="h-5 w-5" />
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive" />
             </Button>
+          {notifOpen &&<div ref={dropdownRef}> <NotificationDropdown notifOpen={notifOpen} notifications={null} onClose={() => setNotifOpen(false)} /></div>}
             <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
               <span className="text-primary-foreground text-xs font-bold">RS</span>
             </div>

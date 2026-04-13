@@ -11,6 +11,9 @@ export interface IAdmin extends Document {
   comparePassword(password: string): Promise<boolean>;
   isOnline:boolean;
   lastSeen: string;
+  mobile:string;
+  clubName:string;
+  foundedYear:string;
 }
 
 const AdminSchema = new Schema<IAdmin>(
@@ -26,6 +29,20 @@ const AdminSchema = new Schema<IAdmin>(
       required: true,
       unique: true,
       lowercase: true
+    },
+    mobile:{
+      type:String,
+      default:"9876543212"
+    },
+
+    clubName:{
+      type:String,
+      default:"xyz club"
+    },
+
+    foundedYear:{
+      type:String,
+      default:"2026"
     },
 
     password: {

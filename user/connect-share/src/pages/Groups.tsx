@@ -60,7 +60,9 @@ const Groups = () => {
       <div className="mx-auto max-w-4xl px-4 py-6">
         <h1 className="font-heading text-2xl font-bold text-foreground mb-6">Groups</h1>
         <div className="grid sm:grid-cols-2 gap-4">
-          {groupList.map(group => {
+          {
+            groupList?.length > 0 ?
+          groupList.map(group => {
            const isMember = group.members?.some( (member) => member._id === user?._id);
             return(
             <div key={group._id} className="bg-card cursor-pointer rounded-xl shadow-card overflow-hidden" onClick={() => navigate(`/groups/${group._id}`)}>
@@ -87,7 +89,14 @@ const Groups = () => {
               </div>
             </div>
           )}
-          )}
+          )
+          :
+         <div className="col-span-2 flex justify-center items-center mt-20">
+  <span className="text-muted-foreground text-sm">
+    No Group Found.
+  </span>
+</div>
+        }
         </div>
       </div>
       <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />

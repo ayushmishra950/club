@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Camera, MapPin, Briefcase, Calendar, Gift, Edit2, ChevronRight, UserMinus, Users, Shield, Globe, Lock, UserPlus } from 'lucide-react';
+import { Camera, MapPin, Briefcase, Calendar, Gift, Edit2, ChevronRight, UserMinus, Users, Shield, Globe, Lock, UserPlus, LogOut } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { PostCard } from '@/components/feed/PostCard';
@@ -16,6 +16,8 @@ import { isImage, getBirthdayInfo, personalFields } from "@/service/global";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
 import { setPostList } from "@/redux-toolkit/slice/postSlice";
 import { getAllPost } from "@/service/post";
+import DeleteCard from "@/components/card/DeleteCard";
+
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -29,6 +31,8 @@ const Profile = () => {
   const [friendList, setFriendList] = useState([]);
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [userListRefresh, setUserListRefresh] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   const dispatch = useAppDispatch();
   const postList = useAppSelector((state) => state?.post?.postList);
   const userPosts = postList?.filter(
@@ -41,6 +45,20 @@ const Profile = () => {
   const allImages = postList?.filter((p) => p?.createdBy?._id === userId).flatMap(post =>
     (post.images || []).filter(url => isImage(url))
   ) || [];
+
+  const handleLogout = () => {
+    try{
+      setLogoutLoading(true);
+       localStorage.removeItem("user");
+    navigate("/login");
+
+    }catch(err){
+      console.log(err)
+    }finally{
+      setLogoutLoading(false);
+    }
+   
+  }
 
   const completionItems = personalFields.map(field => {
     const value = userData?.[field.key];
@@ -146,6 +164,16 @@ const Profile = () => {
   console.log(userData)
   return (
     <>
+      <DeleteCard
+        isOpen={logoutDialogOpen}
+        onOpenChange={setLogoutDialogOpen}
+        isLoading={logoutLoading}
+        buttonName="Logout"
+        title={`User Logout`} // Dynamic title
+        description={`Are you sure you want to Logout.`} // Dynamic description
+        onConfirm={handleLogout}
+      />
+
       <div className="min-h-screen bg-background">
         <Navbar onChatToggle={() => setChatOpen(!chatOpen)} chatUnread={totalUnread} />
 
@@ -178,9 +206,17 @@ const Profile = () => {
                 <Users className="h-4 w-4" /> {friendList?.length} connections
               </p>
             </div>
-            {isTrue && <button onClick={() => { navigate(`/userDialog/${userData?._id}`) }} className="flex items-center gap-2 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
+            {isTrue && <><button onClick={() => { navigate(`/userDialog/${userData?._id}`) }} className="flex items-center gap-2 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
               <Edit2 className="h-4 w-4" /> Edit Profile
-            </button>}
+            </button>
+              <button
+                onClick={()=>{setLogoutDialogOpen(true)}}
+                className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-700 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
+            </>}
           </div>
 
           {/* Completion bar */}

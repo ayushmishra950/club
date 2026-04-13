@@ -39,6 +39,18 @@ export const loginAdmin = async(obj:any) => {
 }
 
 
+export const getAdmin = async(id:string) => {
+    const res = await api.get(`${base_url}/admin/auth/getbyid/${id}`);
+    return res;
+}
+
+
+export const updateAdmin = async(id:string, obj:any) => {
+    const res = await api.put(`${base_url}/admin/auth/update/${id}`, obj);
+    return res;
+}
+
+
 
 
 export const getAllUser = async ({ page, perPage, search }) => {

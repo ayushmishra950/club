@@ -27,6 +27,7 @@ import PostPage from "@/pages/dashboard/PostPage";
 import GroupsPage from "@/pages/dashboard/GroupsPage";
 import BusinessDirectoryPage from "@/pages/dashboard/BusinessDirectoryPage";
 import SettingsPage from "@/pages/dashboard/SettingsPage";
+import SuggestionPage from "@/pages/dashboard/SuggestionPage";
 import NotFound from "@/pages/NotFound";
 import socket from "./socket/socket";
 import { useEffect } from "react";
@@ -68,6 +69,7 @@ const App = () => {
             <Route path="members" element={<MembersPage />} />
             <Route path="events" element={<EventsPage />} />
             <Route path="announcements" element={<AnnouncementsPage />} />
+            <Route path="suggestions" element={<SuggestionPage />} />
             <Route path="referrals" element={<ReferralsPage />} />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="finance" element={<FinancePage />} />

@@ -9,7 +9,9 @@ export enum NotificationType {
   ANNOUNCEMENT = "announcement",
   FOLLOW = "follow",
   MESSAGE = "message",
-  POST = "post"
+  POST = "post",
+  EVENT = "event",
+  SUGGESTION = "suggestion"
 }
 
 export interface INotification extends Document {

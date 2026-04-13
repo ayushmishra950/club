@@ -14,6 +14,7 @@ import RoleDialog from "@/components/forms/RoleDialog";
 import DeleteCard from "@/components/cards/DeleteCard";
 import {setUserList} from "@/redux-toolkit/slice/userSlice";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
+import socket from "@/socket/socket";
 
 export default function MembersPage() {
   const {toast} = useToast();
@@ -32,7 +33,15 @@ export default function MembersPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const dispatch = useAppDispatch();
   const memberList = useAppSelector((state)=> state?.user?.userList);
-
+  
+  useEffect(()=>{
+      socket.on("newUser", () => {
+        handleGetUsers();
+      });
+      return () => {
+        socket.off("newUser");
+      }
+  },[])
 
   const handleAdd = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -162,7 +171,9 @@ export default function MembersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {memberList?.map((m) => (
+              {
+                memberList?.length > 0 ? 
+              memberList?.map((m) => (
                 <TableRow key={m?._id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -217,7 +228,12 @@ export default function MembersPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+              :
+              <TableRow>
+                <TableCell colSpan={5} className="text-center">No Member Found.</TableCell>
+              </TableRow>
+            }
             </TableBody>
 
           </Table>

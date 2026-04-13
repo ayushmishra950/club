@@ -20,6 +20,9 @@ import adminGroupRoutes from "./routes/admin/group.route.js";
 import adminBusinessGroupRoutes from "./routes/admin/business.group.route.js";
 import adminAnnouncementRoutes from "./routes/admin/announcement.route.js";
 import adminChatRoutes from "./routes/admin/chat.route.js";
+import adminSuggestionRoutes from "./routes/admin/suggestion.route.js";
+import adminNotificationRoutes from "./routes/admin/notification.route.js";
+
 
 // user routes
 import userAuthRoutes from "./routes/user/auth.route.js";
@@ -29,6 +32,7 @@ import userFrinendRoutes from "./routes/user/friendRequest.route.js";
 import userChatRoutes from "./routes/user/chat.route.js";
 import userNotificationRoutes from "./routes/user/notification.route.js";
 import userAnnouncementRoutes from "./routes/user/announcement.route.js";
+import userSuggestionRoutes from "./routes/user/suggestion.route.js";
 
 const app = express();
 
@@ -51,6 +55,8 @@ app.use("/api/admin/group", adminGroupRoutes);
 app.use("/api/admin/businessgroup", adminBusinessGroupRoutes);
 app.use("/api/admin/announcement", adminAnnouncementRoutes);
 app.use("/api/admin/chat", adminChatRoutes);
+app.use("/api/admin/suggestion", adminSuggestionRoutes);
+app.use("/api/admin/notification", adminNotificationRoutes);
 
 // user route
 app.use("/api/user/auth", userAuthRoutes);
@@ -60,6 +66,7 @@ app.use("/api/user/friend", userFrinendRoutes);
 app.use("/api/user/chat", userChatRoutes);
 app.use("/api/user/notification", userNotificationRoutes);
 app.use("/api/user/announcement", userAnnouncementRoutes);
+app.use("/api/user/suggestion", userSuggestionRoutes);
 
 const port = process.env.PORT;
 

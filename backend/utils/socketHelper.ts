@@ -298,6 +298,14 @@ export const initSocket = (server: HTTPServer) => {
       io.emit("typingChat");
     });
 
+    socket.on("event", () => {
+      io.emit("event");
+    });
+
+    socket.on("interestedcandidateFromEvent", (obj)=>{
+      io.emit("interestedcandidateFromEvent", obj);
+    })
+
     socket.on("getUnreadCount", async (userId) => {
       const count = await getUnreadCount(userId);
       io.to(userId).emit("totalUnReadChat", count);

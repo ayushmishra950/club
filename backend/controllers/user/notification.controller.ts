@@ -46,9 +46,12 @@ else if ( type === "friend_accept" || type === "friend_cancel" || type === "like
 } 
 else { targetUserId = receiverId as string;}
 
-if (type === "announcement") {
+if (type === "announcement" || type === "event") {
   io.emit("notification", notification);
-} else {
+}else if(type === "suggestion"){
+  io.emit("adminNotification", notification);
+}
+ else {
   io.to(targetUserId).emit("notification", notification);
 }
 

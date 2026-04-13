@@ -239,12 +239,10 @@ const UserSchema = new Schema<IUser>(
     isOnline:{
       type:Boolean,
       default:false,
-      required:true
     },
     lastSeen:{
       type:String,
       default:null,
-      required:true
     }
 
   },

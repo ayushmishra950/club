@@ -6,6 +6,8 @@ import galleryReducer from "../slice/gallerySlice";
 import categoryReducer from "../slice/categorySlice";
 import postReducer from "../slice/postSlice";
 import announcementReducer from "../slice/announcementSlice";
+import suggestionReducer from "../slice/suggestionSlice";
+import notificationReducer from "../slice/notificationSlice";
 
 
 export const store = configureStore({
@@ -16,7 +18,9 @@ export const store = configureStore({
         gallery:galleryReducer,
         category:categoryReducer,
         post:postReducer,
-        announcement: announcementReducer
+        announcement: announcementReducer,
+        suggestion: suggestionReducer,
+        notification:notificationReducer
     }
 });
 

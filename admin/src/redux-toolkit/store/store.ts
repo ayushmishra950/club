@@ -8,6 +8,7 @@ import postReducer from "../slice/postSlice";
 import announcementReducer from "../slice/announcementSlice";
 import suggestionReducer from "../slice/suggestionSlice";
 import notificationReducer from "../slice/notificationSlice";
+import groupReducer from "../slice/groupSlice";
 
 
 export const store = configureStore({
@@ -20,7 +21,8 @@ export const store = configureStore({
         post:postReducer,
         announcement: announcementReducer,
         suggestion: suggestionReducer,
-        notification:notificationReducer
+        notification:notificationReducer,
+        group:groupReducer
     }
 });
 

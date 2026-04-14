@@ -7,6 +7,8 @@ import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
 import Post from "../../models/post.model.js";
 import FriendRequest from "../../models/friendRequest.model.js";
 import { getIO } from "../../utils/socketHelper.js";
+import { createNotificationInternal } from "./notification.controller.js";
+import {NotificationType} from "../../models/notification.model.js";
 
 
 // REGISTER USER
@@ -69,6 +71,7 @@ export const registerUser = async (req: Request, res: Response) => {
     });
 
     io.emit("newUser");
+        await createNotificationInternal(user?._id, user?._id, NotificationType.NEW_USER, undefined, `Add new Member Please check member List.`);
     res.status(201).json({
       success: true,
       message: "User registered successfully",

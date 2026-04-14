@@ -1,31 +1,37 @@
 
 import { Send } from 'lucide-react';
 import { useState } from 'react';
-import {addSuggestion} from "@/service/suggestion";
+import { addSuggestion } from "@/service/suggestion";
 import { useToast } from '@/hooks/use-toast';
 
 export function MessageSection() {
-  const {toast} = useToast();
+  const { toast } = useToast();
   const user = JSON.parse(localStorage.getItem("user"));
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const handleSend = async() => {
+  const handleSend = async () => {
     if (!message.trim() || !user?._id) return;
 
-    const obj = { description: message.trim(), userId:user?._id};
-     try{
-       const res = await addSuggestion(obj);
+    const obj = { description: message.trim(), userId: user?._id };
+    try {
+      setLoading(true);
+      const res = await addSuggestion(obj);
 
-       if(res.status === 201){
-        toast({title:"Message Send Successfully.", description:res?.data?.message});
+      if (res.status === 201) {
+        toast({ title: "Message Send Successfully.", description: res?.data?.message });
         setMessage("");
-       }
-     }
-     catch(err){
+      }
+    }
+    catch (err) {
       console.log(err);
-      toast({title:"Message Send Failed.", description:err?.response?.data?.message || err?.message, variant:"destructive"})
-     }
+      toast({ title: "Message Send Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
+    } finally {
+      setLoading(false);
+    }
   };
+
+
 
   return (
     <div className="bg-card rounded-xl shadow-card p-4 mt-4">
@@ -47,9 +53,17 @@ export function MessageSection() {
         {/* Button */}
         <button
           onClick={handleSend}
-          className="w-full bg-primary text-primary-foreground text-sm font-semibold py-2 rounded-lg hover:opacity-90 transition"
+          disabled={loading}
+          className={`w-full text-sm font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 ${loading
+              ? "bg-primary/70 cursor-not-allowed"
+              : "bg-primary hover:opacity-90"
+            } text-primary-foreground`}
         >
-          Send to Admin
+          {loading ? (
+            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          ) : (
+            "Send to Admin"
+          )}
         </button>
       </div>
     </div>

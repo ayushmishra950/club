@@ -16,9 +16,12 @@ export default function SuggestionPage() {
 
   const [deleteData, setDeleteData] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(()=>{
     socket.on("addSuggestion", (data) => {
+      console.log(data);
      dispatch(setNewSuggestion(data));
     });
 
@@ -28,28 +31,36 @@ export default function SuggestionPage() {
 
     return () => {
       socket.off("addSuggestion");
+      socket.off("deleteSuggestion");
     }
   },[]);
 
 
   const handleGetSuggestions = async () => {
     try {
+      setLoading(true);
       const res = await getAllSuggestion();
       if (res.status === 200) {
         dispatch(setSuggestionList(res?.data?.data || res?.data));
       }
     } catch (err) {
       console.log(err);
+    }finally{
+      setLoading(false);
     }
   };
 
   useEffect(() => {
+    if(suggestionList?.length ===0){
     handleGetSuggestions();
-  }, []);
+    }
+  }, [suggestionList?.length]);
 
   
   const handleDeleteSuggestion = async () => {
     if (!deleteData?._id) return;
+
+    setDeleteLoading(true);
 
     try {
       const res = await deleteSuggestion(deleteData?._id);
@@ -63,8 +74,19 @@ export default function SuggestionPage() {
       }
     } catch (err) {
       toast({ title: "Delete Failed", description: err?.response?.data?.message || err?.message, variant: "destructive"});
+    }finally{
+      setDeleteLoading(false);
     }
   };
+
+     
+   if (suggestionList?.length === 0 && loading) {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <span className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></span>
+    </div>
+  );
+}
 
   return (
     <>
@@ -72,6 +94,7 @@ export default function SuggestionPage() {
       <DeleteCard
         isOpen={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
+        isLoading={deleteLoading}
         title="Delete Suggestion"
         description="Are you sure you want to delete this suggestion?"
         onConfirm={handleDeleteSuggestion}

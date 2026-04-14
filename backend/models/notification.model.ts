@@ -11,7 +11,8 @@ export enum NotificationType {
   MESSAGE = "message",
   POST = "post",
   EVENT = "event",
-  SUGGESTION = "suggestion"
+  SUGGESTION = "suggestion",
+  NEW_USER = "new_user",
 }
 
 export interface INotification extends Document {

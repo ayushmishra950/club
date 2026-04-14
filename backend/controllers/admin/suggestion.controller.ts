@@ -6,6 +6,7 @@ import { getIO } from "../../utils/socketHelper.js";
 export const addSuggestion = async (req: Request, res: Response) => {
   try {
     const {userId, description } = req.body;
+    const io = getIO();
 
     if (!description) {
       return res.status(400).json({ message: "Description is required" });
@@ -15,6 +16,8 @@ export const addSuggestion = async (req: Request, res: Response) => {
       description,
       createdBy: userId,
     });
+
+    io.emit("addSuggestion", newSuggestion)
 
     return res.status(201).json({
       message: "Suggestion created successfully",

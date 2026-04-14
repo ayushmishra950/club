@@ -48,7 +48,7 @@ else { targetUserId = receiverId as string;}
 
 if (type === "announcement" || type === "event") {
   io.emit("notification", notification);
-}else if(type === "suggestion"){
+}else if(type === "suggestion" || type === "new_user"){
   io.emit("adminNotification", notification);
 }
  else {

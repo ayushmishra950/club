@@ -2,15 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Calendar, Megaphone, Link2, CheckSquare,
-  DollarSign, CreditCard, ClipboardList,FileText ,  BarChart3, Settings, Menu,
-  X, Bell, LogOut, ChevronLeft,Lightbulb,
+  DollarSign, CreditCard, ClipboardList, FileText, BarChart3, Settings, Menu,
+  X, Bell, LogOut, ChevronLeft, Lightbulb,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
-import {getAllNotifications} from "@/service/notification";
+import { getAllNotifications } from "@/service/notification";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
-import { setNotificationList } from "@/redux-toolkit/slice/notificationSlice";
+import { setNotificationList, setNewNotifications } from "@/redux-toolkit/slice/notificationSlice";
 import DeleteCard from "./cards/DeleteCard";
 import socket from "@/socket/socket";
 
@@ -19,9 +19,9 @@ const menuItems = [
   { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { label: "Members", path: "/dashboard/members", icon: Users },
   { label: "Events", path: "/dashboard/events", icon: Calendar },
-  { label: "Posts", path: "/dashboard/posts", icon: FileText  },
-  { label: "Groups", path: "/dashboard/groups", icon: FileText  },
-  { label: "Business Directory", path: "/dashboard/businessDirectory", icon: FileText  },
+  { label: "Posts", path: "/dashboard/posts", icon: FileText },
+  { label: "Groups", path: "/dashboard/groups", icon: FileText },
+  { label: "Business Directory", path: "/dashboard/businessDirectory", icon: FileText },
   { label: "Announcements", path: "/dashboard/announcements", icon: Megaphone },
   { label: "Suggestions", path: "/dashboard/suggestions", icon: Lightbulb },
   // { label: "Referrals", path: "/dashboard/referrals", icon: Link2 },
@@ -36,61 +36,69 @@ const menuItems = [
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-    const [notifOpen, setNotifOpen] = useState(false);
-    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-    const [logoutLoading, setLogoutLoading] = useState(false);
-        const dropdownRef = useRef<HTMLDivElement>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-
+  const notificationList = useAppSelector((state) => state?.notification?.notificationList);
+  const unreadSuggestionCount = notificationList?.filter(
+    (item) => (item?.type === "suggestion" || item?.type === "new_user") && item?.isRead === false
+  )?.length;
 
   const isActive = (path: string) =>
     path === "/dashboard" ? location.pathname === path : location.pathname.startsWith(path);
 
-  useEffect(()=>{
+  useEffect(() => {
     socket.on("adminNotification", (data) => {
-     
+      dispatch(setNewNotifications(data))
     });
+
+    socket.on("notificationSeen", (data) => {
+      console.log(data);
+      dispatch(setNotificationList(data));
+    })
 
     return () => {
       socket.off("adminNotification");
+      socket.off("notificationSeen");
     }
-  },[]);
-   const handleLogout = () => {
-    try{
+  }, []);
+  const handleLogout = () => {
+    try {
       setLogoutLoading(true);
-       localStorage.removeItem("user");
-    navigate("/admin/login");
+      localStorage.removeItem("user");
+      navigate("/admin/login");
 
-    }catch(err){
+    } catch (err) {
       console.log(err)
-    }finally{
+    } finally {
       setLogoutLoading(false);
     }
-   
+
   }
 
-  const handleGetAllNotifications = async() => {
-    try{
-       const res = await getAllNotifications();
-       console.log(res);
-       if(res.status === 200){
-        dispatch(setNotificationList(res?.data))
-       }
+  const handleGetAllNotifications = async () => {
+    try {
+      const res = await getAllNotifications();
+      if (res.status === 200) {
+        dispatch(setNotificationList(res?.data?.data))
+      }
     }
-    catch(err){
+    catch (err) {
       console.log(err);
     }
   };
 
-  useEffect(()=>{
+  useEffect(() => {
     handleGetAllNotifications();
-  },[])
+  }, [])
 
   const SidebarContent = () => (
     <>
-     <DeleteCard
+      <DeleteCard
         isOpen={logoutDialogOpen}
         onOpenChange={setLogoutDialogOpen}
         isLoading={logoutLoading}
@@ -100,52 +108,51 @@ export function DashboardLayout() {
         onConfirm={handleLogout}
       />
 
-        <div className="flex flex-col h-full">
-      <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
-        {!collapsed && (
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-gold flex items-center justify-center">
-              <span className="text-secondary-foreground font-display font-bold text-xs">CC</span>
-            </div>
-            <span className="font-display font-bold text-sidebar-foreground">ClubConnect</span>
-          </Link>
-        )}
-        <button onClick={() => setCollapsed(!collapsed)} className="hidden lg:block p-1 rounded hover:bg-sidebar-accent text-sidebar-foreground">
-          <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`} />
-        </button>
-        <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 text-sidebar-foreground">
-          <X className="h-5 w-5" />
-        </button>
-      </div>
+      <div className="flex flex-col h-full">
+        <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
+          {!collapsed && (
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg gradient-gold flex items-center justify-center">
+                <span className="text-secondary-foreground font-display font-bold text-xs">CC</span>
+              </div>
+              <span className="font-display font-bold text-sidebar-foreground">ClubConnect</span>
+            </Link>
+          )}
+          <button onClick={() => setCollapsed(!collapsed)} className="hidden lg:block p-1 rounded hover:bg-sidebar-accent text-sidebar-foreground">
+            <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? "rotate-180" : ""}`} />
+          </button>
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 text-sidebar-foreground">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            onClick={() => setSidebarOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              isActive(item.path)
-                ? "bg-sidebar-accent text-sidebar-primary"
-                : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-            }`}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {menuItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(item.path)
+                  ? "bg-sidebar-accent text-sidebar-primary"
+                  : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                }`}
+            >
+              <item.icon className="h-4.5 w-4.5 shrink-0" />
+              {!collapsed && <span>{item.label}</span>}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="p-3 border-t border-sidebar-border">
+          <button
+            onClick={() => { setLogoutDialogOpen(true) }}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 w-full"
           >
-            <item.icon className="h-4.5 w-4.5 shrink-0" />
-            {!collapsed && <span>{item.label}</span>}
-          </Link>
-        ))}
-      </nav>
-
-      <div className="p-3 border-t border-sidebar-border">
-        <button
-          onClick={()=> {setLogoutDialogOpen(true)}}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 w-full"
-        >
-          <LogOut className="h-4.5 w-4.5 shrink-0" />
-          {!collapsed && <span>Log Out</span>}
-        </button>
+            <LogOut className="h-4.5 w-4.5 shrink-0" />
+            {!collapsed && <span>Log Out</span>}
+          </button>
+        </div>
       </div>
-    </div>
     </>
   );
 
@@ -192,11 +199,21 @@ export function DashboardLayout() {
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative" onClick={() => setNotifOpen(!notifOpen)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={() => setNotifOpen(!notifOpen)}
+            >
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive" />
+
+              {unreadSuggestionCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 text-[10px] flex items-center justify-center rounded-full bg-destructive text-white">
+                  {unreadSuggestionCount}
+                </span>
+              )}
             </Button>
-          {notifOpen &&<div ref={dropdownRef}> <NotificationDropdown notifOpen={notifOpen} notifications={null} onClose={() => setNotifOpen(false)} /></div>}
+            {notifOpen && <div ref={dropdownRef}> <NotificationDropdown notifOpen={notifOpen} notifications={notificationList} onClose={() => setNotifOpen(false)} /></div>}
             <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
               <span className="text-primary-foreground text-xs font-bold">RS</span>
             </div>

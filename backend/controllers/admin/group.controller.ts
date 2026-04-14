@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 import Group from "../../models/group.model.js";
 import mongoose from "mongoose";
 import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
+import Message from "../../models/message.model.js";
+import Chat from "../../models/chat.model.js";
 
 // ========================
 // Create Group
@@ -40,16 +42,49 @@ export const createGroup = async (req: Request, res: Response) => {
 // ========================
 // Get All Groups
 // ========================
+// export const getGroups = async (req: Request, res: Response) => {
+//   try {
+//     const groups = await Group.find().populate("members", "fullName email profileImage").sort({ createdAt: -1 });
+//     return res.status(200).json({ groups });
+//   } catch (err: any) {
+//     console.error(err);
+//     return res.status(500).json({ message: err.message || "Server Error" });
+//   }
+// };
 export const getGroups = async (req: Request, res: Response) => {
   try {
-    const groups = await Group.find().populate("members", "fullName email profileImage").sort({ createdAt: -1 });
-    return res.status(200).json({ groups });
+    const groups = await Group.find()
+      .populate("members", "fullName email profileImage")
+      .sort({ createdAt: -1 });
+
+    const groupsWithMessages = await Promise.all(
+      groups.map(async (group) => {
+        const chat = await Chat.findOne({ groupId: group._id });
+
+        let unreadMessages: any = [];
+
+        if (chat) {
+          unreadMessages = await Message.find({
+            chatId: chat._id,
+            status: { $ne: "seen" },
+          }).sort({ createdAt: -1 });
+        }
+
+        return {
+          ...group.toObject(),
+          chatId: chat ? chat._id : null,
+          unreadMessages,
+        };
+      })
+    );
+
+    return res.status(200).json({ groups: groupsWithMessages });
+
   } catch (err: any) {
     console.error(err);
     return res.status(500).json({ message: err.message || "Server Error" });
   }
 };
-
 // ========================
 // Get Single Group
 // ========================

@@ -230,7 +230,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     const chat = await Chat.findByIdAndUpdate(chatId, { lastMessage: message._id});
 
     io.emit("messageRefresh", message);
-    io.emit("messageAdminRefresh", { newMessage: message, groupId: chat?.groupId});
+    io.emit("messageAdminRefresh", { newMessage: message, groupId: chat?.groupId, chatId});
 
     return res.status(201).json({
       message: "message sent successfully.",

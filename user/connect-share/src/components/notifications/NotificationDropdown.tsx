@@ -46,13 +46,12 @@ export function NotificationDropdown({notifOpen, onClose, notifications }: Props
       <div className="absolute right-0 top-12 z-50 w-80 sm:w-96 rounded-xl bg-card border border-border shadow-elevated animate-fade-in overflow-hidden">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
           <h3 className="font-heading font-semibold text-foreground">Notifications</h3>
-          {/* <button className="text-xs text-primary hover:underline">Mark all read</button> */}
+      
         </div>
 
     <div className="max-h-72 overflow-y-auto flex flex-col">
-  {notificationList && notificationList.length > 0 ? (
-    notificationList
-      .filter(n => {
+  { notificationList && notificationList.length > 0 ? (
+    notificationList.filter(n => n.type !== "suggestion").filter(n => {
         if (n?.type === "friend_accept" || n?.type === "friend_cancel") {
           return n?.sender?._id === user?._id;
         }

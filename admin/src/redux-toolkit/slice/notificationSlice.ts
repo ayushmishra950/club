@@ -11,11 +11,15 @@ const notificationSlice = createSlice({
     reducers:{
         setNotificationList : (state, action) => {
           state.notificationList = action.payload;
+        },
+
+        setNewNotifications:(state, action) => {
+          state.notificationList.unshift(action.payload);
         }
     }
 });
 
 
-export const {setNotificationList} = notificationSlice.actions;
+export const {setNotificationList, setNewNotifications} = notificationSlice.actions;
 
 export default notificationSlice.reducer;

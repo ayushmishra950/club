@@ -19,12 +19,12 @@ export default function UserPage() {
 
     const [formData, setFormData] = useState<any>({
         accountType: "user",
-        type:"public"
+        type: "public"
     });
     const [errors, setErrors] = useState({
-    skills: "",
-    hobbies: "",
-});
+        skills: "",
+        hobbies: "",
+    });
 
     const [preview, setPreview] = useState<any>({
         profileImage: "",
@@ -33,31 +33,31 @@ export default function UserPage() {
     });
 
     const handleChange = (e: any) => {
-    const { name, value, files, type, checked } = e.target;
+        const { name, value, files, type, checked } = e.target;
 
-    if (files) {
-        const file = files[0];
-        setFormData({ ...formData, [name]: file });
+        if (files) {
+            const file = files[0];
+            setFormData({ ...formData, [name]: file });
 
-        setPreview({
-            ...preview,
-            [name]: URL.createObjectURL(file),
-        });
-    } else if (type === "checkbox") {
-        setFormData({ ...formData, [name]: checked });
-    } else {
-        // Split the input by commas and trim each item
-        const items = value.split(",").map((item: string) => item.trim()).filter(Boolean);
-
-        // Check if items exceed 5
-        if (items.length > 5) {
-            setErrors({ ...errors, [name]: "Maximum 5 items allowed" });
+            setPreview({
+                ...preview,
+                [name]: URL.createObjectURL(file),
+            });
+        } else if (type === "checkbox") {
+            setFormData({ ...formData, [name]: checked });
         } else {
-            setErrors({ ...errors, [name]: "" });
-            setFormData({ ...formData, [name]: value });
+            // Split the input by commas and trim each item
+            const items = value.split(",").map((item: string) => item.trim()).filter(Boolean);
+
+            // Check if items exceed 5
+            if (items.length > 5) {
+                setErrors({ ...errors, [name]: "Maximum 5 items allowed" });
+            } else {
+                setErrors({ ...errors, [name]: "" });
+                setFormData({ ...formData, [name]: value });
+            }
         }
-    }
-};
+    };
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
@@ -71,7 +71,6 @@ export default function UserPage() {
             const res = await updateUser(convertFormData);
             console.log(res);
             if (res.status === 200) {
-                // localStorage.setItem("user", JSON.stringify(res?.data?.data));
                 toast({ title: "Profile Updated Successfully.", description: res?.data?.message });
             }
         }
@@ -285,6 +284,28 @@ export default function UserPage() {
                                 </select>
                             </div>
                         </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Spouse Name</label>
+                                <input
+                                    name="spouseName"
+                                    value={formData.spouseName || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Enter spouse name"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Spouse Email</label>
+                                <input
+                                    name="spouseEmail"
+                                    value={formData.spouseEmail || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Enter spouse email"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Contact & Location */}
@@ -372,7 +393,7 @@ export default function UserPage() {
 
                         <div>
                             <label>Type</label>
-                            <Select  value={formData?.type} onValueChange={(value)=> {setFormData({...formData, type:value})}}>
+                            <Select value={formData?.type} onValueChange={(value) => { setFormData({ ...formData, type: value }) }}>
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
@@ -381,7 +402,7 @@ export default function UserPage() {
                                     <SelectItem value="private">Private</SelectItem>
                                 </SelectContent>
                             </Select>
-                            
+
                         </div>
                     </div>
 

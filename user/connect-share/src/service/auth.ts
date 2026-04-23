@@ -32,3 +32,16 @@ export const getAllUser = async () => {
     const res = await api.get(`${base_url}/user/auth/get`);
     return res;
 };
+
+
+
+export const convertPremiumUser = async (obj: any) => {
+    const res = await api.put(`${base_url}/user/auth/convert-premium`, obj,
+        {
+            headers:{
+                "Content-Type": "multipart/form-data",
+            }
+        }
+    );
+    return res;
+};

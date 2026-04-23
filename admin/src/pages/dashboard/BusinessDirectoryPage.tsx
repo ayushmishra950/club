@@ -16,25 +16,25 @@ export default function BusinessDirectoryPage() {
   const dispatch = useAppDispatch();
   const users = useAppSelector((state) => state?.user?.businessList);
 
-  useEffect(() => {
-    socket.on("updateProfileFromUser", () => {
-      handleGetAllUser();
-    });
 
-    return () => {
-      socket.off("updateProfileFromUser");
-    }
-  }, [])
+  useEffect(() => {
+  const handler = () => {
+    handleGetAllUser();
+  };
+
+  socket.on("updateProfileFromUser", handler);
+
+  return () => {
+    socket.off("updateProfileFromUser", handler);
+  };
+}, []);
 
   const handleGetAllUser = async () => {
     try {
       const res = await getAllUser({ page, perPage, search });
-      console.log(res);
       if (res.status === 200) {
         const businessUsers = res?.data?.users?.filter(user => user.accountType === "business");
-        console.log(businessUsers);
         dispatch(setBusinessList(businessUsers))
-
       }
     } catch (err) {
       console.log(err);
@@ -62,8 +62,7 @@ export default function BusinessDirectoryPage() {
     if (users?.length === 0) {
       handleGetAllUser();
     }
-  }, [users?.length]);
-
+  }, [users?.length]);  
 
   return (
     <>
@@ -72,7 +71,7 @@ export default function BusinessDirectoryPage() {
           <h3 className="font-display font-semibold text-lg">All Business Groups</h3>
         </div>
 
-        {users?.length > 0 ? (
+        {Array.isArray(users) && users.length > 0  ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {users?.map((user) => (
               <Card

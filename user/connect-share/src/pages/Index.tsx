@@ -21,8 +21,34 @@ const Index = () => {
   const dispatch = useAppDispatch();
   const postList = useAppSelector((state) => state?.post?.postList);
   const searchQuery = useAppSelector((state) => state?.search?.searchQuery);
+  console.log(postList)
+  const adminPosts = postList.filter(
+    (post) => post?.createdBy?.role === "admin"
+  );
 
-  const filteredPosts = postList.filter(post => {
+  const userPosts = postList.filter(
+    (post) => post?.createdBy?.role !== "admin"
+  );
+
+  const pinnedAdminPosts = [...adminPosts]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 3);
+
+  const remainingAdminPosts = adminPosts.filter(
+    (post) => !pinnedAdminPosts.includes(post)
+  );
+
+  const sortedUserPosts = [...userPosts].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const finalPosts = [
+    ...pinnedAdminPosts,
+    ...remainingAdminPosts,
+    ...sortedUserPosts
+  ];
+
+  const filteredPosts = finalPosts.filter(post => {
     const query = searchQuery.toLowerCase();
 
     const postTitle = post?.title?.toLowerCase() || post?.notes?.toLowerCase() || "";
@@ -33,7 +59,7 @@ const Index = () => {
       userName.includes(query)
     );
   });
-  const finalPosts = searchQuery ? filteredPosts : postList;
+  const postsToRender = searchQuery ? filteredPosts : finalPosts;
 
 
   const handleGetPosts = async () => {
@@ -67,8 +93,8 @@ const Index = () => {
             <StoriesCarousel />
             <CreatePost setPostListRefresh={setPostListRefresh} />
 
-            {finalPosts?.length > 0 ? (
-              finalPosts.map(post => (
+            {postsToRender?.length > 0 ? (
+              postsToRender.map(post => (
                 <PostCard key={post._id} post={post} />
               ))
             ) : (

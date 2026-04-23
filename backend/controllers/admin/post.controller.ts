@@ -58,7 +58,7 @@ export const createPost = async (req: any, res: any) => {
 export const getAllPosts = async (req: Request, res: Response) => {
   try {
     const posts = await Post.find()
-      .populate("createdBy", "name email fullName profileImage occupation")
+      .populate("createdBy", "name email fullName profileImage occupation role")
       .populate("comments.user", "fullName name profileImage")
       .sort({ createdAt: -1 });
 
@@ -180,7 +180,7 @@ export const deletePost = async (req: Request, res: Response) => {
 
 // ✅ Like / Unlike Post (Toggle)
 export const toggleLikePost = async (req: Request, res: Response) => {
-    const {userId, postId} = req.body;
+  const { userId, postId } = req.body;
   try {
     const post = await Post.findById(postId);
 
@@ -261,7 +261,7 @@ export const addComment = async (req: Request, res: Response) => {
 export const deleteComment = async (req: Request, res: Response) => {
   try {
     const { postId, commentId, userId } = req.params;
-     if(!userId) return res.status(400).json({message:"post, comment or user is required."})
+    if (!userId) return res.status(400).json({ message: "post, comment or user is required." })
     const post = await Post.findById(postId);
 
     if (!post) {

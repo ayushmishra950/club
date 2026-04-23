@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Users as UsersIcon, Heart, MessageCircle } from "lucide-react";
-import {isVideo} from "@/services/allFunctions";
 
 const PostDetailCard = ({ post, isOpen, onClose }: any) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -47,7 +46,7 @@ const PostDetailCard = ({ post, isOpen, onClose }: any) => {
             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
           >
           {post.images?.map((media: string, idx: number) => {
-  // const isVideo = media.match(/\.(mp4|webm|ogg)$/i); // video extension check
+  const isVideo = media.match(/\.(mp4|webm|ogg)$/i); // video extension check
 
   return isVideo ? (
     <video

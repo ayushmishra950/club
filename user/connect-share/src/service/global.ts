@@ -31,27 +31,27 @@ export const formatBackendDateTime = (date) => {
 
 
 //  y date ko today or yesterday ya date formate m show karne k liye hai 
- export const formatChatDate = (timestamp) => {
-      const msgDate = new Date(timestamp);
-      const today = new Date();
-      const yesterday = new Date();
-      yesterday.setDate(today.getDate() - 1);
+export const formatChatDate = (timestamp) => {
+  const msgDate = new Date(timestamp);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
 
-      const isSameDay = (d1, d2) =>
-        d1.getFullYear() === d2.getFullYear() &&
-        d1.getMonth() === d2.getMonth() &&
-        d1.getDate() === d2.getDate();
+  const isSameDay = (d1, d2) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
 
-      if (isSameDay(msgDate, today)) return "Today";
-      if (isSameDay(msgDate, yesterday)) return "Yesterday";
+  if (isSameDay(msgDate, today)) return "Today";
+  if (isSameDay(msgDate, yesterday)) return "Yesterday";
 
-      return msgDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-    };
+  return msgDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
 
 
 
 // y bhi chat k liye hai jo time ko show karne k liye hai agar vo today ya yesterday ka ho to us case m varna full date with time
-    export const formatMessageTimestamp = (timestamp) => {
+export const formatMessageTimestamp = (timestamp) => {
   if (!timestamp) return "";
 
   const msgDate = new Date(timestamp);
@@ -95,38 +95,50 @@ export function formatLastSeen(timestamp) {
 }
 
 
+export const getEventStatus = (eventDate: string) => {
+  const now = new Date();
+  const date = new Date(eventDate);
+
+  const today = new Date(now.toDateString());
+  const eventDay = new Date(date.toDateString());
+
+  if (eventDay > today) return "upcoming";
+  if (eventDay < today) return "past";
+  return "live";
+};
+
 
 
 export function formatMongoDate(mongoDate) {
-    const inputDate = new Date(mongoDate);
-    const now = new Date();
+  const inputDate = new Date(mongoDate);
+  const now = new Date();
 
-    // Helper: same day check
-    const isSameDay = (d1, d2) =>
-        d1.getDate() === d2.getDate() &&
-        d1.getMonth() === d2.getMonth() &&
-        d1.getFullYear() === d2.getFullYear();
+  // Helper: same day check
+  const isSameDay = (d1, d2) =>
+    d1.getDate() === d2.getDate() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getFullYear() === d2.getFullYear();
 
-    // Yesterday date
-    const yesterday = new Date();
-    yesterday.setDate(now.getDate() - 1);
+  // Yesterday date
+  const yesterday = new Date();
+  yesterday.setDate(now.getDate() - 1);
 
-    // Time format (HH:MM AM/PM)
-    const timeString = inputDate.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+  // Time format (HH:MM AM/PM)
+  const timeString = inputDate.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 
-    // Date format (DD/MM/YYYY)
-    const dateString = inputDate.toLocaleDateString();
+  // Date format (DD/MM/YYYY)
+  const dateString = inputDate.toLocaleDateString();
 
-    if (isSameDay(inputDate, now)) {
-        return `Last Seen Today ${timeString}`;
-    } else if (isSameDay(inputDate, yesterday)) {
-        return `Last Seen Yesterday ${timeString}`;
-    } else {
-        return `Last Seen ${dateString} ${timeString}`;
-    }
+  if (isSameDay(inputDate, now)) {
+    return `Last Seen Today ${timeString}`;
+  } else if (isSameDay(inputDate, yesterday)) {
+    return `Last Seen Yesterday ${timeString}`;
+  } else {
+    return `Last Seen ${dateString} ${timeString}`;
+  }
 }
 
 

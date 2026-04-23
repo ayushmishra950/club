@@ -70,25 +70,20 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
     }
   },[user?._id]);
 
-
-
   useEffect(()=>{
     socket.on("totalUnReadChat", (count) => {
      setChatUnRead(count);
     });
-
+     console.log("chat unread", friendUnRead);
     socket.on("unSeenFriendRequest", (total)=>{
-      console.log(total);
      setFriendUnRead(total);
     });
 
    socket.on("notification", (data) => {
-    console.log("data", data)
     setNotificationList(prevList => [...prevList, data]);
 });
 
 socket.on("notificationSeen", (data)=>{
-  console.log("seen", data);
  
 })
 
@@ -114,7 +109,6 @@ socket.on("notificationSeen", (data)=>{
     if(!user?._id) return;
     try{
     const res = await getAllNotifications(user?._id);
-    console.log(res);
     if(res.status === 200){
       setNotificationList(res?.data?.data);
     }
@@ -293,9 +287,9 @@ socket.on("notificationSeen", (data)=>{
             >
               <UserPlus className="h-5 w-5" />
               <span>Friend Requests</span>
-              {incomingCount > 0 && (
+              {friendUnRead > 0 && (
                 <span className="ml-auto h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
-                  {incomingCount}
+                  {friendUnRead}
                 </span>
               )}
             </Link>

@@ -1,10 +1,10 @@
 {
   "type": "module",
   "scripts": {
-  "dev": "nodemon --exec tsx app.ts",
-  "build": "tsc",
-  "start": "node dist/app.js"
-},
+    "dev": "nodemon --exec tsx app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js"
+  },
   "devDependencies": {
     "@types/node": "^25.5.0",
     "nodemon": "^3.1.14",
@@ -21,8 +21,10 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/mongoose": "^5.11.96",
     "@types/multer": "^2.1.0",
+    "@types/nanoid": "^2.1.0",
     "@types/nodemon": "^1.19.6",
     "@types/socket.io": "^3.0.1",
+    "@types/xlsx": "^0.0.35",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
     "cookie-parser": "^1.4.7",
@@ -32,6 +34,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.0",
     "multer": "^2.1.1",
-    "socket.io": "^4.8.3"
+    "nanoid": "^5.1.9",
+    "socket.io": "^4.8.3",
+    "xlsx": "^0.18.5"
   }
 }

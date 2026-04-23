@@ -1,5 +1,5 @@
 import express from "express";
-import {registerUser,  loginUser,updateUser,refreshAccessToken, getAllUsers, getSingleUser, deleteUser} from "../../controllers/user/auth.controller.js";
+import {registerUser,  loginUser,updateUser,convertPremiumUser, refreshAccessToken, getAllUsers, getSingleUser, deleteUser} from "../../controllers/user/auth.controller.js";
 import upload from "../../middlewares/upload.js";
 
 
@@ -12,7 +12,7 @@ router.get("/get", getAllUsers);
 router.get("/getbyid/:id", getSingleUser);
 router.delete("/delete", deleteUser);
 router.put("/update",upload.fields([{name:"profileImage", maxCount:1}, {name:"coverImage", maxCount:1}, {name:"businessCoverImage", maxCount:1}]), updateUser);
-
+router.put("/convert-premium",upload.fields([{name:"paymentImage", maxCount:1}]), convertPremiumUser);
 
 export default router;
 

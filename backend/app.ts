@@ -4,7 +4,7 @@ import express from "express";
 import connectDb from "./config/db.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import {initSocket} from "./utils/socketHelper.js";
+import { initSocket } from "./utils/socketHelper.js";
 import http from "http";
 
 // admin routes 
@@ -40,7 +40,7 @@ const app = express();
 connectDb();
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({origin:["http://localhost:8080", "http://localhost:8081", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"], credentials:true}))
+app.use(cors({ origin: ["http://localhost:8080", "http://192.168.0.128:8080", "http://localhost:8081", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"], credentials: true }))
 
 // admin route
 app.use("/api/admin/auth", adminAuthRoutes);
@@ -78,11 +78,11 @@ const port = process.env.PORT;
 
 
 const server = http.createServer(app);
- 
-    initSocket(server);
+
+initSocket(server);
 
 
-server.listen(port, ()=>{
+server.listen(port, () => {
     console.log(`server is running on port ${port}`)
 })
 

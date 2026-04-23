@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Camera, MapPin, Briefcase, Calendar, Gift, Edit2, ChevronRight, UserMinus, Users, Shield, Globe, Lock, UserPlus, LogOut } from 'lucide-react';
+import { Camera, MapPin, Briefcase, Calendar, Gift, Edit2, ChevronRight, UserMinus, Users, Shield, Globe, Lock, UserPlus, LogOut, Crown } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { PostCard } from '@/components/feed/PostCard';
@@ -17,7 +17,8 @@ import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook"
 import { setPostList } from "@/redux-toolkit/slice/postSlice";
 import { getAllPost } from "@/service/post";
 import DeleteCard from "@/components/card/DeleteCard";
-
+import PaymentDialog from "@/components/forms/PaymentDialog";
+import { setUserData, setUpdateUser } from "@/redux-toolkit/slice/userSlice";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -27,17 +28,17 @@ const Profile = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'about' | 'photos' | 'friends'>('posts');
   const totalUnread = mockChats.reduce((acc, c) => acc + c.unread, 0);
-  const [userData, setUserData] = useState(null);
   const [friendList, setFriendList] = useState([]);
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [userListRefresh, setUserListRefresh] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const dispatch = useAppDispatch();
   const postList = useAppSelector((state) => state?.post?.postList);
-  const userPosts = postList?.filter(
-    (p) => p?.createdBy?._id === userId
-  );
+  const userData = useAppSelector((state)=> state?.user?.userData);
+  const premiumUser = userData?.premiumUser === "premium";
+  const userPosts = postList?.filter((p) => p?.createdBy?._id === userId);
 
 
   const isTrue = userId === user?._id;
@@ -46,18 +47,30 @@ const Profile = () => {
     (post.images || []).filter(url => isImage(url))
   ) || [];
 
-  const handleLogout = () => {
-    try{
-      setLogoutLoading(true);
-       localStorage.removeItem("user");
-    navigate("/login");
 
-    }catch(err){
+  useEffect(() => {
+    socket.on("paymentRequestAccepted", (data) => {
+      console.log("paymentRequestAccepted", data);
+        dispatch(setUpdateUser(data));
+    });
+
+    return () => {
+      socket.off("paymentRequestAccepted");
+    }
+  }, [])
+
+  const handleLogout = () => {
+    try {
+      setLogoutLoading(true);
+      localStorage.removeItem("user");
+      navigate("/login");
+
+    } catch (err) {
       console.log(err)
-    }finally{
+    } finally {
       setLogoutLoading(false);
     }
-   
+
   }
 
   const completionItems = personalFields.map(field => {
@@ -76,9 +89,8 @@ const Profile = () => {
     if (!userId) return;
     try {
       const res = await getSingleUser(userId);
-      console.log(res);
       if (res.status === 200) {
-        setUserData(res?.data?.data);
+        dispatch(setUserData(res?.data?.data));
         setFriendList(res?.data?.friends);
       }
     }
@@ -159,18 +171,20 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    handleGetUser();
+    if(Object.keys(userData || {}).length === 0 || userId){
+      handleGetUser();
+    }
   }, [userId, userListRefresh]);
-  console.log(userData)
   return (
     <>
+      <PaymentDialog open={paymentDialogOpen} setOpen={setPaymentDialogOpen} />
       <DeleteCard
         isOpen={logoutDialogOpen}
         onOpenChange={setLogoutDialogOpen}
         isLoading={logoutLoading}
         buttonName="Logout"
-        title={`User Logout`} // Dynamic title
-        description={`Are you sure you want to Logout.`} // Dynamic description
+        title={`User Logout`}
+        description={`Are you sure you want to Logout.`}
         onConfirm={handleLogout}
       />
 
@@ -188,11 +202,37 @@ const Profile = () => {
         <div className="mx-auto max-w-4xl px-4">
           {/* Profile header */}
           <div className="relative -mt-16 flex flex-col sm:flex-row items-center sm:items-end gap-4 pb-4 border-b border-border">
-            <div className="relative">
+            {/* <div className="relative">
               <img src={userData?.profileImage} alt="" className="h-32 w-32 rounded-full object-cover ring-4 ring-background" />
               {/* {isTrue && <button className="absolute bottom-2 right-2 h-8 w-8 rounded-full gradient-primary flex items-center justify-center text-primary-foreground">
               <Camera className="h-4 w-4" />
-            </button>} */}
+            </button>} 
+            </div> */}
+
+
+            <div className="relative group">
+              <img
+                src={userData?.profileImage}
+                alt=""
+                className="h-32 w-32 rounded-full object-cover ring-4 ring-background"
+              />
+
+              { (premiumUser) && <div className="absolute -top-1 -right-1">
+
+                <div className="absolute inset-0 rounded-full bg-yellow-400 opacity-30 blur-md"></div>
+
+                <div className="relative flex items-center justify-center
+                    h-9 w-9 rounded-full
+                    bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500
+                    border-2 border-white
+                    shadow-[0_4px_15px_rgba(255,200,0,0.6)]
+                    overflow-hidden">
+
+                  <div className="absolute inset-0 bg-white opacity-10 animate-pulse"></div>
+
+                  <Crown size={18} className="text-white drop-shadow-sm" />
+                </div>
+              </div>}
             </div>
             <div className="flex-1 text-center sm:text-left">
               <h1 className="font-heading text-2xl font-bold text-foreground">{userData?._id === user?._id ? "You" : userData?.fullName}</h1>
@@ -206,18 +246,53 @@ const Profile = () => {
                 <Users className="h-4 w-4" /> {friendList?.length} connections
               </p>
             </div>
-            {isTrue && <><button onClick={() => { navigate(`/userDialog/${userData?._id}`) }} className="flex items-center gap-2 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
-              <Edit2 className="h-4 w-4" /> Edit Profile
-            </button>
-              <button
-                onClick={()=>{setLogoutDialogOpen(true)}}
-                className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-700 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </button>
-            </>}
+            {isTrue && <div className="flex flex-col items-center sm:items-end gap-4 w-full sm:w-auto mt-2 sm:mt-0">
+              <div className='flex gap-2'>
+                <button onClick={() => { navigate(`/userDialog/${userData?._id}`) }} className="flex items-center gap-2 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
+                  <Edit2 className="h-4 w-4" /> Edit Profile
+                </button>
+                <button
+                  onClick={() => { setLogoutDialogOpen(true) }}
+                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-700 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </div>
+              {/* Mobile Premium Card */}
+              {(premiumUser || (userData?.paymentImage && userData?.transitionNumber)) ? null : (
+                <div className="sm:hidden bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 shadow-sm w-full text-left">
+                  <h3 className="text-base font-semibold text-yellow-700">
+                    Upgrade to Premium
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+                    Unlock exclusive club features, priority access to events, and premium member benefits to enhance your experience.
+                  </p>
+                  <button onClick={() => { setPaymentDialogOpen(true) }} className="mt-3 w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-medium py-2 rounded-lg hover:opacity-90 transition">
+                    Go Premium
+                  </button>
+                </div>
+              )} 
+            </div>}
           </div>
+
+          {/* Desktop Premium Banner */}
+          {isTrue && !(premiumUser || (userData?.paymentImage && userData?.transitionNumber)) && (
+            <div className="hidden sm:flex items-center justify-between bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 shadow-sm mt-4">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 shrink-0 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 flex items-center justify-center text-white shadow-inner">
+                  <Crown size={24} />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-yellow-700">Upgrade to Premium Membership</h3>
+                  <p className="text-sm text-gray-600 mt-0.5">Unlock exclusive club features, priority access to events, and premium member benefits.</p>
+                </div>
+              </div>
+              <button onClick={() => setPaymentDialogOpen(true)} className="shrink-0 ml-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-medium px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg hover:opacity-90 transition">
+                Go Premium
+              </button>
+            </div>
+          )}
 
           {/* Completion bar */}
           {isTrue && <div className="mt-4 bg-card rounded-xl shadow-card p-4">

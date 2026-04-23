@@ -4,9 +4,12 @@ import bcrypt from "bcryptjs";
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
+  userId: string;
   fullName: string;
   fatherName: string;
   motherName: string;
+  spouseName?: string;
+  spouseEmail?: string;
   email: string;
   phone: string;
   dob: Date;
@@ -27,9 +30,9 @@ export interface IUser extends Document {
   isVerified: boolean;
   skills?: string[];
   hobbies?: string[];
-  friends?:mongoose.Types.ObjectId[];
-  type:"public" | "private" ;
-  isOnline:boolean;
+  friends?: mongoose.Types.ObjectId[];
+  type: "public" | "private";
+  isOnline: boolean;
   lastSeen: string;
 
   accountType: "user" | "business";
@@ -39,10 +42,14 @@ export interface IUser extends Document {
   businessCategory?: string;
   businessDescription?: string;
   website?: string;
-  businessVerified:boolean | null;
+  businessVerified: boolean | null;
   businessPhone?: string;
   businessAddress?: string;
   workingHours?: string;
+  paymentImage?: string;
+  transitionNumber?: string;
+  premiumUser?: null | "premium";
+
 
   comparePassword(password: string): Promise<boolean>;
 }
@@ -55,19 +62,44 @@ const UserSchema = new Schema<IUser>(
       trim: true,
     },
 
+    userId: {
+      type: String,
+      trim: true,
+      unique: true,
+    },
+
     fatherName: {
       type: String,
-      required: false,       
       trim: true,
     },
 
     motherName: {
       type: String,
-      required: false,    
       trim: true,
     },
+    spouseName: {
+      type: String,
+      trim: true,
+    },
+    spouseEmail: {
+      type: String,
+      trim: true,
+    },
+    paymentImage:{
+      type: String,
+      default: null,
+    },
+    transitionNumber:{
+      type: String,
+      default: null,
+    },
+    premiumUser:{
+      type: String,
+      enum: [null, "premium"],
+      default: null,
+    },
 
-    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default:[] }],
+    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] }],
 
     role: {
       type: String,
@@ -110,16 +142,14 @@ const UserSchema = new Schema<IUser>(
 
     phone: {
       type: String,
-      required: true,
       unique: true,
       trim: true,
     },
 
     dob: {
       type: Date,
-      required: false,    
+      required: false,
     },
-
     gender: {
       type: String,
       enum: ["male", "female", "other"],
@@ -134,13 +164,13 @@ const UserSchema = new Schema<IUser>(
 
     occupation: {
       type: String,
-      required: false,      
+      required: false,
       trim: true,
     },
 
     address: {
       type: String,
-      required: false,   
+      required: false,
       trim: true,
     },
 
@@ -160,14 +190,13 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: true,
       minlength: 6,
-      select: false,     
+      select: false,
     },
 
     isVerified: {
       type: Boolean,
       default: false,
     },
-
     donationsCount: {
       type: Number,
       default: 0,
@@ -182,7 +211,7 @@ const UserSchema = new Schema<IUser>(
       type: Number,
       default: 0,
     },
-
+     
 
     accountType: {
       type: String,
@@ -191,25 +220,25 @@ const UserSchema = new Schema<IUser>(
       default: "user",
     },
 
-    type:{
-     type:String,
-     enum:["public", "private"],
-     required:true,
-     default:"public",
+    type: {
+      type: String,
+      enum: ["public", "private"],
+      required: true,
+      default: "public",
     },
 
-    businessVerified:{
-    type:Boolean,
-    default:null,
+    businessVerified: {
+      type: Boolean,
+      default: null,
     },
 
     businessName: {
       type: String,
       trim: true,
     },
-    businessCoverImage:{
-      type:String,
-      default:"https://imgs.search.brave.com/qtVnhSH_3K-y6lNVrGFLKW9Npve7PVGkR7tWDauD_gk/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTM4/Njc5NjEzNi92ZWN0/b3IvbWlycm9yLWJh/bGwtZGlzY28tbGln/aHRzLWNsdWItZGFu/Y2UtcGFydHktZ2xp/dHRlci0zZC1pbGx1/c3RyYXRpb24uanBn/P3M9NjEyeDYxMiZ3/PTAmaz0yMCZjPW10/ZERKMmVrbjJwcFpB/dm"
+    businessCoverImage: {
+      type: String,
+      default: "https://imgs.search.brave.com/qtVnhSH_3K-y6lNVrGFLKW9Npve7PVGkR7tWDauD_gk/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTM4/Njc5NjEzNi92ZWN0/b3IvbWlycm9yLWJh/bGwtZGlzY28tbGln/aHRzLWNsdWItZGFu/Y2UtcGFydHktZ2xp/dHRlci0zZC1pbGx1/c3RyYXRpb24uanBn/P3M9NjEyeDYxMiZ3/PTAmaz0yMCZjPW10/ZERKMmVrbjJwcFpB/dm"
     },
     businessCategory: {
       type: String,
@@ -236,13 +265,13 @@ const UserSchema = new Schema<IUser>(
       trim: true,
     },
 
-    isOnline:{
-      type:Boolean,
-      default:false,
+    isOnline: {
+      type: Boolean,
+      default: false,
     },
-    lastSeen:{
-      type:String,
-      default:null,
+    lastSeen: {
+      type: String,
+      default: null,
     }
 
   },

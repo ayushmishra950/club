@@ -63,6 +63,7 @@ const Profile = () => {
     try {
       setLogoutLoading(true);
       localStorage.removeItem("user");
+      localStorage.removeItem("accessToken");
       navigate("/login");
 
     } catch (err) {

@@ -108,7 +108,7 @@ export function PostCard({ post }) {
     <div className="bg-card rounded-xl shadow-card mb-4 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => { navigate(`/profile/${post?.createdBy?._id}`) }}>
+        <div className={`flex items-center gap-3 ${post?.createdBy?.role !== "admin" ? "cursor-pointer" : ""}`}  onClick={() => {if (post?.createdBy?.role !== "admin") { navigate(`/profile/${post?.createdBy?._id}`)} }}>
           <div className="relative">
             <img
               src={post?.createdBy?.profileImage || "https://via.placeholder.com/40"}

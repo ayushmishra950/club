@@ -170,7 +170,7 @@ const App = () => {
         <Toaster />
         <Sonner />
 
-        <HashRouter>
+        <BrowserRouter>
           <ConnectionProvider>
 
             <Routes>
@@ -292,7 +292,7 @@ const App = () => {
             </Routes>
 
           </ConnectionProvider>
-        </HashRouter>
+        </BrowserRouter>
 
       </TooltipProvider>
     </QueryClientProvider>

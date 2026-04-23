@@ -53,31 +53,6 @@ export default function MembersPage() {
     }
   }, [])
 
-  // const handleUploadExcel = async (e) => {
-  //   e.preventDefault();
-  //   setIsLoading(true);
-  //   const formData = new FormData();
-  //   formData.append("excelFile", excelFile);
-  //   try {
-  //     const res = await uploadExcel(formData);
-  //     console.log(res);
-  //     if (res.status === 201) {
-  //       toast({ title: "Member Added Successfully.", description: res?.data?.message })
-  //       dispatch(setAddNewUser(res?.data?.inserted));
-  //       setUploadDialogOpen(false);
-  //       setExcelFile(null);
-  //     }
-  //   }
-  //   catch (err) {
-  //     console.log(err);
-  //     toast({ title: "Add Member Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // }
-
-
-
   const handleUploadExcel = async (e) => {
     e.preventDefault();
     setIsLoading(true);

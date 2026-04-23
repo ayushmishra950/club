@@ -18,7 +18,7 @@ export const getSuggestedUsers = async (req: Request, res: Response) => {
 
     const currentFriends = currentUser.friends?.map((f: any) => f.toString()) || [];
 
-    const users = await User.find({ _id: { $ne: currentUser._id } }).select("+friends");
+    const users = await User.find({ _id: { $ne: currentUser._id }, isVerified:true, blocked: false }).select("+friends");
 
     const friendRequests = await FriendRequest.find({
       $or: [{ from: currentUser._id }, { to: currentUser._id }],

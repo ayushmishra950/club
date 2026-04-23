@@ -118,7 +118,7 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const users = await User.find().select("-password");
+    const users = await User.find({ isVerified: true , blocked: false }).select("-password");
 
     res.status(200).json({ success: true, count: users.length, data: users});
 

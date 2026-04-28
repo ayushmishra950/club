@@ -8,13 +8,19 @@ const base_url = import.meta.env.VITE_BACKEND_URL;
 
 
 
-export const getAllSuggestion = async() => {
+export const getAllSuggestion = async () => {
     const res = await api.get(`${base_url}/admin/suggestion/get`);
     return res;
 };
 
 
-export const deleteSuggestion = async(id:string) => {
+export const deleteSuggestion = async (id: string) => {
     const res = await api.delete(`${base_url}/admin/suggestion/delete/${id}`);
     return res;
 }
+
+
+export const updateSuggestionStatus = async (obj: any) => {
+    const res = await api.put(`${base_url}/admin/suggestion/update`, obj);
+    return res;
+};

@@ -4,13 +4,15 @@ import type { Request, Response } from "express";
 import mongoose from "mongoose";
 import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
 import { createNotificationInternal } from "../user/notification.controller.js";
-import {NotificationType} from "../../models/notification.model.js";
+import { NotificationType } from "../../models/notification.model.js";
+import { getIO } from "../../utils/socketHelper.js";
 
 
 
 export const addEvent = async (req: Request, res: Response) => {
     try {
         const { title, description, date, location, userId, category, type } = req.body;
+        const io = getIO();
 
         const files = (req as any).files;
         const file = files?.coverImage?.[0];
@@ -31,8 +33,9 @@ export const addEvent = async (req: Request, res: Response) => {
             type: type
         });
 
-       await createNotificationInternal(userId, userId, NotificationType.EVENT, undefined, `Admin sent a new Event.`);
-
+        await createNotificationInternal(userId, userId, NotificationType.EVENT, undefined, `Admin sent a new Event.`);
+        const updatedEvent = await Event.findById(event._id).populate("gallery");
+        io.emit("event", updatedEvent);
         res.status(201).json({ message: "Event Created Sucessfully." })
     }
     catch (err: unknown) {
@@ -46,7 +49,7 @@ export const addEvent = async (req: Request, res: Response) => {
 
 export const getAllEvent = async (req: Request, res: Response) => {
     try {
-        const event = await Event.find().populate("gallery");
+        const event = await Event.find().populate("gallery").sort({ createdAt: -1 });
         res.status(200).json({ event, success: true })
     }
     catch (err: unknown) {
@@ -79,6 +82,22 @@ export const getSingleEvent = async (req: Request, res: Response) => {
         }
     }
 }
+
+export const getLatestEvent = async (req: Request, res: Response) => {
+    try {
+        const event = await Event.findOne().sort({ createdAt: -1 }).populate("gallery").populate("createdBy");
+        if (!event) return res.status(404).json({ message: "No events found.", success: false });
+        res.status(200).json({ event, success: true });
+    }
+    catch (err: unknown) {
+        if (err instanceof Error) {
+            res.status(500).json({ message: err?.message, success: false });
+        }
+        else {
+            res.status(500).json({ message: "Server error." });
+        }
+    }
+};
 
 export const updateEvent = async (req: Request, res: Response) => {
     try {

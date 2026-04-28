@@ -45,3 +45,8 @@ export const interestedOrNotInterestedFromEvent = async(obj:any) =>{
     const res = await api.post(`${base_url}/admin/event/candidate/interested`, obj);
     return res;
 };
+
+export const getLatestEvent = async() =>{
+    const res = await api.get(`${base_url}/admin/event/latest`);
+    return res;
+};

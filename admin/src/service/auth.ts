@@ -53,14 +53,14 @@ export const updateAdmin = async (id: string, obj: any) => {
 
 
 
-export const getAllUser = async ({ page, perPage, search }) => {
-    const res = await api.get(`${base_url}/admin/user/get`, { params: { page, perPage, search } });
+export const getAllUser = async ({ page, perPage, search, filterStatus }) => {
+    const res = await api.get(`${base_url}/admin/user/get`, { params: { page, perPage, search, filterStatus } });
     return res;
 }
 
 
-export const verifyUser = async (id: string) => {
-    const res = await api.patch(`${base_url}/admin/user/verify/${id}`);
+export const verifyUser = async (memberIds: string[]) => {
+    const res = await api.patch(`${base_url}/admin/user/verify`, { memberIds });
     return res;
 }
 
@@ -99,7 +99,7 @@ export const uploadExcel = async (obj: any) => {
     return res;
 };
 
-export const acceptPaymentRequest = async (id: string) => {
-    const res = await api.post(`${base_url}/admin/user/accept-payment/${id}`);
+export const acceptPaymentRequest = async (obj: any) => {
+    const res = await api.post(`${base_url}/admin/user/accept-payment`, obj);
     return res;
 };

@@ -37,7 +37,10 @@ export default function MembersPage() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [selectedMemebersId, setSelectedMembersId] = useState<string[]>([]);
+  const [filterStatus, setFilterStatus] = useState("active");
   const dispatch = useAppDispatch();
+
   const memberList = useAppSelector((state) => state?.user?.userList);
 
   useEffect(() => {
@@ -113,7 +116,7 @@ export default function MembersPage() {
 
   const handleGetUsers = async () => {
     try {
-      const res = await getAllUser({ page, perPage, search });
+      const res = await getAllUser({ page, perPage, search, filterStatus });
       console.log(res);
       if (res.status === 200) {
         dispatch(setUserList(res?.data?.users));
@@ -127,15 +130,17 @@ export default function MembersPage() {
     }
   }
   useEffect(() => {
-    if (page || perPage || search || memberListRefresh) { handleGetUsers() }
-  }, [page, perPage, search, memberListRefresh]);
+    if (page || perPage || search || memberListRefresh || filterStatus) { handleGetUsers() }
+  }, [page, perPage, search, memberListRefresh, filterStatus]);
 
-  const handleVerifyUser = async (id: string) => {
+  const handleVerifyUser = async (id?: string) => {
+    let membersIds = selectedMemebersId?.length > 0 ? selectedMemebersId : [id];
     try {
-      const res = await verifyUser(id);
+      const res = await verifyUser(membersIds);
       if (res?.status === 200) {
         toast({ title: "User Verified Successfully.", description: res?.data?.message });
         setMemberListRefresh(true);
+        setSelectedMembersId([]);
       }
     } catch (err) {
       console.log(err);
@@ -195,16 +200,53 @@ export default function MembersPage() {
       <RoleDialog isOpen={roleDailog} onOpenChange={setRoleDialog} initialData={initialData} setMemberListRefresh={setMemberListRefresh} />
       <div className="space-y-4">
         <div className="flex flex-row gap-3 items-start sm:items-center justify-between">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members..." className="pl-9" />
+
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+
+            {/* 🔍 SEARCH INPUT */}
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search members..."
+                className="pl-9"
+              />
+            </div>
+
+            {/* 🔘 ACTIVE / INACTIVE TOGGLE */}
+            <div className="flex items-center border rounded-md overflow-hidden text-sm w-fit md:w-auto">
+
+              <button
+                onClick={() => setFilterStatus("active")}
+                className={`px-3 py-1 transition ${filterStatus === "active"
+                  ? "bg-green-500 text-white"
+                  : "bg-white hover:bg-gray-100"
+                  }`}
+              >
+                Active
+              </button>
+
+              <button
+                onClick={() => setFilterStatus("inactive")}
+                className={`px-3 py-1 transition border-l ${filterStatus === "inactive"
+                  ? "bg-red-500 text-white"
+                  : "bg-white hover:bg-gray-100"
+                  }`}
+              >
+                Inactive
+              </button>
+
+            </div>
+
           </div>
           <div className="flex gap-2 ">
-            <div className="hidden md:inline-block">
-              <Button variant="ghost" size="icon" onClick={() => setView("table")} className={view === "table" ? "bg-muted" : ""}>
+            <div className="hidden md:flex gap-2">
+              {selectedMemebersId?.length > 0 && <Button onClick={() => handleVerifyUser()} className="gradient-gold text-secondary-foreground font-semibold">Users Verify</Button>}
+              <Button variant="ghost" size="icon" onClick={() => setView("table")} disabled={selectedMemebersId?.length > 0} className={view === "table" ? "bg-muted" : ""}>
                 <List className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => setView("card")} className={view === "card" ? "bg-muted" : ""}>
+              <Button variant="ghost" size="icon" onClick={() => setView("card")} disabled={selectedMemebersId?.length > 0} className={view === "card" ? "bg-muted" : ""}>
                 <Grid3X3 className="h-4 w-4" />
               </Button>
             </div>
@@ -260,6 +302,9 @@ export default function MembersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[30px] px-2 text-center">
+                    <input type="checkbox" className="w-4 h-4 cursor-pointer" />
+                  </TableHead>
                   <TableHead className="hidden sm:table-cell">UserId</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead className="hidden sm:table-cell">Role</TableHead>
@@ -274,6 +319,22 @@ export default function MembersPage() {
                 {memberList?.length > 0 ? (
                   memberList.map((m, i) => (
                     <TableRow key={m?._id} className="sm:px-4 px-2">
+
+                      {/* CHECKBOX */}
+                      <TableCell className="w-[30px] px-2 text-center">
+                        <input type="checkbox" className="w-4 h-4 cursor-pointer"
+                          checked={selectedMemebersId.includes(m._id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedMembersId((prev) => [...prev, m._id]);
+                            } else {
+                              setSelectedMembersId((prev) =>
+                                prev.filter((id) => id !== m._id)
+                              );
+                            }
+                          }}
+                        />
+                      </TableCell>
 
                       {/* USER ID */}
                       <TableCell className="hidden sm:table-cell">
@@ -412,7 +473,7 @@ export default function MembersPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">
+                    <TableCell colSpan={8} className="text-center">
                       No Member Found.
                     </TableCell>
                   </TableRow>
@@ -438,7 +499,10 @@ export default function MembersPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {memberList?.map((m) => (
-              <Card key={m?._id} className="shadow-card hover:shadow-elevated transition-shadow">
+              <Card key={m?._id} className="shadow-card hover:shadow-elevated transition-shadow relative">
+                <div className="absolute top-3 left-3">
+                  <input type="checkbox" className="w-4 h-4 cursor-pointer" />
+                </div>
                 <CardContent className="p-5 text-center">
                   <div className="w-16 h-16 rounded-full gradient-primary mx-auto mb-3 flex items-center justify-center">
                     <span className="text-primary-foreground font-display font-bold text-lg">{m?.fullName?.split(" ")?.map(n => n[0])?.join("")}</span>

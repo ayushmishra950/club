@@ -12,7 +12,8 @@ const Directory = () => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const totalUnread = mockChats.reduce((acc, c) => acc + c.unread, 0);
-    const [users, setUsers] = useState([]);
+    const [businesses, setBusinesses] = useState<any[]>([]);
+    const [skills, setSkills] = useState<string[]>([]);
 
     useEffect(()=>{
       socket.on("businessVerify", () => {
@@ -23,45 +24,53 @@ const Directory = () => {
       }
     },[]);
 
-  const filtered = users?.filter((u)=> u?.businessVerified === true).filter(user => {
-  const query = search.toLowerCase();
+  const filtered = businesses?.filter(biz => {
+    // Search filter
+    const query = search.toLowerCase();
+    const fieldsToCheck = [
+      biz.businessName,
+      biz.businessDescription,
+      biz.businessAddress,
+      biz.businessCategory,
+      biz.ownerName
+    ];
 
-  // Check multiple fields
-  const fieldsToCheck = [
-    user.fullName,
-    user.businessName,
-    user.businessDescription,
-    user.address,
-    user.businessAddress,
-    user.city,
-    user.state,
-    user.occupation,
-    user.businessCategory,
-  ];
+    const matchesSearch = fieldsToCheck.some(field => field?.toLowerCase().includes(query));
 
-  // Skills & hobbies are arrays, so join them to string
-  if (user.skills) fieldsToCheck.push(user.skills.join(" "));
-  if (user.hobbies) fieldsToCheck.push(user.hobbies.join(" "));
+    // Category filter
+    const matchesCategory = category === 'all' || biz.businessCategory?.toLowerCase() === category.toLowerCase();
 
-  // Check if any field includes the search query
-  const matchesSearch = fieldsToCheck.some(field => field?.toLowerCase().includes(query));
-
-  // Category filter (if you want)
- const matchesCategory = category === 'all' || (user.skills || []).some(skill => skill.toLowerCase() === category.toLowerCase());
-
-
-  return matchesSearch && matchesCategory;
-});
-
-  const skills = [...new Set(users?.flatMap((u)=> u?.skills))];
+    return matchesSearch && matchesCategory;
+  });
 
    const handleGetAllUser = async () => {
       try {
         const res = await getAllUser();
-        console.log(res);
         if (res.status === 200) {
-         const businessUsers = res?.data?.data.filter(user => user.accountType === "business");
-      setUsers(businessUsers);
+          const allUsers = res?.data?.data || [];
+          
+          // Flatten all businesses from verified users/accounts
+          const flattened = allUsers.reduce((acc: any[], user: any) => {
+            if (user.accountType === "business" && user.businesses) {
+              const verifiedBusinesses = user.businesses
+                .filter((biz: any) => biz.isVerified === "verified")
+                .map((biz: any) => ({
+                  ...biz,
+                  ownerId: user._id,
+                  ownerName: user.fullName,
+                  ownerEmail: user.email,
+                  ownerImage: user.profileImage || user.coverImage
+                }));
+              return [...acc, ...verifiedBusinesses];
+            }
+            return acc;
+          }, []);
+
+          setBusinesses(flattened);
+          
+          // Extract unique categories for filter
+          const uniqueCategories = [...new Set(flattened.map((b: any) => b.businessCategory).filter(Boolean))];
+          setSkills(uniqueCategories as string[]);
         }
       } catch (err) {
         console.log(err);
@@ -121,15 +130,12 @@ const Directory = () => {
         <div className="grid sm:grid-cols-2 gap-4">
           {
             filtered?.length > 0 ?
-          filtered.map(biz => (
-            <div key={biz.id} className="bg-card rounded-xl shadow-card overflow-hidden hover:shadow-elevated transition-shadow">
+          filtered.map((biz, idx) => (
+            <div key={biz.businessId || idx} className="bg-card rounded-xl shadow-card overflow-hidden hover:shadow-elevated transition-shadow">
               <img src={biz?.businessCoverImage} alt="" className="w-full h-40 object-cover" />
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-heading font-bold text-foreground">{biz.businessName}</h3>
-                  <span className="flex items-center gap-1 text-sm text-yellow-500 shrink-0">
-                    <Star className="h-4 w-4 fill-current" /> {biz.rating}
-                  </span>
                 </div>
                 <p className="text-xs text-primary font-medium mt-0.5">{biz.businessCategory}</p>
                 <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{biz?.businessDescription}</p>
@@ -138,14 +144,17 @@ const Directory = () => {
                   <span>{biz?.businessAddress}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-                  <img src={biz?.profileImage || biz?.coverImage} alt="" className="h-6 w-6 rounded-full object-cover" />
-                  <span className="text-xs text-muted-foreground">by <span className="font-semibold text-foreground">{biz?.role === "admin" ? "Admin" : biz?.fullName}</span></span>
+                  <img src={biz?.ownerImage} alt="" className="h-6 w-6 rounded-full object-cover" />
+                  <span className="text-xs text-muted-foreground">by <span className="font-semibold text-foreground">{biz?.ownerName}</span></span>
                 </div>
               </div>
             </div>
           ))
           :
-          <span className='ml-[100px] md:ml-[250px] mt-[120px]'>No Business Found.</span>
+          <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
+            <Filter className="h-12 w-12 mb-4 opacity-20" />
+            <p>No verified businesses found matching your criteria.</p>
+          </div>
         }
         </div>
       </div>

@@ -14,135 +14,244 @@ export default function BusinessDirectoryPage() {
   const [perPage, setPerPage] = useState(8);
   const [search, setSearch] = useState("");
   const dispatch = useAppDispatch();
+  const [filterStatus, setFilterStatus] = useState("active");
   const users = useAppSelector((state) => state?.user?.businessList);
 
 
   useEffect(() => {
-  const handler = () => {
-    handleGetAllUser();
-  };
+    const handler = () => {
+      handleGetAllUser();
+    };
 
-  socket.on("updateProfileFromUser", handler);
+    socket.on("updateProfileFromUser", handler);
 
-  return () => {
-    socket.off("updateProfileFromUser", handler);
-  };
-}, []);
+    return () => {
+      socket.off("updateProfileFromUser", handler);
+    };
+  }, []);
 
   const handleGetAllUser = async () => {
     try {
-      const res = await getAllUser({ page, perPage, search });
+      const res = await getAllUser({ page, perPage, search, filterStatus });
       if (res.status === 200) {
-        const businessUsers = res?.data?.users?.filter(user => user.accountType === "business");
-        dispatch(setBusinessList(businessUsers))
+        // Flatten all businesses from users who have accountType === 'business'
+        const allBusinesses = res?.data?.users?.reduce((acc: any[], user: any) => {
+          if (user.accountType === "business" && user.businesses) {
+            const userBusinesses = user.businesses.map((biz: any) => ({
+              ...biz,
+              ownerId: user._id,
+              ownerName: user.fullName,
+              ownerEmail: user.email,
+              userCreatedAt: user.createdAt
+            }));
+            return [...acc, ...userBusinesses];
+          }
+          return acc;
+        }, []);
+
+        dispatch(setBusinessList(allBusinesses));
       }
     } catch (err) {
       console.log(err);
     }
   };
 
-  const handleVerifyBusiness = async (userId: string, val: boolean) => {
-    if (!userId) return;
+  const handleVerifyBusiness = async (userId: string, businessId: string, status: boolean) => {
+    if (!userId || !businessId) return;
     try {
-      let obj = { userId: userId, val: val };
+      let obj = { userId, businessId, status };
       const res = await verifyBusinessUser(obj);
       if (res.status === 200) {
-        toast({ title: "business Verify Successfully.", description: res?.data?.message });
+        toast({ title: "Business update successful", description: res?.data?.message });
         handleGetAllUser();
         socket.emit("businessVerify", userId);
       }
     }
-    catch (err) {
+    catch (err: any) {
       console.log(err);
-      toast({ title: "business verify failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
+      toast({ title: "Verification failed", description: err?.response?.data?.message || err?.message, variant: "destructive" })
     }
   }
 
   useEffect(() => {
-    if (users?.length === 0) {
-      handleGetAllUser();
-    }
-  }, [users?.length]);  
+    handleGetAllUser();
+  }, [page, perPage, search, filterStatus]);
+
 
   return (
     <>
       <div className="space-y-4 ">
         <div className="flex justify-between items-center">
-          <h3 className="font-display font-semibold text-lg">All Business Groups</h3>
+          <h3 className="font-display font-semibold text-lg">Business Verification Directory</h3>
         </div>
+        {Array.isArray(users) && users.length > 0 ? (
+          <>
+            {/* ================= DESKTOP TABLE ================= */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
+                <thead className="bg-gray-100 text-left text-sm">
+                  <tr>
+                    <th className="p-3">Cover</th>
+                    <th className="p-3">Business ID</th>
+                    <th className="p-3">Business Name</th>
+                    <th className="p-3">Category</th>
+                    <th className="p-3">Owner</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
 
-        {Array.isArray(users) && users.length > 0  ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {users?.map((user) => (
-              <Card
-                key={user?._id}
-                className="shadow-card hover:shadow-elevated transition-shadow relative"
-              >
-                {user.businessCoverImage && (
-                  <img
-                    src={user?.businessCoverImage}
-                    alt={user?.businessName}
-                    className="w-full h-48 object-cover rounded-t"
-                  />
-                )}
+                <tbody>
+                  {users.map((biz: any) => (
+                    <tr key={biz?.businessId} className="border-t hover:bg-gray-50">
+                      {/* Image */}
+                      <td className="p-3">
+                        {biz?.businessCoverImage ? (
+                          <img
+                            src={biz.businessCoverImage}
+                            className="w-12 h-12 rounded-lg object-cover border"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-gray-200" />
+                        )}
+                      </td>
 
-                <CardContent className="p-5">
+                      {/* Business ID */}
+                      <td className="p-3 text-xs font-mono text-gray-500">
+                        {biz?.businessId}
+                      </td>
 
-                  <h3 className="font-display font-semibold text-lg mb-2">
-                    {user?.businessName}
-                  </h3>
+                      {/* Business Name */}
+                      <td className="p-3 font-medium">
+                        {biz?.businessName}
+                      </td>
 
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {user?.businessDescription}
-                  </p>
+                      {/* Category */}
+                      <td className="p-3 text-sm">
+                        {biz?.businessCategory}
+                      </td>
 
-                  <div className="space-y-2 text-xs text-muted-foreground mb-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3.5 w-3.5 text-secondary" />
-                      {new Date(user.createdAt)?.toLocaleDateString()}
-                    </div>
+                      {/* Owner */}
+                      <td className="p-3 text-sm">
+                        <div>
+                          <p className="font-medium">{biz?.ownerName}</p>
+                          <p className="text-xs text-gray-500">{biz?.ownerEmail}</p>
+                        </div>
+                      </td>
 
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-3.5 w-3.5 text-secondary" />
-                      {user.businessAddress}
-                    </div>
+                      {/* Status */}
+                      <td className="p-3 text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          biz.isVerified === 'verified' ? 'bg-green-100 text-green-700' :
+                          biz.isVerified === 'rejected' ? 'bg-red-100 text-red-700' :
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {biz.isVerified || 'pending'}
+                        </span>
+                      </td>
 
-                    <div className="flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5 text-secondary" />
-                      {user?.members?.length} Members
-                    </div>
+                      {/* Actions */}
+                      <td className="p-3">
+                        <div className="flex justify-end gap-2">
+                          {biz.isVerified !== 'verified' && (
+                            <button
+                              onClick={() => handleVerifyBusiness(biz.ownerId, biz.businessId, true)}
+                              className="p-1.5 rounded bg-green-100 hover:bg-green-200 transition-colors"
+                              title="Approve Business"
+                            >
+                              <Check className="w-4 h-4 text-green-600" />
+                            </button>
+                          )}
 
-                    <div className="flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5 text-secondary" />
-                      createdBy:- {user?.fullName}
-                    </div>
+                          {biz.isVerified !== 'rejected' && (
+                            <button
+                              onClick={() => handleVerifyBusiness(biz.ownerId, biz.businessId, false)}
+                              className="p-1.5 rounded bg-red-100 hover:bg-red-200 transition-colors"
+                              title="Reject Business"
+                            >
+                              <X className="w-4 h-4 text-red-600" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* ================= MOBILE VIEW ================= */}
+            <div className="md:hidden space-y-3">
+              {users.map((biz: any) => (
+                <div
+                  key={biz?.businessId}
+                  className="border rounded-xl p-4 flex gap-4 items-start bg-white shadow-sm"
+                >
+                  {/* Image */}
+                  <div className="shrink-0">
+                    {biz?.businessCoverImage ? (
+                      <img
+                        src={biz.businessCoverImage}
+                        className="w-14 h-14 rounded-lg object-cover border"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg bg-gray-200" />
+                    )}
                   </div>
 
-                  {user?.businessVerified === null && (
-                    <div className="flex items-center justify-end gap-3 mt-3">
-
-                      <button
-                        className="h-8 w-8 rounded-full flex items-center justify-center bg-green-100 text-green-600 hover:bg-green-200 transition"
-                        title="Verify"
-                        onClick={() => handleVerifyBusiness(user._id, true)}
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                      <button
-                        className="h-8 w-8 rounded-full flex items-center justify-center bg-red-100 text-red-600 hover:bg-red-200 transition"
-                        title="Reject"
-                        onClick={() => handleVerifyBusiness(user._id, false)}
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold text-gray-900 truncate">
+                        {biz?.businessName}
+                      </h3>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                        biz.isVerified === 'verified' ? 'bg-green-100 text-green-700' :
+                        biz.isVerified === 'rejected' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {biz.isVerified || 'pending'}
+                      </span>
                     </div>
-                  )}
 
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      ID: {biz?.businessId}
+                    </p>
+
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs text-gray-600 flex items-center gap-1">
+                        <MapPin size={12} /> {biz?.businessCategory}
+                      </p>
+                      <p className="text-xs text-gray-600 flex items-center gap-1">
+                        <Users size={12} /> {biz?.ownerName}
+                      </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 mt-4">
+                      {biz.isVerified !== 'verified' && (
+                        <button
+                          onClick={() => handleVerifyBusiness(biz.ownerId, biz.businessId, true)}
+                          className="flex-1 py-1.5 rounded-lg bg-green-50 text-green-700 text-xs font-medium hover:bg-green-100 flex items-center justify-center gap-1"
+                        >
+                          <Check size={14} /> Approve
+                        </button>
+                      )}
+
+                      {biz.isVerified !== 'rejected' && (
+                        <button
+                          onClick={() => handleVerifyBusiness(biz.ownerId, biz.businessId, false)}
+                          className="flex-1 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-medium hover:bg-red-100 flex items-center justify-center gap-1"
+                        >
+                          <X size={14} /> Reject
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <p className="flex items-center justify-center h-[400px]">
             No Data Found.

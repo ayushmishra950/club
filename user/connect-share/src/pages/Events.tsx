@@ -5,7 +5,7 @@ import { ChatPanel } from '@/components/chat/ChatPanel';
 import { mockEvents, mockChats } from '@/data/mockData';
 import { getEvent, interestedOrNotInterestedFromEvent } from "@/service/event";
 import { formatBackendDateTime, getEventStatus } from "@/service/global";
-import { setInterestedOrNotInterestedCandidate, setEventList } from "@/redux-toolkit/slice/eventSlice";
+import { setInterestedOrNotInterestedCandidate, setEventList, setNewEvent } from "@/redux-toolkit/slice/eventSlice";
 import { useToast } from '@/hooks/use-toast';
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
 import socket from "@/socket/socket";
@@ -22,8 +22,8 @@ const Events = () => {
   const totalUnread = mockChats.reduce((acc, c) => acc + c.unread, 0);
 
   useEffect(() => {
-    socket.on("event", () => {
-      setEventListRefresh(true);
+    socket.on("event", (data) => {
+      dispatch(setNewEvent(data));
     })
     return () => {
       socket.off("event")
@@ -33,7 +33,6 @@ const Events = () => {
   const handleGetEvent = async () => {
     try {
       const res = await getEvent();
-      console.log(res);
       if (res.status === 200) {
         dispatch(setEventList(res?.data?.event));
         setEventListRefresh(false);

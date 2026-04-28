@@ -15,7 +15,6 @@ const ShareModal = ({ isOpen, onOpenChange, post }) => {
 
     const dispatch = useAppDispatch();
     const friendList = useAppSelector((state) => state?.chat?.userChatList);
-    console.log(friendList);
 
     useEffect(() => {
         if (!isOpen) setSelectedUsers([]);
@@ -38,10 +37,10 @@ const ShareModal = ({ isOpen, onOpenChange, post }) => {
                 fromId: user?._id,
                 toId: selectedUsers,
                 postId: post?._id,
-                activeTab:activeTab,
+                activeTab: activeTab,
 
             };
-          console.log(obj)
+            console.log(obj)
             const res = await sharePost(obj);
 
             if (res.status === 200) {
@@ -134,22 +133,20 @@ const ShareModal = ({ isOpen, onOpenChange, post }) => {
                     <div className="flex mt-3 gap-2">
                         <button
                             onClick={() => setActiveTab("single")}
-                            className={`flex-1 py-1 rounded-md text-sm ${
-                                activeTab === "single"
+                            className={`flex-1 py-1 rounded-md text-sm ${activeTab === "single"
                                     ? "bg-blue-500 text-white"
                                     : "bg-gray-100"
-                            }`}
+                                }`}
                         >
                             Single
                         </button>
 
                         <button
                             onClick={() => setActiveTab("group")}
-                            className={`flex-1 py-1 rounded-md text-sm ${
-                                activeTab === "group"
+                            className={`flex-1 py-1 rounded-md text-sm ${activeTab === "group"
                                     ? "bg-blue-500 text-white"
                                     : "bg-gray-100"
-                            }`}
+                                }`}
                         >
                             Group
                         </button>

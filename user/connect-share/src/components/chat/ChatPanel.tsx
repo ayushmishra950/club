@@ -35,6 +35,7 @@ export function ChatPanel({ open, onClose }: Props) {
   const filteredChats = userList?.filter((chat: any) =>
     chatType === "single" ? !chat.isGroup : chat.isGroup
   );
+
   const handleSeenMessages = async (chat: any) => {
     socket.emit("messageSeen", { chatId: chat?.chatId, receiverUserId: user?._id, senderUserId: chat?.friend?._id });
     socket.emit("getUnreadCount", user?._id);
@@ -42,12 +43,12 @@ export function ChatPanel({ open, onClose }: Props) {
     dispatch(setUnreadCountRemove({ chat }));
   };
   useEffect(() => {
-    socket.on("messageRefresh", (newMessage) => {
+    socket.on("messageRefresh", (newMessage, updatedAt) => {
       if (newMessage.chatId?.toString() === activeChat?.chatId?.toString()) {
         dispatch(setNewMessageAdd(newMessage));
         socket.emit("messageSeen", { chatId: newMessage.chatId, receiverUserId: user?._id, senderUserId: activeChat?.friend?._id });
       }
-      dispatch(setMessageRefresh({ newMessage }));
+      dispatch(setMessageRefresh({ newMessage, updatedAt }));
     });
     socket.on("typingChat", () => {
       setIsTyping(true);
@@ -111,13 +112,13 @@ export function ChatPanel({ open, onClose }: Props) {
     try {
       let obj = { chatId: activeChat?.chatId, senderId: user?._id, text: message, image: selectedFile || null };
       const form = new FormData();
-    form.append("chatId", activeChat?.chatId);
-form.append("senderId", user?._id);
-form.append("text", message || "");
+      form.append("chatId", activeChat?.chatId);
+      form.append("senderId", user?._id);
+      form.append("text", message || "");
 
-if (selectedFile) {
-  form.append("image", selectedFile);
-}
+      if (selectedFile) {
+        form.append("image", selectedFile);
+      }
       setSendLoading(true);
 
       const res = await sendMessage(form);
@@ -541,9 +542,9 @@ if (selectedFile) {
                       )}
                     </div>
 
-                    {chat?.deliveredMessages?.filter((msg: any) => msg.sender !== user?._id)?.length > 0 && (
+                    {chat?.deliveredMessages?.filter((msg: any) => (msg.sender?._id || msg.sender) !== user?._id)?.length > 0 && (
                       <span className="h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center shrink-0">
-                        {chat.deliveredMessages.filter((msg: any) => msg.sender !== user?._id).length}</span>
+                        {chat.deliveredMessages.filter((msg: any) => (msg.sender?._id || msg.sender) !== user?._id).length}</span>
                     )}</button>
                 ))
               ) : (

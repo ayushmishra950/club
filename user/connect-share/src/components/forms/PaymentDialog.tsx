@@ -16,6 +16,7 @@ export default function PaymentDialog({ open, setOpen }) {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [number, setNumber] = useState("");
+  const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();
 
@@ -25,6 +26,7 @@ export default function PaymentDialog({ open, setOpen }) {
     setImage(null);
     setPreview(null);
     setNumber("");
+    setAmount("");
   };
 
   const handleImageChange = (e) => {
@@ -39,32 +41,30 @@ export default function PaymentDialog({ open, setOpen }) {
   const removeImage = () => {
     setImage(null);
     setPreview(null);
-    if(fileRef.current){
-         fileRef.current.value = null;
+    if (fileRef.current) {
+      fileRef.current.value = null;
     }
   };
 
   const handleSubmit = async () => {
-    if (!number) {
-      toast({ title: "Number is required" });
-      return;
-    };
+
     setLoading(true);
 
     try {
       const formData = new FormData();
       formData.append("userId", user?._id);
       formData.append("paymentImage", image);
+      formData.append("amount", amount);
       formData.append("transitionNumber", number);
 
-     const res =  await convertPremiumUser(formData);
-     if(res.status === 200){
-      toast({ title: "User converted to premium successfully.", description: res?.data?.message });
-       setOpen(false);
-      resetForm();
+      const res = await convertPremiumUser(formData);
+      if (res.status === 200) {
+        toast({ title: "User converted to premium successfully.", description: res?.data?.message });
+        setOpen(false);
+        resetForm();
         dispatch(setUserData(res?.data?.data));
-     }
-     
+      }
+
     } catch (err) {
       toast({ title: "Failed to convert user to premium.", description: err?.response?.data?.message || err?.message, variant: "destructive" });
     } finally {
@@ -125,19 +125,30 @@ export default function PaymentDialog({ open, setOpen }) {
           </div>
         )}
 
-        {/* Number Input */}
+        {/* Amount Input */}
         <div style={{ marginTop: "10px" }}>
-          <Label>Transition Number</Label>
+          <Label>Amount</Label>
           <Input
             type="number"
-            placeholder="Enter transition number..."
+            placeholder="Enter amount..."
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </div>
+
+        {/* Number Input */}
+        <div style={{ marginTop: "10px" }}>
+          <Label>Transaction Number</Label>
+          <Input
+            type="number"
+            placeholder="Enter transaction number..."
             value={number}
             onChange={(e) => setNumber(e.target.value)}
           />
         </div>
 
         {/* Submit Button */}
-        <Button onClick={handleSubmit} disabled={loading || !number || !image} >
+        <Button onClick={handleSubmit} disabled={loading || !number || !image || !amount} >
           {loading && <Loader2 className="animate-spin mr-2" size={16} />}
           Submit
         </Button>

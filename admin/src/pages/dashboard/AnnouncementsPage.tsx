@@ -16,7 +16,7 @@ import DeleteCard from "@/components/cards/DeleteCard";
 export default function AnnouncementsPage() {
   const user = JSON.parse(localStorage.getItem("user"));
   const { toast } = useToast();
-  const [formData, setFormData] = useState({title:"", description:"", priority:""});
+  const [formData, setFormData] = useState({ title: "", description: "", priority: "" });
   const [announcementListRefresh, setAnnouncementListRefresh] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteAnnouncements, setDeleteAnnouncements] = useState(null);
@@ -26,7 +26,7 @@ export default function AnnouncementsPage() {
   const dispatch = useAppDispatch();
   const announcementList = useAppSelector((state) => state?.announcement?.announcementList);
 
-  const resetForm = () => {setFormData({title:"", description:"", priority:""})};
+  const resetForm = () => { setFormData({ title: "", description: "", priority: "" }) };
 
   const handleAddAnnouncement = async (e) => {
     e.preventDefault();
@@ -98,7 +98,7 @@ export default function AnnouncementsPage() {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="font-display font-semibold text-lg">Announcements</h3>
-          <Dialog open={dialogOpen} onOpenChange={(open) => {resetForm(); setDialogOpen(open)}}>
+          <Dialog open={dialogOpen} onOpenChange={(open) => { resetForm(); setDialogOpen(open) }}>
             <DialogTrigger asChild>
               <Button className="gradient-gold text-secondary-foreground font-semibold"><Plus className="h-4 w-4 mr-1" /> Post</Button>
             </DialogTrigger>
@@ -117,51 +117,141 @@ export default function AnnouncementsPage() {
             </DialogContent>
           </Dialog>
         </div>
+        <div className="space-y-3">
+          {announcementList?.length > 0 ? (
+            <>
+              {/* ================= DESKTOP TABLE ================= */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
+                  <thead className="bg-gray-100 text-left text-sm">
+                    <tr>
+                      <th className="p-3">Title</th>
+                      <th className="p-3">Priority</th>
+                      <th className="p-3">Description</th>
+                      <th className="p-3">Created At</th>
+                      <th className="p-3 text-right">Action</th>
+                    </tr>
+                  </thead>
 
-       <div className="space-y-3">
-  {announcementList?.length > 0 ? (
-    announcementList.map((ann) => (
-      <Card key={ann?._id} className="shadow-card relative">
+                  <tbody>
+                    {announcementList.map((ann) => (
+                      <tr key={ann?._id} className="border-t hover:bg-gray-50">
+                        {/* Title */}
+                        <td className="p-3 font-medium">{ann.title}</td>
 
-        {/* 🔥 DELETE ICON */}
-        <button
-          onClick={() => {
-            setDeleteAnnouncements(ann);
-            setDeleteDialogOpen(true);
-          }}
-          className="absolute top-3 right-3 p-1 rounded hover:bg-red-100 transition"
-        >
-          <Trash className="w-4 h-4 text-red-500" />
-        </button>
+                        {/* Priority */}
+                        <td className="p-3">
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-medium ${ann.priority === "high"
+                              ? "bg-destructive/10 text-destructive"
+                              : ann.priority === "medium"
+                                ? "bg-warning/10 text-warning"
+                                : "bg-muted text-muted-foreground"
+                              }`}
+                          >
+                            {ann?.priority}
+                          </span>
+                        </td>
 
-        <CardContent className="p-5">
+                        {/* Description */}
+                        <td className="p-3 text-sm text-muted-foreground max-w-xs truncate">
+                          {ann.description}
+                        </td>
 
-          <div className="flex items-start justify-between mb-2 pr-8">
-            <h3 className="font-display font-semibold">{ann.title}</h3>
+                        {/* Date */}
+                        <td className="p-3 text-sm">
+                          {new Date(ann.createdAt).toLocaleString([], {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
 
-            <span className={`px-2 py-0.5 rounded text-xs font-medium shrink-0 ml-3 ${ ann.priority === "high" ? "bg-destructive/10 text-destructive" : ann.priority === "medium" ? "bg-warning/10 text-warning"  : "bg-muted text-muted-foreground" }`}>
-              {ann?.priority}
-            </span>
-          </div>
+                        {/* Action */}
+                        <td className="p-3">
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => {
+                                setDeleteAnnouncements(ann);
+                                setDeleteDialogOpen(true);
+                              }}
+                              className="p-1.5 rounded hover:bg-red-100"
+                            >
+                              <Trash className="w-4 h-4 text-red-500" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-          <p className="text-sm text-muted-foreground mb-3"> {ann.description} </p>
+              {/* ================= MOBILE VIEW ================= */}
+              <div className="md:hidden space-y-3">
+                {announcementList.map((ann) => (
+                  <div
+                    key={ann?._id}
+                    className="border rounded-lg p-3 flex justify-between items-start"
+                  >
+                    {/* Content */}
+                    <div className="flex-1 pr-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-medium text-sm">{ann.title}</h3>
 
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>By Admin</span>
-            <span> {new Date(ann.createdAt).toLocaleString([], { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} </span>
-          </div>
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium ${ann.priority === "high"
+                            ? "bg-destructive/10 text-destructive"
+                            : ann.priority === "medium"
+                              ? "bg-warning/10 text-warning"
+                              : "bg-muted text-muted-foreground"
+                            }`}
+                        >
+                          {ann?.priority}
+                        </span>
+                      </div>
 
-        </CardContent>
-      </Card>
-    ))
-  ) : (
-    <div className="flex items-center justify-center h-[300px]">
-      <p className="text-muted-foreground text-sm">
-        No Announcements Found.
-      </p>
-    </div>
-  )}
-</div>
+                      <p className="text-xs text-gray-500 mb-1 line-clamp-2">
+                        {ann.description}
+                      </p>
+
+                      <p className="text-xs text-gray-400">
+                        {new Date(ann.createdAt).toLocaleString([], {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+
+                    {/* Action */}
+                    <div>
+                      <button
+                        onClick={() => {
+                          setDeleteAnnouncements(ann);
+                          setDeleteDialogOpen(true);
+                        }}
+                        className="p-1 rounded hover:bg-red-100"
+                      >
+                        <Trash className="w-4 h-4 text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-[300px]">
+              <p className="text-muted-foreground text-sm">
+                No Announcements Found.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

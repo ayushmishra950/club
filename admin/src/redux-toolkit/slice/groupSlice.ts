@@ -1,61 +1,106 @@
-import {createSlice, PayloadAction} from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 
 const initialState = {
-  groupList : []
+  groupList: [],
+  messageList: []
 };
 
 
 const groupSlice = createSlice({
-    name:"Group",
-    initialState,
-    reducers:{
-        setGroupList : (state, action) => {
-          state.groupList = action.payload;
-        },
+  name: "Group",
+  initialState,
+  reducers: {
+    setGroupList: (state, action) => {
+      const sortedList = [...action.payload].sort(
+        (a, b) =>
+          new Date(b.updatedAt || b.createdAt || 0).getTime() -
+          new Date(a.updatedAt || a.createdAt || 0).getTime()
+      );
+      state.groupList = sortedList;
+    },
 
-      setAddAnRemoveUserGroup: (state, action) => {
-  const { groupId, userId } = action.payload;
+    setAddAnRemoveUserGroup: (state, action) => {
+      const { groupId, userId } = action.payload;
 
-  const group = state.groupList.find(g => g._id === groupId);
-  if (!group) return;
+      const group = state.groupList.find(g => g._id === groupId);
+      if (!group) return;
 
-  const isMember = group.members.some(member => member._id === userId);
+      const isMember = group.members.some(member => member._id === userId);
 
-  if (isMember) {
-    group.members = group.members.filter( member => member._id !== userId);
-  } else {
-    group.members.push({ _id: userId });
-  }
-},
+      if (isMember) {
+        group.members = group.members.filter(member => member._id !== userId);
+      } else {
+        group.members.push({ _id: userId });
+      }
+    },
 
-   setNewUnReadMessage: (state, action) => {
-  const { groupId, newMessage } = action.payload;
+    setNewUnReadMessage: (state, action) => {
+      const { groupId, newMessage, updatedAt } = action.payload;
 
-  const group = state.groupList?.find(
-    (g) => g._id?.toString() === groupId?.toString()
-  );
+      const group = state.groupList?.find(
+        (g) => g._id?.toString() === groupId?.toString()
+      );
 
-  if (!group) return;
+      if (!group) return;
 
-  // ensure array exists
-  if (!Array.isArray(group.unreadMessages)) {
-    group.unreadMessages = [];
-  }
+      if (!Array.isArray(group.unreadMessages)) {
+        group.unreadMessages = [];
+      }
 
-  // avoid duplicate messages (optional but recommended)
-  const isAlreadyExists = group.unreadMessages.some(
-    (msg) => msg?._id === newMessage?._id
-  );
+      const isAlreadyExists = group.unreadMessages.some(
+        (msg) => msg?._id === newMessage?._id
+      );
 
-  if (!isAlreadyExists) {
-    group.unreadMessages.push(newMessage);
-  }
-}
+      if (!isAlreadyExists && newMessage?.sender !== null) {
+        group.unreadMessages.push({ ...newMessage, updatedAt });
+      }
+
+      // 🔥 ADD THIS (IMPORTANT)
+      group.updatedAt = updatedAt || new Date().toISOString();
+
+      // 🔥 REORDER LIST IN-PLACE (IMMER WAY)
+      state.groupList.sort(
+        (a, b) =>
+          new Date(b.updatedAt || b.createdAt || 0).getTime() -
+          new Date(a.updatedAt || a.createdAt || 0).getTime()
+      );
+    },
+    setMessageList: (state, action) => {
+      const { groupId, messages } = action.payload;
+
+      const group = state.groupList?.find(
+        (g) => g._id?.toString() === groupId?.toString()
+      );
+      if (!group) return;
+
+      state.messageList = messages;
+    },
+
+    setCleanMessage: (state) => {
+      state.messageList = [];
+    },
+
+    setNewGroup: (state, action: PayloadAction<any>) => {
+      state.groupList.unshift(action.payload);
+    },
+
+    setUpdateGroup: (state, action: PayloadAction<any>) => {
+      const group = state.groupList.find(
+        g => g._id === action.payload._id
+      );
+
+      if (group) {
+        // ✅ update members array
+        if (action.payload.members) {
+          group.members = action.payload.members;
+        }
+      }
     }
+  }
 });
 
-export const {setGroupList, setAddAnRemoveUserGroup, setNewUnReadMessage} = groupSlice.actions;
+export const { setGroupList, setAddAnRemoveUserGroup, setUpdateGroup, setNewUnReadMessage, setMessageList, setCleanMessage, setNewGroup } = groupSlice.actions;
 
 export default groupSlice.reducer;
 

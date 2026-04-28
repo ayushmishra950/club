@@ -97,7 +97,13 @@ export const handleSendGroupMessage = async (req: Request, res: Response) => {
 
     await chat.save();
 
-    io.emit("messageRefresh", newMessage);
+    io.emit("messageRefresh", newMessage, chat.updatedAt);
+    io.emit("messageAdminRefresh", { 
+      newMessage: newMessage, 
+      groupId: chat.groupId, 
+      chatId: chat._id, 
+      updatedAt: chat.updatedAt 
+    });
 
     // -------------------------
     // 7. RESPONSE

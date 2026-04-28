@@ -9,20 +9,22 @@ import groupReducer from "../slice/businessGroupSlice";
 import chatReducer from "../slice/chatSlice";
 import searchReducer from "../slice/searchSlice";
 import announcementReducer from "../slice/announcementSlice";
+import suggestionReducer from "../slice/suggestionSlice";
 
 
 export const store = configureStore({
-    reducer:{
-        event:eventReducer,
-        user:userReducer,
-        donation:donationReducer,
-        gallery:galleryReducer,
-        category:categoryReducer,
-        post:postReducer,
-        group:groupReducer,
-        chat:chatReducer,
-        search:searchReducer,
-         announcement: announcementReducer
+    reducer: {
+        event: eventReducer,
+        user: userReducer,
+        donation: donationReducer,
+        gallery: galleryReducer,
+        category: categoryReducer,
+        post: postReducer,
+        group: groupReducer,
+        chat: chatReducer,
+        search: searchReducer,
+        announcement: announcementReducer,
+        suggestion: suggestionReducer
     }
 });
 

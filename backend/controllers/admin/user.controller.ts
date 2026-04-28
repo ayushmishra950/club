@@ -4,6 +4,7 @@ import type { Request, Response } from "express";
 import { nanoid } from "nanoid";
 import xlsx from "xlsx";
 import { getIO } from "../../utils/socketHelper.js";
+import bcrypt from "bcryptjs";
 
 
 export const getAllUsers = async (req: Request, res: Response) => {
@@ -11,13 +12,17 @@ export const getAllUsers = async (req: Request, res: Response) => {
     const pageParam = req.query.page;
     const perPageParam = req.query.perPage;
     const searchParam = req.query.search;
+    const status = req.query.filterStatus;
 
     const page = parseInt(typeof pageParam === "string" ? pageParam : "1", 10);
     const perPage = parseInt(typeof perPageParam === "string" ? perPageParam : "8", 10);
     const search = typeof searchParam === "string" ? searchParam.trim() : "";
 
     // search filter
-    let filter = {};
+    let filter: any = {};
+    if (status) {
+      filter.blocked = status === "active" ? false : true;
+    }
     if (search) {
       filter = {
         $or: [
@@ -30,10 +35,10 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
     const total = await User.countDocuments(filter);
 
-    const users = await User.find(filter).populate({ path: "donations" })
+    const users = await User.find(filter)
       .skip((page - 1) * perPage)
       .limit(perPage)
-      .sort({ createdAt: -1 }); // latest first
+      .sort({ createdAt: -1 });
 
 
     res.status(200).json({
@@ -49,22 +54,27 @@ export const getAllUsers = async (req: Request, res: Response) => {
 };
 
 
-
 export const handleVerifyUser = async (req: Request, res: Response) => {
   try {
-    const userId = req.params?.id;
-    if (!userId) return res.status(400).json({ message: "userId not found." });
+    const { memberIds } = req.body;
 
-    const user = await User.findOne({ _id: userId });
-    if (!user) return res.status(404).json({ message: "user not Found." });
+    if (!memberIds || memberIds.length === 0) {
+      return res.status(400).json({ message: "memberIds not found." });
+    }
 
-    user.isVerified = true;
+    await User.updateMany(
+      { _id: { $in: memberIds } },
+      { $set: { isVerified: true } }
+    );
 
-    await user.save();
-    res.status(200).json({ message: "User verified successfully." })
-  }
-  catch (err: any) {
-    return res.status(500).json({ message: err?.message || "Server Error" })
+    return res.status(200).json({
+      message: "Users verified successfully."
+    });
+
+  } catch (err: any) {
+    return res.status(500).json({
+      message: err?.message || "Server Error"
+    });
   }
 };
 
@@ -73,19 +83,33 @@ export const handleVerifyUser = async (req: Request, res: Response) => {
 
 export const handleVerifyBusinessUser = async (req: Request, res: Response) => {
   try {
-    const { userId, val } = req.body;
-    if (!userId) return res.status(400).json({ message: "userId not found." });
+    const { userId, businessId, status } = req.body;
+    if (!userId || !businessId) {
+      return res.status(400).json({ success: false, message: "userId and businessId are required." });
+    }
 
-    const user = await User.findOne({ _id: userId });
-    if (!user) return res.status(404).json({ message: "user not Found." });
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
 
-    user.businessVerified = val;
+    // Find the business in the businesses array
+    const business = user.businesses.find(b => b.businessId === businessId);
+    if (!business) {
+      return res.status(404).json({ success: false, message: "Business not found." });
+    }
+
+    // Update status: true maps to 'verified', false maps to 'rejected'
+    business.isVerified = status === true ? "verified" : "rejected";
 
     await user.save();
-    res.status(200).json({ message: `business ${val ? "varified" : "Unverified"} successfully.` })
-  }
-  catch (err: any) {
-    return res.status(500).json({ message: err?.message || "Server Error" })
+    res.status(200).json({
+      success: true,
+      message: `Business ${status === true ? "Verified" : "Rejected"} successfully.`,
+      user
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err?.message || "Server Error" });
   }
 };
 
@@ -198,91 +222,58 @@ export const addNewUser = async (req: Request, res: Response) => {
 }
 
 
+export const acceptPaymentRequest = async (req: Request, res: Response) => {
+  try {
+    const { id, amount } = req.body;
+
+    const io = getIO();
+    if (!id) return res.status(400).json({ message: "userId not found." });
+
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: "user not found." });
+    user.premiumUser = "premium";
+    user.amount = amount;
+
+    await user.save();
+    io.to(user?._id?.toString()).emit("paymentRequestAccepted", { user });
+    io.emit("paymentSuccess");
+    res.status(200).json({ user: user, message: "Payment request accepted and user upgraded to premium successfully." })
+  }
+  catch (err: any) {
+    res.status(500).json({ message: err?.message || "Server Error" })
+  }
+}
 
 
-// export const uploadExcel = async (req: Request, res: Response) => {
-//   try {
-//     const files = req.files as any;
-//     const file = files?.excelFile?.[0];
+const normalize = (val: string) => val?.trim().toLowerCase();
 
-//     if (!file) {
-//       return res.status(400).json({ message: "No file uploaded" });
-//     }
+const hashPassword = async (password: string) => {
+  return bcrypt.hash(password, 10);
+};
 
-//     // Read Excel file
-//     const workbook = xlsx.read(file.buffer, { type: "buffer" });
+const buildUser = async (user: any, extra: any = {}) => {
+  const rawPassword =
+    user.password || `${user?.fullName?.trim()?.toLowerCase()}@123`;
 
-//     const sheetName = workbook.SheetNames[0];
-//     const sheetData = workbook.Sheets[sheetName];
+  const hashedPassword = await hashPassword(rawPassword);
 
-//     const jsonData = xlsx.utils.sheet_to_json(sheetData);
-//     console.log("jsonData", jsonData);
-
-//     // Save to MongoDB
-//     await User.insertMany(jsonData);
-
-//     res.status(201).json({
-//       message: "Excel uploaded and data saved successfully",
-//       totalInserted: jsonData.length,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// };
-
-
-
-// export const uploadExcel = async (req: Request, res: Response) => {
-//   try {
-//     const files = req.files as any;
-//     const file = files?.excelFile?.[0];
-
-//     if (!file) {
-//       return res.status(400).json({ message: "No file uploaded" });
-//     }
-
-//     const workbook = xlsx.read(file.buffer, { type: "buffer" });
-//     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-//     const jsonData: any[] = xlsx.utils.sheet_to_json(sheet);
-
-//     // ✅ Add userId to each user
-//     const usersWithId = jsonData.map((user, index) => ({
-//       ...user,
-//       userId: `USR-${nanoid(8)}`,
-
-//       // ⚠️ important: phone string me convert karo
-//       phone: user.phone?.toString(),
-
-//       // ⚠️ Excel date fix
-//       dob: typeof user.dob === "number"
-//         ? new Date(xlsx.SSF.parse_date_code(user.dob).y,
-//                    xlsx.SSF.parse_date_code(user.dob).m - 1,
-//                    xlsx.SSF.parse_date_code(user.dob).d)
-//         : user.dob,
-//     }));
-
-//     // Save to MongoDB
-//     const result = await User.insertMany(usersWithId, {
-//       ordered: false,
-//     });
-
-//     res.status(201).json({
-//       message: "Excel uploaded and users saved successfully",
-//       data: result,
-//     });
-
-//   } catch (error: any) {
-//     console.error(error);
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
+  return {
+    fullName: user.fullName,
+    email: normalize(user.email),
+    ...(user.phone && { phone: user.phone.toString() }),
+    password: hashedPassword,
+    userId: `USR-${nanoid(8)}`,
+    dob: user.dob || null,
+    spouseName: extra.spouseName || null,
+    spouseEmail: extra.spouseEmail
+      ? normalize(extra.spouseEmail)
+      : null,
+  };
+};
 
 export const uploadExcel = async (req: Request, res: Response) => {
   try {
-    const files = req.files as any;
-    const file = files?.excelFile?.[0];
+    const file = (req.files as any)?.excelFile?.[0];
 
     if (!file) {
       return res.status(400).json({ message: "No file uploaded" });
@@ -295,53 +286,98 @@ export const uploadExcel = async (req: Request, res: Response) => {
     const successUsers: any[] = [];
     const duplicateUsers: any[] = [];
 
+    // 🔹 Normalize all emails/phones from Excel
+    const emails = jsonData
+      .flatMap(u => [u.email, u.spouseEmail])
+      .filter(Boolean)
+      .map(normalize);
+
+    const phones = jsonData
+      .flatMap(u => [u.phone])
+      .filter(Boolean)
+      .map(p => p.toString());
+
+    // 🔹 Existing users from DB
+    const existingUsers = await User.find({
+      $or: [
+        { email: { $in: emails } },
+        { phone: { $in: phones } }
+      ]
+    });
+
+    const existingEmailSet = new Set(
+      existingUsers.map(u => normalize(u.email))
+    );
+
+    const existingPhoneSet = new Set(
+      existingUsers.map(u => u.phone)
+    );
+
+    // 🔹 Excel-level tracking
+    const usedEmails = new Set<string>();
+    const usedPhones = new Set<string>();
+
     for (const user of jsonData) {
+      const email = normalize(user.email);
+      const phone = user.phone ? user.phone.toString() : null;
 
-      const email = user.email;
-      const phone = user.phone?.toString();
-
-      const existing = await User.findOne({
-        $or: [{ email }, { phone }]
-      });
-
-      if (existing) {
-        duplicateUsers.push({
-          fullName: user.fullName,
-          email,
-          phone,
-          reason:
-            existing.email === email && existing.phone === phone
-              ? "Email & Phone already exists"
-              : existing.email === email
-              ? "Email already exists"
-              : "Phone already exists"
-        });
+      // =========================
+      // 👤 MAIN USER CHECK
+      // =========================
+      if (existingEmailSet.has(email) || usedEmails.has(email) || (phone && (existingPhoneSet.has(phone) || usedPhones.has(phone)))) {
+        duplicateUsers.push({ email, phone, reason: "Main user duplicate" });
         continue;
       }
 
-      successUsers.push({
-        ...user,
-        userId: `USR-${nanoid(8)}`,
-        phone,
-        dob:
-          typeof user.dob === "number"
-            ? new Date(
-                xlsx.SSF.parse_date_code(user.dob).y,
-                xlsx.SSF.parse_date_code(user.dob).m - 1,
-                xlsx.SSF.parse_date_code(user.dob).d
-              )
-            : user.dob,
-      });
+      usedEmails.add(email);
+      if (phone) usedPhones.add(phone);
+
+      const mainUser = await buildUser(user);
+      successUsers.push(mainUser);
+
+      // =========================
+      // 🔗 SPOUSE USER CHECK
+      // =========================
+      if (user.spouseEmail && user.spouseName) {
+        const spouseEmail = normalize(user.spouseEmail);
+        if (
+          existingEmailSet.has(spouseEmail) ||
+          usedEmails.has(spouseEmail)
+        ) {
+          duplicateUsers.push({
+            email: spouseEmail,
+            reason: "Spouse email duplicate"
+          });
+          continue;
+        }
+
+        usedEmails.add(spouseEmail);
+
+        const spouseUser = await buildUser(
+          {
+            fullName: user.spouseName,
+            email: spouseEmail,
+            phone: null,
+            password: user.password
+          },
+          {
+            spouseName: user.fullName,
+            spouseEmail: email
+          }
+        );
+
+        successUsers.push(spouseUser);
+      }
     }
 
     const result = await User.insertMany(successUsers);
 
     return res.status(201).json({
-      message: "Excel upload completed",
+      message: "Excel upload completed successfully",
       insertedCount: result.length,
       duplicateCount: duplicateUsers.length,
-      duplicates: duplicateUsers, // 👈 important for admin
-      inserted: result,
+      duplicates: duplicateUsers,
+      inserted: result
     });
 
   } catch (error: any) {
@@ -351,23 +387,3 @@ export const uploadExcel = async (req: Request, res: Response) => {
     });
   }
 };
-
-
-export const acceptPaymentRequest = async(req:Request, res:Response) => {
-  try{
-    const userId = req.params.id;
-    console.log("userId", userId);
-    const io = getIO();
-    if(!userId) return res.status(400).json({ message: "userId not found." });
-
-    const user = await User.findById(userId);
-    if(!user) return res.status(404).json({ message: "user not found." });
-    user.premiumUser = "premium";
-    await user.save();
-    io.to(userId.toString()).emit("paymentRequestAccepted", { userId });
-    res.status(200).json({user:user, message: "Payment request accepted and user upgraded to premium successfully." })
-  }
-  catch(err:any){
-    res.status(500).json({ message: err?.message || "Server Error" })
-  }
-}

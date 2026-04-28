@@ -6,9 +6,9 @@ import { mockChats } from '@/data/mockData';
 import { getAllGroups, toggleMember } from "@/service/group";
 import { useToast } from '@/hooks/use-toast';
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
-import { setGroupList, setGroupJoinAnUnJoin } from '@/redux-toolkit/slice/businessGroupSlice';
+import { setGroupList, setGroupJoinAnUnJoin, setNewGroup } from '@/redux-toolkit/slice/businessGroupSlice';
 import { useNavigate } from 'react-router-dom';
-
+import socket from '@/socket/socket';
 
 const Groups = () => {
   const { toast } = useToast();
@@ -20,6 +20,15 @@ const Groups = () => {
   const dispatch = useAppDispatch();
   const groupList = useAppSelector((state) => state?.group?.groupList);
 
+  useEffect(() => {
+    socket.on("newGroup", (group) => {
+      dispatch(setNewGroup(group));
+    });
+
+    return () => {
+      socket.off("newGroup");
+    }
+  }, [])
 
   const toggleJoin = async (id: string) => {
     let obj = { groupId: id, userId: user?._id, fullName: user?.fullName, email: user?.email, profileImage: user?.profileImage };
@@ -77,8 +86,8 @@ const Groups = () => {
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleJoin(group?._id) }}
                           className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${isMember
-                              ? 'bg-primary/10 text-primary'
-                              : 'gradient-primary text-primary-foreground hover:opacity-90'
+                            ? 'bg-primary/10 text-primary'
+                            : 'gradient-primary text-primary-foreground hover:opacity-90'
                             }`}
                         >
                           {isMember ? 'Joined ✓' : 'Join'}

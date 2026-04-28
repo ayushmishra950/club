@@ -7,7 +7,11 @@ import { getAllMessage, addMessage } from "@/service/chat";
 import GroupDialog from "@/components/forms/GroupDialog";
 import socket from "@/socket/socket";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
-import { setGroupList, setAddAnRemoveUserGroup, setNewUnReadMessage } from "@/redux-toolkit/slice/groupSlice";
+import { setGroupList, setAddAnRemoveUserGroup, setNewUnReadMessage, setNewGroup, setMessageList, setCleanMessage } from "@/redux-toolkit/slice/groupSlice";
+import AddMemberCard from "@/components/cards/AddMemberCard";
+import DeleteCard from "@/components/cards/DeleteCard";
+import GroupInfoCard from "@/components/cards/GroupInfoCard";
+
 
 export default function GroupsPage() {
   const { toast } = useToast();
@@ -17,7 +21,6 @@ export default function GroupsPage() {
   const [initialData, setInitialData] = useState(null);
   const [groupListRefresh, setGroupListRefresh] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
-  const [messageList, setMessageList] = useState([]);
 
   const [openMenuId, setOpenMenuId] = useState(null);
   const [messageText, setMessageText] = useState("");
@@ -27,12 +30,19 @@ export default function GroupsPage() {
   const [sendLoading, setSendLoading] = useState(false);
   const [chatId, setChatId] = useState(null);
   const chatEndRef = useRef(null);
-
   const [isMobile, setIsMobile] = useState(false);
+  const [shareCardOpen, setShareOpenCard] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteGroupData, setDeleteGroupData] = useState(null);
+  const [groupInfoOpen, setGroupInfoOpen] = useState(false);
+
   const groupList = useAppSelector((state) => state?.group?.groupList);
+  const messageList = useAppSelector((state) => state?.group?.messageList);
   const liveUnreadCount = messageList?.filter((msg) => msg?.chatId === chatId && msg?.status !== "seen")?.length;
 
-  const handleSelectGroup = (id:string) => {socket.emit("adminMessageSeen", id)}
+  const handleSelectGroup = (id: string) => { socket.emit("adminMessageSeen", id) }
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -43,26 +53,32 @@ export default function GroupsPage() {
   }, [messageList, selectedGroup]);
 
   useEffect(() => {
-    socket.on("messageAdminRefresh", ({ newMessage, groupId, chatId }) => {
-      dispatch(setNewUnReadMessage({groupId, newMessage}))
+    socket.on("messageAdminRefresh", ({ newMessage, groupId, chatId, updatedAt }) => {
+      dispatch(setNewUnReadMessage({ groupId, newMessage, updatedAt }))
       setChatId(chatId);
       if (groupId?.toString() === selectedGroup?._id?.toString()) {
-        setMessageList((prev) => [...prev, newMessage]);
+        dispatch(setMessageList({ groupId, newMessage }))
       }
     });
+
 
     socket.on("addAnRemoveUserFromGroup", (data) => {
       dispatch(setAddAnRemoveUserGroup(data))
     });
 
-    socket.on("adminMessageSeen", (data)=>{
+    socket.on("adminMessageSeen", (data) => {
       dispatch(setGroupList(data));
-    })
+    });
+
+    socket.on("newGroup", (group) => {
+      dispatch(setNewGroup(group));
+    });
 
     return () => {
       socket.off("messageAdminRefresh");
       socket.off("addAnRemoveUserFromGroup");
       socket.off("adminMessageSeen");
+      socket.off("newGroup");
     }
   }, [selectedGroup])
 
@@ -89,7 +105,7 @@ export default function GroupsPage() {
     if (!selectedGroup?._id) return;
     const res = await getAllMessage(selectedGroup._id);
     if (res.status === 200) {
-      setMessageList(res.data.messages);
+      dispatch(setMessageList({ groupId: selectedGroup._id, messages: res.data.messages }))
     }
   };
 
@@ -98,13 +114,18 @@ export default function GroupsPage() {
   }, [selectedGroup?._id]);
 
   // ---------------- DELETE ----------------
-  const handleDeleteGroup = async (id) => {
+  const handleDeleteGroup = async () => {
     try {
-      await deleteGroup(id);
-      toast({ title: "Deleted" });
-      handleGetGroups();
-    } catch {
-      toast({ title: "Error", variant: "destructive" });
+      setDeleteLoading(true);
+      const res = await deleteGroup(deleteGroupData?._id);
+      if (res.status === 200) {
+        toast({ title: "Deleted Group.", description: res?.data?.message || "Group Deleted Successfully" });
+        setDeleteDialogOpen(false);
+        setDeleteGroupData(null);
+        handleGetGroups();
+      }
+    } catch (err) {
+      toast({ title: "Error", description: err?.response?.data?.message || err?.message, variant: "destructive" });
     }
   };
   // ---------------- FILE ----------------
@@ -135,7 +156,6 @@ export default function GroupsPage() {
       setSendLoading(true);
       // 👉 API CALL HERE
       const res = await addMessage(formData);
-      console.log(res);
 
       setMessageText("");
       removeSelectedFile();
@@ -148,14 +168,21 @@ export default function GroupsPage() {
   };
 
   // ---------------- VIDEO CHECK ----------------
-  const isVideo = (url) =>
-    url?.includes(".mp4") ||
-    url?.includes(".webm") ||
-    url?.includes(".ogg") ||
-    url?.includes("video");
+  const isVideo = (url) => url?.includes(".mp4") || url?.includes(".webm") || url?.includes(".ogg") || url?.includes("video");
 
   return (
     <>
+      <GroupInfoCard isOpen={groupInfoOpen} onOpenChange={setGroupInfoOpen} groupId={selectedGroup?._id} />
+      <DeleteCard
+        isOpen={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        isLoading={deleteLoading}
+        buttonName="Delete"
+        title={`Delete Group: ${deleteGroupData?.title}`} // Dynamic title
+        description={`Are you sure you want to delete the group "${deleteGroupData?.title}"? This action cannot be undone.`} // Dynamic description
+        onConfirm={handleDeleteGroup}
+      />
+      <AddMemberCard isOpen={shareCardOpen} onOpenChange={setShareOpenCard} groupId={selectedGroupId} />
       <GroupDialog isOpen={groupDialogOpen} onOpenChange={setGroupDialogOpen} initialData={initialData} setGroupListRefresh={setGroupListRefresh} />
       <div className="h-screen flex bg-gray-100">
 
@@ -173,15 +200,15 @@ export default function GroupsPage() {
             <div className="flex-1 overflow-y-auto">
               {groupList.map((group) => {
 
-                const finalCount =  group?.unreadMessages?.length;
+                const finalCount = group?.unreadMessages?.length;
                 return (
                   <div
                     key={group._id}
                     onClick={() => {
                       setSelectedGroup(group);
                       handleSelectGroup(group?._id);
-                      if(selectedGroup?._id !== group?._id){
-                           setMessageList([]);
+                      if (selectedGroup?._id !== group?._id) {
+                        dispatch(setCleanMessage());
                       }
                     }}
                     className="flex items-center justify-between px-3 py-2 hover:bg-gray-100 cursor-pointer"
@@ -201,11 +228,11 @@ export default function GroupsPage() {
 
                     {/* 3 DOT */}
                     <div className="relative">
-                     {finalCount > 0 && (
-    <span className="absolute -top-1 right-6 min-w-[16px] h-[16px] px-1 text-[10px] flex items-center justify-center rounded-full bg-red-500 text-white leading-none">
-      {finalCount > 99 ? "99+" : finalCount}
-    </span>
-  )}
+                      {finalCount > 0 && (
+                        <span className="absolute -top-1 right-6 min-w-[16px] h-[16px] px-1 text-[10px] flex items-center justify-center rounded-full bg-red-500 text-white leading-none">
+                          {finalCount > 99 ? "99+" : finalCount}
+                        </span>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -217,12 +244,15 @@ export default function GroupsPage() {
 
                       {openMenuId === group._id && (
                         <div className="absolute right-0 top-6 bg-white border shadow-lg rounded-md w-32 z-50">
-                          <button className="w-full px-3 py-2 text-sm hover:bg-gray-100" onClick={() => { setInitialData(group); setGroupDialogOpen(true) }}>
+                          <button className="w-full px-3 py-2 text-sm hover:bg-gray-100" onClick={(e) => { e.stopPropagation(); setSelectedGroupId(group?._id); setShareOpenCard(true); setOpenMenuId(null) }} >
+                            Add Members
+                          </button>
+                          <button className="w-full px-3 py-2 text-sm hover:bg-gray-100" onClick={(e) => { e.stopPropagation(); setInitialData(group); setGroupDialogOpen(true); setOpenMenuId(null) }}>
                             Edit
                           </button>
 
                           <button
-                            onClick={() => handleDeleteGroup(group._id)}
+                            onClick={(e) => { e.stopPropagation(); setDeleteGroupData(group); setDeleteDialogOpen(true); setOpenMenuId(null) }}
                             className="w-full px-3 py-2 text-sm text-red-500 hover:bg-red-100"
                           >
                             Delete
@@ -252,16 +282,16 @@ export default function GroupsPage() {
 
               <img
                 src={selectedGroup.images?.[0]}
-                className="w-8 h-8 rounded-full"
+                className="w-8 h-8 rounded-full cursor-pointer" onClick={() => { setSelectedGroupId(selectedGroup?._id); setGroupInfoOpen(true) }}
               />
-              <span className="font-semibold">{selectedGroup.title}</span>
+              <span className="font-semibold cursor-pointer" onClick={() => { setSelectedGroupId(selectedGroup?._id); setGroupInfoOpen(true) }}>{selectedGroup.title}</span>
             </div>
 
             {/* CHAT AREA */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
 
-              {messageList.length > 0 ? (
-                messageList.map((m) => {
+              {messageList?.length > 0 ? (
+                messageList?.map((m) => {
                   const sender = m.sender;
 
                   const isMe =

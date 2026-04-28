@@ -2,27 +2,125 @@ import User from "../../models/user.model.js";
 import FriendRequest from "../../models/friendRequest.model.js";
 import type { Request, Response } from "express";
 import { createNotificationInternal } from "./notification.controller.js";
-import {NotificationType} from "../../models/notification.model.js";
+import { NotificationType } from "../../models/notification.model.js";
 import { getIO } from "../../utils/socketHelper.js";
 import Chat from "../../models/chat.model.js";
+
+
+// export const getSuggestedUsers = async (req: Request, res: Response) => {
+//   try {
+//     const { userId } = req.params;
+
+//     if (!userId) return res.status(400).json({ message: "userId is required." });
+
+//     const currentUser = await User.findById(userId).select("+friends");
+//     if (!currentUser) return res.status(404).json({ message: "User not found" });
+
+//     const currentFriends = currentUser.friends?.map((f: any) => f.toString()) || [];
+
+//     const users = await User.find({ _id: { $ne: currentUser._id }, isVerified: true, blocked: false }).select("+friends");
+
+//     const friendRequests = await FriendRequest.find({
+//       $or: [{ from: currentUser._id }, { to: currentUser._id }],
+//     });
+
+//     const requestMap: Record<string, any> = {};
+//     friendRequests.forEach((fr) => {
+//       const otherUserId = fr.from.toString() === userId ? fr.to.toString() : fr.from.toString();
+//       requestMap[otherUserId] = fr;
+//     });
+
+//     const suggestions: any[] = [];
+
+//     const now = new Date();
+//     const cooldownDays = 30;
+
+//     for (let u of users) {
+//       const userIdStr = u._id.toString();
+
+//       if (currentFriends.includes(userIdStr)) continue;
+
+//       const fr = requestMap[userIdStr];
+
+//       if (fr) {
+//         if (fr.status === "accepted" || fr.status === "pending") {
+//           continue;
+//         } else if (fr.status === "rejected") {
+//           const rejectedAt = fr.updatedAt || fr.createdAt;
+//           const diffDays = (now.getTime() - rejectedAt.getTime()) / (1000 * 60 * 60 * 24);
+
+//           if (diffDays < cooldownDays) {
+//             continue;
+//           }
+//         }
+//       }
+//       let score = 0;
+
+//       if (u.city && u.city === currentUser.city) score += 3;
+//       if (u.state && u.state === currentUser.state) score += 2;
+//       if (u.hobbies?.some((h: string) => currentUser.hobbies?.includes(h))) score += 2;
+//       if (u.skills?.some((s: string) => currentUser.skills?.includes(s))) score += 3;
+//       if (u.occupation && u.occupation === currentUser.occupation) score += 1;
+
+//       const userFriends = u.friends?.map((f: any) => f.toString()) || [];
+//       const mutualFriends = userFriends.filter((f: string) => currentFriends.includes(f));
+//       if (mutualFriends.length > 0) score += mutualFriends.length * 2;
+
+//       if (fr && fr.status === "rejected") {
+//         score = Math.max(1, score * 0.5);
+//       }
+//       if (score > 0) {
+//         suggestions.push({
+//           ...u.toObject(),
+//           score,
+//           mutualFriendsCount: mutualFriends.length,
+//           mutualFriends: mutualFriends.slice(0, 3),
+//         });
+//       }
+//     }
+
+//     suggestions.sort((a, b) => b.score - a.score);
+
+//     res.status(200).json(suggestions);
+//   } catch (err: any) {
+//     res.status(500).json({ message: err?.message });
+//   }
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 export const getSuggestedUsers = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    if (!userId) return res.status(400).json({ message: "userId is required." });
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required." });
+    }
 
     const currentUser = await User.findById(userId).select("+friends");
-    if (!currentUser) return res.status(404).json({ message: "User not found" });
+    if (!currentUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    const currentFriends = currentUser.friends?.map((f: any) => f.toString()) || [];
+    const currentFriends =
+      currentUser.friends?.map((f: any) => f.toString()) || [];
 
-    const users = await User.find({ _id: { $ne: currentUser._id }, isVerified:true, blocked: false }).select("+friends");
+    const users = await User.find({ _id: { $ne: currentUser._id }, isVerified: true, blocked: false });
 
-    const friendRequests = await FriendRequest.find({
-      $or: [{ from: currentUser._id }, { to: currentUser._id }],
-    });
+    const friendRequests = await FriendRequest.find({ $or: [{ from: currentUser._id }, { to: currentUser._id }] });
 
     const requestMap: Record<string, any> = {};
     friendRequests.forEach((fr) => {
@@ -37,7 +135,6 @@ export const getSuggestedUsers = async (req: Request, res: Response) => {
 
     for (let u of users) {
       const userIdStr = u._id.toString();
-
       if (currentFriends.includes(userIdStr)) continue;
 
       const fr = requestMap[userIdStr];
@@ -45,48 +142,28 @@ export const getSuggestedUsers = async (req: Request, res: Response) => {
       if (fr) {
         if (fr.status === "accepted" || fr.status === "pending") {
           continue;
-        } else if (fr.status === "rejected") {
+        }
+
+        if (fr.status === "rejected") {
           const rejectedAt = fr.updatedAt || fr.createdAt;
-          const diffDays = (now.getTime() - rejectedAt.getTime()) / (1000 * 60 * 60 * 24);
+          const diffDays =
+            (now.getTime() - rejectedAt.getTime()) /
+            (1000 * 60 * 60 * 24);
 
           if (diffDays < cooldownDays) {
             continue;
           }
         }
       }
-      let score = 0;
 
-      if (u.city && u.city === currentUser.city) score += 3;
-      if (u.state && u.state === currentUser.state) score += 2;
-      if (u.hobbies?.some((h: string) => currentUser.hobbies?.includes(h))) score += 2;
-      if (u.skills?.some((s: string) => currentUser.skills?.includes(s))) score += 3;
-      if (u.occupation && u.occupation === currentUser.occupation) score += 1;
-
-      const userFriends = u.friends?.map((f: any) => f.toString()) || [];
-      const mutualFriends = userFriends.filter((f: string) => currentFriends.includes(f));
-      if (mutualFriends.length > 0) score += mutualFriends.length * 2;
-
-      if (fr && fr.status === "rejected") {
-        score = Math.max(1, score * 0.5);
-      }
-      if (score > 0) {
-        suggestions.push({
-          ...u.toObject(),
-          score,
-          mutualFriendsCount: mutualFriends.length,
-          mutualFriends: mutualFriends.slice(0, 3),
-        });
-      }
+      suggestions.push(u);
     }
 
-    suggestions.sort((a, b) => b.score - a.score);
-
-    res.status(200).json(suggestions);
+    return res.status(200).json(suggestions);
   } catch (err: any) {
-    res.status(500).json({ message: err?.message });
+    return res.status(500).json({ message: err?.message });
   }
 };
-
 
 
 export const sendFriendRequest = async (req: Request, res: Response) => {
@@ -123,6 +200,7 @@ export const sendFriendRequest = async (req: Request, res: Response) => {
 export const acceptFriendRequest = async (req: Request, res: Response) => {
   try {
     const { requestId } = req.params;
+    const io = getIO();
 
     const request = await FriendRequest.findById(requestId);
     if (!request) return res.status(404).json({ message: "Friend request not found." });
@@ -137,8 +215,9 @@ export const acceptFriendRequest = async (req: Request, res: Response) => {
     ]);
 
     const fromUser = await User.findById(request.to);
-        await createNotificationInternal(request.from, request.to, NotificationType.FRIEND_ACCEPT, undefined, `${fromUser?.fullName} friend request accepted.`);
-
+    await createNotificationInternal(request.from, request.to, NotificationType.FRIEND_ACCEPT, undefined, `${fromUser?.fullName} friend request accepted.`);
+    io.to(request.from.toString()).emit("friendRequestAccepted");
+    io.to(request.to.toString()).emit("friendRequestAccepted");
     res.status(200).json({ message: "Friend request accepted." });
   } catch (err: any) {
     res.status(500).json({ message: err.message });
@@ -146,42 +225,13 @@ export const acceptFriendRequest = async (req: Request, res: Response) => {
 };
 
 
-// export const cancelFriendRequest = async (req: Request, res: Response) => {
-//   try {
-//     const { requestId } = req.params;
-
-//     const request = await FriendRequest.findById(requestId);
-//     if (!request) return res.status(404).json({ message: "Friend request not found." });
-
-//     await Promise.all([
-//       User.findByIdAndUpdate(request.from, { $pull: { friends: request.to } }),
-//       User.findByIdAndUpdate(request.to, { $pull: { friends: request.from } }),
-//     ]);
-
-//     await FriendRequest.findByIdAndDelete(requestId);
-
-//     const fromUser = await User.findById(request.to);
-
-//     await createNotificationInternal(
-//       request.from,
-//       request.to,
-//       NotificationType.FRIEND_CANCEL,
-//       undefined,
-//       `${fromUser?.fullName} cancelled the friend request`
-//     );
-
-//     res.status(200).json({ message: "Friend request cancelled." });
-//   } catch (err: any) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-
 export const cancelFriendRequest = async (req: Request, res: Response) => {
   try {
     const { requestId } = req.params;
+    console.log("requestId", requestId);
 
     const request = await FriendRequest.findById(requestId);
+    console.log("request", request);
     if (!request) return res.status(404).json({ message: "Friend request not found." });
 
     // Remove each other from friends list

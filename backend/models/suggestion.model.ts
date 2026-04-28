@@ -1,13 +1,14 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IMessage extends Document {
+export interface ISuggestion extends Document {
   description: string;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  status: 'pending' | 'seen' | 'approved' | 'rejected';
 }
 
-const suggestionSchema: Schema<IMessage> = new Schema(
+const suggestionSchema: Schema<ISuggestion> = new Schema(
   {
     description: {
       type: String,
@@ -20,13 +21,21 @@ const suggestionSchema: Schema<IMessage> = new Schema(
       ref: "User",
       required: true,
     },
+
+    status: {
+      type: String,
+      enum: ['pending', 'seen', 'approved', 'rejected'],
+      default: 'pending',
+    },
+
+
   },
   {
-    timestamps: true, 
+    timestamps: true,
   }
 );
 
-export const Suggestion = mongoose.model<IMessage>(
+export const Suggestion = mongoose.model<ISuggestion>(
   "Suggestion",
   suggestionSchema
 );

@@ -1,48 +1,94 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, DollarSign, TrendingUp } from "lucide-react";
+import { Users, Calendar, DollarSign, TrendingUp, FileText, LayoutGrid, Briefcase, Megaphone, Lightbulb } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { monthlyStats, announcements } from "@/lib/dummy-data";
 import { getAllAnnouncement } from "@/service/announcement";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
 import { setAnnouncementList } from "@/redux-toolkit/slice/announcementSlice";
 import { useEffect, useState } from "react";
-import { getAllUser } from "@/service/auth";
-import {setUserList} from "@/redux-toolkit/slice/userSlice";
-import { setEventList } from "@/redux-toolkit/slice/eventSlice";
-import { getEvent } from "@/service/event";
-import {getCurrentMonthCount} from "@/service/global";
+import { getDashboardStats, getYearlyAnalytics } from "@/service/dashboard";
+import { setDashboardStats, setGraphStats } from "@/redux-toolkit/slice/dashboardSlice";
+import socket from "@/socket/socket";
 
 
 
 export default function DashboardHome() {
-    const [search, setSearch] = useState("");
-   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(8);
-  const [totalPages, setTotalPages] = useState(0);
-    const [memberListRefresh,setMemberListRefresh] = useState(false);
-     const [eventListRefresh, setEventListRefresh] = useState(false);
-      const [announcementListRefresh, setAnnouncementListRefresh] = useState(false);
-   const dispatch = useAppDispatch();
-    const announcementList = useAppSelector((state) => state?.announcement?.announcementList);
-    const memberList = useAppSelector((state)=> state?.user?.userList);
-    const eventList = useAppSelector((state)=> state?.event?.eventList);
+  const [dashboardStatsRefresh, setDashboardStatsRefresh] = useState(false);
+  const [announcementListRefresh, setAnnouncementListRefresh] = useState(false);
+  const dispatch = useAppDispatch();
+  const announcementList = useAppSelector((state) => state?.announcement?.announcementList);
+  const dashboardStats = useAppSelector((state) => state?.dashboard?.dashboardStats);
+  const graphStats = useAppSelector((state) => state?.dashboard?.graphStats);
 
-    const currentMonthEvents = getCurrentMonthCount(eventList, "date");
-    
-const statCards = [
-  { title: "Total Members", value: memberList?.filter((m)=> m?.isVerified === true)?.length, change: `${getCurrentMonthCount(memberList, "createdAt")} this month`, icon: Users, color: "text-primary" },
-  { title: "Events This Month", value: eventList?.length, change: `${getCurrentMonthCount(memberList, "createdAt")} this month`, icon: Calendar, color: "text-secondary" },
-  { title: "Revenue (Mar)", value: "₹95,000", change: "+32%", icon: DollarSign, color: "text-success" },
-  { title: "Growth Rate", value: "12%", change: "Steady growth", icon: TrendingUp, color: "text-info" },
-];
 
- const handleGetEvent = async () => {
+  const statCards = [
+    { title: "Total Members", value: dashboardStats?.users?.total, change: dashboardStats?.users?.active + " active this month", icon: Users, color: "text-primary", bg: "bg-primary/10" },
+    { title: "Total Events", value: dashboardStats?.events?.total, change: dashboardStats?.events?.currentMonth + " this month", icon: Calendar, color: "text-secondary", bg: "bg-secondary/10" },
+    { title: "Total Posts", value: dashboardStats?.posts?.total, change: dashboardStats?.posts?.currentMonth + " this month", icon: FileText, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { title: "Total Groups", value: dashboardStats?.groups?.total, change: dashboardStats?.groups?.currentMonth + " this month", icon: LayoutGrid, color: "text-indigo-500", bg: "bg-indigo-500/10" },
+    { title: "Business Directory", value: dashboardStats?.business?.total, change: dashboardStats?.business?.currentMonth + " this month", icon: Briefcase, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { title: "Announcements", value: dashboardStats?.announcements?.total, change: dashboardStats?.announcements?.currentMonth + " this month", icon: Megaphone, color: "text-rose-500", bg: "bg-rose-500/10" },
+    { title: "Suggestions", value: dashboardStats?.suggestions?.total, change: dashboardStats?.suggestions?.currentMonth + " this month", icon: Lightbulb, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { title: "Business Revenue", value: `₹ ${dashboardStats?.revenue?.total}`, change: `₹ ${dashboardStats?.revenue?.currentMonth}` + " this month", icon: Lightbulb, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+
+  ];
+
+
+  useEffect(() => {
+    socket.on("paymentSuccess", () => {
+      setDashboardStatsRefresh(true);
+    })
+    return () => {
+      socket.off("paymentSuccess");
+    }
+  }, [])
+
+  const handleGetYearlyAnalytics = async () => {
     try {
-      const res = await getEvent();
+      const res = await getYearlyAnalytics();
       console.log(res);
       if (res.status === 200) {
-        dispatch(setEventList(res?.data?.event))
-                setEventListRefresh(false);
+        setDashboardStatsRefresh(false);
+        dispatch(setGraphStats(res?.data?.data));
+      }
+    }
+    catch (err) {
+      console.log(err);
+    }
+  }
+
+  useEffect(() => {
+    if (!graphStats || Object.keys(graphStats)?.length === 0 || dashboardStatsRefresh) {
+      handleGetYearlyAnalytics();
+    }
+  }, [graphStats, dashboardStatsRefresh])
+
+  const handleGetDashboardStats = async () => {
+    try {
+      const res = await getDashboardStats();
+      if (res.status === 200) {
+        setDashboardStatsRefresh(false);
+        dispatch(setDashboardStats(res?.data?.data));
+      }
+    }
+    catch (err) {
+      console.log(err);
+    }
+  }
+
+
+  useEffect(() => {
+    if (!dashboardStats || Object.keys(dashboardStats)?.length === 0 || dashboardStatsRefresh) {
+      handleGetDashboardStats();
+    }
+  }, [dashboardStats, dashboardStatsRefresh])
+
+  const handleGetAllAnnouncements = async () => {
+    try {
+      const res = await getAllAnnouncement();
+      if (res.status === 200) {
+        dispatch(setAnnouncementList(res?.data?.announcements));
+        setAnnouncementListRefresh(false);
       }
     }
     catch (err) {
@@ -50,49 +96,11 @@ const statCards = [
     }
   };
 
-
   useEffect(() => {
-    if (eventList?.length === 0 || eventListRefresh) {
-      handleGetEvent();
+    if (announcementList?.length === 0 || announcementListRefresh) {
+      handleGetAllAnnouncements();
     }
-  }, [eventList?.length, eventListRefresh])
-
-     const handleGetUsers = async () => {
-        try {
-          const res = await getAllUser({ page, perPage, search });
-          if (res.status === 200) {
-            dispatch(setUserList(res?.data?.users));
-            setTotalPages(Math.ceil(res?.data?.total / perPage));
-            setMemberListRefresh(false);
-          }
-        }
-        catch (err) {
-          console.log(err);
-        }
-      }
-      useEffect(() => {
-        if(memberList?.length === 0 || memberListRefresh)
-       { handleGetUsers()}
-      }, [memberList?.length, memberListRefresh]);
-
-  const handleGetAllAnnouncements = async () => {
-      try {
-        const res = await getAllAnnouncement();
-        if (res.status === 200) {
-          dispatch(setAnnouncementList(res?.data?.announcements));
-          setAnnouncementListRefresh(false);
-        }
-      }
-      catch (err) {
-        console.log(err);
-      }
-    };
-
-    useEffect(() => {
-        if (announcementList?.length === 0 || announcementListRefresh) {
-          handleGetAllAnnouncements();
-        }
-      }, [announcementList?.length, announcementListRefresh])
+  }, [announcementList?.length, announcementListRefresh])
 
   return (
     <div className="space-y-6">
@@ -106,7 +114,7 @@ const statCards = [
                   <p className="text-2xl font-display font-bold mt-1">{stat.value}</p>
                   <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                <div className={`w-10 h-10 rounded-lg ${stat.bg || "bg-muted"} flex items-center justify-center`}>
                   <stat.icon className={`h-5 w-5 ${stat.color}`} />
                 </div>
               </div>
@@ -120,7 +128,7 @@ const statCards = [
           <CardHeader><CardTitle className="text-base font-display">Monthly Activity</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={monthlyStats}>
+              <BarChart data={graphStats}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 20% 90%)" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
@@ -136,7 +144,7 @@ const statCards = [
           <CardHeader><CardTitle className="text-base font-display">Revenue Trend</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={monthlyStats}>
+              <LineChart data={graphStats}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 20% 90%)" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
@@ -158,11 +166,10 @@ const statCards = [
                   <h4 className="font-medium text-sm">{ann.title}</h4>
                   <p className="text-xs text-muted-foreground mt-0.5">{ann.description}</p>
                 </div>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium shrink-0 ml-3 ${
-                  ann.priority === "high" ? "bg-destructive/10 text-destructive" :
+                <span className={`px-2 py-0.5 rounded text-xs font-medium shrink-0 ml-3 ${ann.priority === "high" ? "bg-destructive/10 text-destructive" :
                   ann.priority === "medium" ? "bg-warning/10 text-warning" :
-                  "bg-muted text-muted-foreground"
-                }`}>{ann.priority}</span>
+                    "bg-muted text-muted-foreground"
+                  }`}>{ann.priority}</span>
               </div>
             ))}
           </div>

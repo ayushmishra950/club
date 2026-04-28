@@ -1,7 +1,7 @@
-import {createSlice, PayloadAction} from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface eventType {
-    eventList : any[];
+  eventList: any[];
 }
 
 type ToggleInterestPayload = {
@@ -9,43 +9,47 @@ type ToggleInterestPayload = {
   userId: string;
 };
 
-const initialState:eventType = {
-  eventList : []
+const initialState: eventType = {
+  eventList: []
 };
 
 
 const eventSlice = createSlice({
-    name:"Event",
-    initialState,
-    reducers:{
-        setEventList : (state, action:PayloadAction<Event[]>) => {
-          state.eventList = action.payload;
-        },
+  name: "Event",
+  initialState,
+  reducers: {
+    setEventList: (state, action: PayloadAction<Event[]>) => {
+      state.eventList = action.payload;
+    },
 
-       setInterestedOrNotInterestedCandidate: (state, action:PayloadAction<ToggleInterestPayload>) => {
-  const { eventId, userId } = action.payload;
+    setInterestedOrNotInterestedCandidate: (state, action: PayloadAction<ToggleInterestPayload>) => {
+      const { eventId, userId } = action.payload;
 
-  const event = state.eventList.find((e) => e._id === eventId);
+      const event = state.eventList.find((e) => e._id === eventId);
 
-  if (event) {
-    const index = event.interestedCandidate?.indexOf(userId);
+      if (event) {
+        const index = event.interestedCandidate?.indexOf(userId);
 
-    if (index > -1) {
-      // ❌ remove (already exists)
-      event.interestedCandidate.splice(index, 1);
-    } else {
-      // ✅ add (not exists)
-      if (!event.interestedCandidate) {
-        event.interestedCandidate = [];
+        if (index > -1) {
+          // ❌ remove (already exists)
+          event.interestedCandidate.splice(index, 1);
+        } else {
+          // ✅ add (not exists)
+          if (!event.interestedCandidate) {
+            event.interestedCandidate = [];
+          }
+          event.interestedCandidate.push(userId);
+        }
       }
-      event.interestedCandidate.push(userId);
+    },
+
+    setNewEvent: (state, action: PayloadAction<any>) => {
+      state.eventList.unshift(action.payload);
     }
   }
-}
-    }
 });
 
-export const {setEventList, setInterestedOrNotInterestedCandidate} = eventSlice.actions;
+export const { setEventList, setInterestedOrNotInterestedCandidate, setNewEvent } = eventSlice.actions;
 
 export default eventSlice.reducer;
 

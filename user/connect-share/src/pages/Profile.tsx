@@ -29,6 +29,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState<'posts' | 'about' | 'photos' | 'friends'>('posts');
   const totalUnread = mockChats.reduce((acc, c) => acc + c.unread, 0);
   const [friendList, setFriendList] = useState([]);
+  const [allFriendRequestStatusList, setAllFriendRequestStatusList] = useState([]);
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [userListRefresh, setUserListRefresh] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
@@ -36,10 +37,9 @@ const Profile = () => {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const dispatch = useAppDispatch();
   const postList = useAppSelector((state) => state?.post?.postList);
-  const userData = useAppSelector((state)=> state?.user?.userData);
+  const userData = useAppSelector((state) => state?.user?.userData);
   const premiumUser = userData?.premiumUser === "premium";
   const userPosts = postList?.filter((p) => p?.createdBy?._id === userId);
-
 
   const isTrue = userId === user?._id;
   const birthday = getBirthdayInfo(userData?.dob);
@@ -47,15 +47,20 @@ const Profile = () => {
     (post.images || []).filter(url => isImage(url))
   ) || [];
 
+  const relation = allFriendRequestStatusList?.find((fr) => fr?._id === user?._id);
+  const currentStatus = relation?.status;
 
   useEffect(() => {
     socket.on("paymentRequestAccepted", (data) => {
-      console.log("paymentRequestAccepted", data);
-        dispatch(setUpdateUser(data));
+      dispatch(setUpdateUser(data));
     });
+    socket.on("friendRequestAccepted", () => {
+      handleGetUser();
+    })
 
     return () => {
       socket.off("paymentRequestAccepted");
+      socket.off("friendRequestAccepted");
     }
   }, [])
 
@@ -90,9 +95,15 @@ const Profile = () => {
     if (!userId) return;
     try {
       const res = await getSingleUser(userId);
+      console.log(res);
       if (res.status === 200) {
         dispatch(setUserData(res?.data?.data));
-        setFriendList(res?.data?.friends);
+        const acceptedFriends = res?.data?.friends?.filter(
+          (f) => f.status === "accepted"
+        );
+
+        setFriendList(acceptedFriends);
+        setAllFriendRequestStatusList(res?.data?.friends);
       }
     }
     catch (err) {
@@ -122,7 +133,6 @@ const Profile = () => {
     if (!userId) return;
     try {
       const res = await getSuggestedUsers(userId);
-      console.log(res);
       if (res.status === 200) {
         setSuggestedUsers(res?.data);
         setUserListRefresh(false);
@@ -172,10 +182,11 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if(Object.keys(userData || {}).length === 0 || userId){
+    if (Object.keys(userData || {}).length === 0 || userId) {
       handleGetUser();
     }
   }, [userId, userListRefresh]);
+
   return (
     <>
       <PaymentDialog open={paymentDialogOpen} setOpen={setPaymentDialogOpen} />
@@ -218,7 +229,7 @@ const Profile = () => {
                 className="h-32 w-32 rounded-full object-cover ring-4 ring-background"
               />
 
-              { (premiumUser) && <div className="absolute -top-1 -right-1">
+              {(premiumUser) && <div className="absolute -top-1 -right-1">
 
                 <div className="absolute inset-0 rounded-full bg-yellow-400 opacity-30 blur-md"></div>
 
@@ -247,34 +258,63 @@ const Profile = () => {
                 <Users className="h-4 w-4" /> {friendList?.length} connections
               </p>
             </div>
-            {isTrue && <div className="flex flex-col items-center sm:items-end gap-4 w-full sm:w-auto mt-2 sm:mt-0">
-              <div className='flex gap-2'>
-                <button onClick={() => { navigate(`/userDialog/${userData?._id}`) }} className="flex items-center gap-2 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
-                  <Edit2 className="h-4 w-4" /> Edit Profile
-                </button>
-                <button
-                  onClick={() => { setLogoutDialogOpen(true) }}
-                  className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-700 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </button>
-              </div>
-              {/* Mobile Premium Card */}
-              {(premiumUser || (userData?.paymentImage && userData?.transitionNumber)) ? null : (
-                <div className="sm:hidden bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 shadow-sm w-full text-left">
-                  <h3 className="text-base font-semibold text-yellow-700">
-                    Upgrade to Premium
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-                    Unlock exclusive club features, priority access to events, and premium member benefits to enhance your experience.
-                  </p>
-                  <button onClick={() => { setPaymentDialogOpen(true) }} className="mt-3 w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-medium py-2 rounded-lg hover:opacity-90 transition">
-                    Go Premium
+            <div className="flex flex-col items-center sm:items-end gap-4 w-full sm:w-auto mt-2 sm:mt-0">
+              {!isTrue && (
+                <>
+                  {currentStatus === "pending" ? (
+                    <button
+                      disabled
+                      className="flex items-center gap-2 rounded-lg bg-gray-400 px-4 py-2 text-sm font-semibold text-white cursor-not-allowed"
+                    >
+                      Requested
+                    </button>
+                  ) : currentStatus === "accepted" ? (
+                    <button
+                      onClick={() => handleCancelRequest(relation?.requestId)}
+                      className="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      Unfollow
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleSendRequest(userData?._id)}
+                      className="flex items-center gap-2 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Follow
+                    </button>
+                  )}
+                </>
+              )}
+              {isTrue && <>
+                <div className='flex gap-2'>
+                  <button onClick={() => { navigate(`/userDialog/${userData?._id}`) }} className="flex items-center gap-2 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
+                    <Edit2 className="h-4 w-4" /> Edit Profile
+                  </button>
+                  <button
+                    onClick={() => { setLogoutDialogOpen(true) }}
+                    className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-700 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
                   </button>
                 </div>
-              )} 
-            </div>}
+                {/* Mobile Premium Card */}
+                {(premiumUser || (userData?.paymentImage && userData?.transitionNumber)) ? null : (
+                  <div className="sm:hidden bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 shadow-sm w-full text-left">
+                    <h3 className="text-base font-semibold text-yellow-700">
+                      Upgrade to Premium
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+                      Unlock exclusive club features, priority access to events, and premium member benefits to enhance your experience.
+                    </p>
+                    <button onClick={() => { setPaymentDialogOpen(true) }} className="mt-3 w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-medium py-2 rounded-lg hover:opacity-90 transition">
+                      Go Premium
+                    </button>
+                  </div>
+                )}
+              </>}
+            </div>
           </div>
 
           {/* Desktop Premium Banner */}
@@ -419,28 +459,28 @@ const Profile = () => {
                   </div>
                 ) : (
                   friendList?.map(friend => (
-                    <div key={friend?.to?._id} className="bg-card rounded-xl shadow-card p-4 flex items-center gap-4 animate-fade-in">
+                    <div key={friend?._id} className="bg-card rounded-xl shadow-card p-4 flex items-center gap-4 animate-fade-in">
                       <div className="relative">
-                        <img src={friend?.to?.profileImage} alt="" className="h-14 w-14 rounded-full object-cover" />
-                        {friend?.to?.isOnline && (
+                        <img src={friend?.profileImage} alt="" className="h-14 w-14 rounded-full object-cover" />
+                        {friend?.isOnline && (
                           <div className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-green-500 ring-2 ring-card" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-heading font-semibold text-foreground">{friend?.to?.fullName}</p>
-                        <p className="text-sm text-muted-foreground">{friend?.to?.occupation}</p>
+                        <p className="font-heading font-semibold text-foreground">{friend?.fullName}</p>
+                        <p className="text-sm text-muted-foreground">{friend?.occupation}</p>
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                           <Users className="h-3 w-3" />
                           {/* {getMutualCount(friend.id)}  */}
                           mutual friends
                         </p>
                       </div>
-                      <button
+                      {userId === user?._id && <button
                         onClick={() => handleCancelRequest(friend._id)}
                         className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                       >
                         <UserMinus className="h-3.5 w-3.5" /> Unfriend
-                      </button>
+                      </button>}
                     </div>
                   ))
                 )}

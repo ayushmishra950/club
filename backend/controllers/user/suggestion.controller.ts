@@ -9,7 +9,7 @@ import { createNotificationInternal } from "../user/notification.controller.js";
 
 export const addSuggestion = async (req: Request, res: Response) => {
   try {
-    const {userId, description } = req.body;
+    const { userId, description } = req.body;
     const io = getIO();
 
     if (!description) {
@@ -19,9 +19,10 @@ export const addSuggestion = async (req: Request, res: Response) => {
     const newSuggestion = await Suggestion.create({
       description,
       createdBy: userId,
+      status: "pending",
     });
 
-     await newSuggestion.populate("createdBy", "fullName email profileImage");
+    await newSuggestion.populate("createdBy", "fullName email profileImage");
 
     io.emit("addSuggestion", newSuggestion);
 
@@ -41,8 +42,12 @@ export const addSuggestion = async (req: Request, res: Response) => {
 // ✅ GET ALL
 export const getAllSuggestions = async (req: Request, res: Response) => {
   try {
-    const suggestions = await Suggestion.find()
-      .populate("createdBy", "fullName email profileImage") // optional
+    const userId = req.params.id;
+    if (!userId) res.status(400).json({ message: "UserId not found." });
+    const suggestions = await Suggestion.find({
+      createdBy: userId,
+    })
+      .populate("createdBy", "fullName email profileImage")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({

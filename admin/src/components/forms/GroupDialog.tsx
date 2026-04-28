@@ -7,18 +7,18 @@ import { Button } from "../ui/button";
 import { Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createGroup, updateGroup } from "@/service/group";
-import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "../ui/select";
 import { validateGroupForm } from "../hook/group.form";
 
 const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh }) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({ title: "", description: "", files: [], type: "public", location: "" });
+  const [formData, setFormData] = useState({ title: "", description: "", files: [], location: "" });
   const [previewList, setPreviewList] = useState<{ url: string; type: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState<any>({});
   const isEdit = Boolean(initialData);
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   // 🔁 Edit Mode
   useEffect(() => {
@@ -27,7 +27,6 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
         title: initialData?.title || "",
         description: initialData?.description || "",
         files: [],
-        type: initialData?.type || "public",
         location: initialData?.location || "",
       });
 
@@ -43,7 +42,7 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
   }, [isOpen, initialData]);
 
   const resetForm = () => {
-    setFormData({ title: "", description: "", files: [], type: "public", location: "" });
+    setFormData({ title: "", description: "", files: [], location: "" });
     setPreviewList([]);
   };
 
@@ -59,7 +58,7 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
 
       let obj = { ...formData, files: [...formData.files, ...files] };
       setFormData(obj);
-      if(isSubmitted){
+      if (isSubmitted) {
         const validationErrors = validateGroupForm(obj);
         setErrors(validationErrors);
       }
@@ -86,11 +85,11 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
 
     const updatedFiles = [...formData.files];
     updatedFiles.splice(index, 1);
-    const obj = { ...formData, files: updatedFiles }; 
+    const obj = { ...formData, files: updatedFiles };
 
     setPreviewList(updatedPreview);
     setFormData(obj);
-    if(isSubmitted){
+    if (isSubmitted) {
       const validationErrors = validateGroupForm(obj);
       setErrors(validationErrors);
     };
@@ -114,7 +113,6 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
       const form = new FormData();
       form.append("title", formData.title);
       form.append("description", formData.description);
-      form.append("type", formData.type);
       form.append("location", formData.location);
 
       formData.files.forEach((file) => {
@@ -192,22 +190,6 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
             {errors?.description && <p className="text-xs mt-1 text-red-500">{errors?.description}</p>}
           </div>
           <div className="my-1 flex gap-4">
-            {/* 🔹 Event Type */}
-            <div className="flex-1">
-              <Label>Select Type</Label>
-              <Select
-                value={formData?.type}
-                onValueChange={(value) => setFormData({ ...formData, type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="private">Private</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             {/* 🔹 Location Input */}
             <div className="flex-1">
@@ -224,55 +206,55 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
           </div>
 
           {/* Media */}
-       <div className="my-4 flex items-start gap-4">
-  {/* File Input - Chhota width */}
-  <div className="w-1/3">
-    <Label>Images / Videos</Label>
-    <Input
-      type="file"
-      multiple
-      accept="image/*,video/*"
-      ref={fileRef}
-      onChange={handleFileChange}
-      className="w-full"
-    />
-    {errors?.images && (
-      <p className="text-xs mt-1 text-red-500">{errors?.images}</p>
-    )}
-  </div>
+          <div className="my-4 flex items-start gap-4">
+            {/* File Input - Chhota width */}
+            <div className="w-1/3">
+              <Label>Images / Videos</Label>
+              <Input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                ref={fileRef}
+                onChange={handleFileChange}
+                className="w-full"
+              />
+              {errors?.images && (
+                <p className="text-xs mt-1 text-red-500">{errors?.images}</p>
+              )}
+            </div>
 
-  {/* Preview - Horizontal row */}
-  {previewList.length > 0 && (
-    <div className="flex gap-2 overflow-x-auto flex-1 mt-6">
-      {previewList.slice(0, 4).map((file, i) => (
-        <div
-          key={i}
-          className="relative w-16 h-16 flex-shrink-0 bg-black rounded overflow-hidden"
-        >
-          {file.type.startsWith("video") ? (
-            <video
-              src={file.url}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <img
-              src={file.url}
-              className="w-full h-full object-cover"
-            />
-          )}
+            {/* Preview - Horizontal row */}
+            {previewList.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto flex-1 mt-6">
+                {previewList.slice(0, 4).map((file, i) => (
+                  <div
+                    key={i}
+                    className="relative w-16 h-16 flex-shrink-0 bg-black rounded overflow-hidden"
+                  >
+                    {file.type.startsWith("video") ? (
+                      <video
+                        src={file.url}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={file.url}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
 
-          {/* Remove button */}
-          <div
-            onClick={() => removeFile(i)}
-            className="absolute top-1 right-1 bg-red-500 rounded-full cursor-pointer p-0.5"
-          >
-            <X className="w-3 h-3 text-white" />
+                    {/* Remove button */}
+                    <div
+                      onClick={() => removeFile(i)}
+                      className="absolute top-1 right-1 bg-red-500 rounded-full cursor-pointer p-0.5"
+                    >
+                      <X className="w-3 h-3 text-white" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
           {/* Submit */}
           <div className="flex justify-end mt-3">
             <Button

@@ -5,7 +5,7 @@ import { getIO } from "../../utils/socketHelper.js";
 
 export const addSuggestion = async (req: Request, res: Response) => {
   try {
-    const {userId, description } = req.body;
+    const { userId, description } = req.body;
     const io = getIO();
 
     if (!description) {
@@ -35,7 +35,7 @@ export const addSuggestion = async (req: Request, res: Response) => {
 export const getAllSuggestions = async (req: Request, res: Response) => {
   try {
     const suggestions = await Suggestion.find()
-      .populate("createdBy", "fullName email profileImage") 
+      .populate("createdBy", "fullName email profileImage")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -95,6 +95,37 @@ export const deleteSuggestion = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       message: "Suggestion deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+      error,
+    });
+  }
+};
+
+
+
+export const updateSuggestionStatus = async (req: Request, res: Response) => {
+  try {
+    const { id, status } = req.body;
+    console.log(id, status);
+
+    const io = getIO();
+
+    const suggestion = await Suggestion.findByIdAndUpdate(id, { status }, { new: true })
+      .populate("createdBy", "fullName email profileImage");
+
+    if (!suggestion) {
+      return res.status(404).json({
+        message: "Suggestion not found",
+      });
+    }
+    io.to(suggestion?.createdBy?._id?.toString()).emit("updateSuggestionStatus", suggestion);
+
+    return res.status(200).json({
+      message: "Suggestion status updated successfully",
+      data: suggestion,
     });
   } catch (error) {
     return res.status(500).json({

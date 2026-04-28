@@ -38,7 +38,8 @@ axiosInstance.interceptors.response.use(
 
     if (
       error.response?.status === 401 &&
-      !originalRequest._retry
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/login")
     ) {
 
       originalRequest._retry = true;

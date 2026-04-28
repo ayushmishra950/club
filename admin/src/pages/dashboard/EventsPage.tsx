@@ -1,22 +1,18 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Calendar, MapPin, Users, Clock, Edit, Delete, Trash } from "lucide-react";
-import { events as initialEvents } from "@/lib/dummy-data";
+import { Plus, Edit, Trash } from "lucide-react";
 import EventDialog from "@/components/forms/EventDialog";
 import { getEvent, deleteEvent } from "@/service/event";
 import DeleteCard from "@/components/cards/DeleteCard";
 import { useToast } from "@/hooks/use-toast";
 import socket from "@/socket/socket";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
-import { setEventList, setInterestedAndNotCandidate } from "@/redux-toolkit/slice/eventSlice";
-
+import { setEventList, setInterestedAndNotCandidate, setNewEvent } from "@/redux-toolkit/slice/eventSlice";
 
 
 export default function EventsPage() {
   const { toast } = useToast();
-  const [events, setEvents] = useState(initialEvents);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [initialData, setIntialData] = useState(null);
@@ -25,29 +21,24 @@ export default function EventsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const dispatch = useAppDispatch();
-  const eventList = useAppSelector((state)=> state?.event?.eventList);
+  const eventList = useAppSelector((state) => state?.event?.eventList);
 
-  
- useEffect(() => {
-  socket.on("interestedcandidateFromEvent", (data) => {
-     dispatch(setInterestedAndNotCandidate(data));
-    // setEventList((prevList) =>
-    //   prevList.map((event) => {
-    //     if (event._id === eventId) {
-    //       const alreadyExists = event.interestedCandidate.includes(userId);
 
-    //       return {
-    //         ...event, interestedCandidate: alreadyExists ? event.interestedCandidate.filter((id) => id !== userId) : [...event.interestedCandidate, userId],
-    //       };
-    //     }
-    //     return event;
-    //   })
-    // );
-  });
-  return () => {
-    socket.off("interestedcandidateFromEvent");
-  };
-}, []);
+  useEffect(() => {
+    socket.on("interestedcandidateFromEvent", (data) => {
+      dispatch(setInterestedAndNotCandidate(data));
+    });
+
+    socket.on("event", (data) => {
+      if (data) {
+        dispatch(setNewEvent(data));
+      }
+    })
+    return () => {
+      socket.off("interestedcandidateFromEvent");
+      socket.off("event")
+    };
+  }, []);
 
 
 
@@ -75,7 +66,6 @@ export default function EventsPage() {
   const handleGetEvent = async () => {
     try {
       const res = await getEvent();
-      console.log(res);
       if (res.status === 200) {
         dispatch(setEventList(res?.data?.event))
         setEventListRefresh(false);
@@ -114,97 +104,130 @@ export default function EventsPage() {
             </DialogTrigger>
           </Dialog>
         </div>
+        {eventList?.length > 0 ? (
+          <>
+            {/* ================= DESKTOP TABLE ================= */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
+                <thead className="bg-gray-100 text-left text-sm">
+                  <tr>
+                    <th className="p-3">Image</th>
+                    <th className="p-3">Title</th>
+                    <th className="p-3">Category</th>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Time</th>
+                    <th className="p-3">Location</th>
+                    <th className="p-3">Attending</th>
+                    <th className="p-3">Type</th>
+                    <th className="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
 
-        {eventList?.length > 0 ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {
-  eventList?.map((event) => (
-    <Card
-      key={event?._id}
-      className="shadow-card hover:shadow-elevated transition-shadow relative overflow-hidden"
-    >
-      {/* 🔥 Cover Image */}
-      {event?.coverImage && (
-        <div className="w-full h-40 overflow-hidden">
-          <img
-            src={event.coverImage}
-            alt={event.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
+                <tbody>
+                  {eventList?.map((event) => (
+                    <tr key={event?._id} className="border-t hover:bg-gray-50">
+                      <td className="p-3">
+                        {event?.coverImage ? (
+                          <img
+                            src={event.coverImage}
+                            className="w-12 h-12 rounded-full object-cover border"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-200" />
+                        )}
+                      </td>
 
-      {/* 🔥 Top Right Icons */}
-      <div className="absolute top-3 right-3 flex gap-2 z-10">
-        <button
-          onClick={() => {
-            setIntialData(event);
-            setEventDialogOpen(true);
-          }}
-          className="p-1 rounded hover:bg-gray-100 bg-white/80 backdrop-blur"
-        >
-          <Edit className="w-4 h-4 md:w-5 md:h-5" />
-        </button>
-        <button
-          onClick={() => {
-            setDeleteEvents(event);
-            setDeleteDialogOpen(true);
-          }}
-          className="p-1 rounded hover:bg-red-100 bg-white/80 backdrop-blur"
-        >
-          <Trash className="w-4 h-4 md:w-5 md:h-5 text-red-500" />
-        </button>
-      </div>
+                      <td className="p-3">{event.title}</td>
+                      <td className="p-3">{event.category}</td>
+                      <td className="p-3">
+                        {new Date(event.date)?.toLocaleDateString()}
+                      </td>
+                      <td className="p-3">
+                        {new Date(event.date).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </td>
+                      <td className="p-3">{event.location}</td>
+                      <td className="p-3">
+                        {event?.interestedCandidate?.length}
+                      </td>
+                      <td className="p-3">{event?.type}</td>
 
-      <CardContent className="p-5">
-        <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-primary/10 text-primary mb-3">
-          {event.category}
-        </span>
+                      <td className="p-3">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setIntialData(event);
+                              setEventDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
 
-        <h3 className="font-display font-semibold text-lg mb-2">
-          {event.title}
-        </h3>
+                          <button
+                            onClick={() => {
+                              setDeleteEvents(event);
+                              setDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash className="w-4 h-4 text-red-500" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-        <p className="text-sm text-muted-foreground mb-4">
-          {event.description}
-        </p>
+            {/* ================= MOBILE VIEW ================= */}
+            <div className="md:hidden space-y-3">
+              {eventList?.map((event) => (
+                <div
+                  key={event?._id}
+                  className="border rounded-lg p-3 flex gap-3 items-start"
+                >
+                  {/* Image */}
+                  <div>
+                    {event?.coverImage ? (
+                      <img
+                        src={event.coverImage}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gray-200" />
+                    )}
+                  </div>
 
-        <div className="space-y-2 text-xs text-muted-foreground mb-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-3.5 w-3.5 text-secondary" />
-            {new Date(event.date)?.toLocaleDateString()}
-          </div>
+                  {/* Content */}
+                  <div className="flex-1">
+                    {/* Title */}
+                    <h3 className="font-medium text-sm">{event.title}</h3>
 
-          <div className="flex items-center gap-2">
-            <Clock className="h-3.5 w-3.5 text-secondary" />
-            {new Date(event.date).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })}
-          </div>
+                    {/* Date + Time */}
+                    <p className="text-xs text-gray-500">
+                      {new Date(event.date)?.toLocaleDateString()} • {new Date(event.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true, })}</p>
 
-          <div className="flex items-center gap-2">
-            <MapPin className="h-3.5 w-3.5 text-secondary" />
-            {event.location}
-          </div>
+                    {/* Location */}
+                    <p className="text-xs text-gray-500">📍 {event.location} </p>
+                  </div>
 
-          <div className="flex items-center gap-2">
-            <Users className="h-3.5 w-3.5 text-secondary" />
-            {event?.interestedCandidate?.length} attending
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Users className="h-3.5 w-3.5 text-secondary" />
-            {event?.type}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  ))
-}
-        </div> :
-          <p className="flex items-center justify-center h-[400px]">No Data Found.</p>
-        }
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2">
+                    <button onClick={() => { setIntialData(event); setEventDialogOpen(true); }} className="p-1 rounded hover:bg-gray-100"><Edit className="w-4 h-4" /></button>
+                    <button onClick={() => { setDeleteEvents(event); setDeleteDialogOpen(true); }} className="p-1 rounded hover:bg-red-100"><Trash className="w-4 h-4 text-red-500" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="flex items-center justify-center h-[400px]">
+            No Data Found.
+          </p>
+        )}
       </div>
     </>
   );

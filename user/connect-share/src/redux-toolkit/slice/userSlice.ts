@@ -22,9 +22,10 @@ const userSlice = createSlice({
         setUserData: (state, action) => {
             state.userData = action.payload;
         },
+
         setUpdateUser: (state, action) => {
-            if (state.userData?._id === action.payload._id) {
-                state.userData.premiumUser = "premium";
+            if (state.userData?._id === action.payload?.user?._id) {
+                state.userData = action.payload?.user;
             }
         }
     }

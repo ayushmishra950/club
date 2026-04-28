@@ -1,7 +1,11 @@
 import User from "../../models/user.model.js";
 import Donation from "../../models/donate.model.js";
 import Event from "../../models/event.model.js";
-import type {Request, Response} from "express";
+import Post from "../../models/post.model.js";
+import Group from "../../models/group.model.js";
+import Announcement from "../../models/announcement.model.js";
+import { Suggestion } from "../../models/suggestion.model.js";
+import type { Request, Response } from "express";
 
 
 export const dashboardSummary = async (req: Request, res: Response) => {
@@ -49,12 +53,12 @@ export const dashboardSummary = async (req: Request, res: Response) => {
     // 8️⃣ Send response
     return res.status(200).json({
       totalUser,
-      userPercentage,            
+      userPercentage,
       totalDonation,
-      currentMonthDonation,     
-      donationPercentage,     
+      currentMonthDonation,
+      donationPercentage,
       totalEvent,
-      currentMonthEventCount    
+      currentMonthEventCount
     });
 
   } catch (err: unknown) {
@@ -70,7 +74,7 @@ export const getMonthlyDonationSummary = async (req: Request, res: Response) => 
     const now = new Date();
     const currentYear = now.getFullYear();
 
-    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     // 1️⃣ Aggregate donations for current year
     const result = await Donation.aggregate([
@@ -108,5 +112,222 @@ export const getMonthlyDonationSummary = async (req: Request, res: Response) => 
   } catch (err: unknown) {
     if (err instanceof Error) return res.status(500).json({ message: err.message });
     return res.status(500).json({ message: "Unknown error" });
+  }
+};
+
+
+
+export const getDashboardStats = async (req: Request, res: Response) => {
+  try {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    // ================= USER STATS =================
+    const totalUsers = await User.countDocuments();
+
+    const activeUsers = await User.countDocuments({
+      blocked: false,
+      isVerified: true,
+    });
+
+    // 🏢 BUSINESS USERS (NEW)
+    const totalBusinessUsers = await User.countDocuments({
+      accountType: "business",
+      businessVerified: true,
+    });
+
+    const currentMonthBusinessUsers = await User.countDocuments({
+      accountType: "business",
+      businessVerified: true,
+      createdAt: { $gte: startOfMonth },
+    });
+
+    // ================= EVENT STATS =================
+    const totalEvents = await Event.countDocuments();
+
+    const currentMonthEvents = await Event.countDocuments({
+      createdAt: { $gte: startOfMonth },
+    });
+
+    // ================= POST STATS =================
+    const totalPosts = await Post.countDocuments();
+
+    const currentMonthPosts = await Post.countDocuments({
+      createdAt: { $gte: startOfMonth },
+    });
+
+    // ================= GROUP STATS =================
+    const totalGroups = await Group.countDocuments();
+
+    const currentMonthGroups = await Group.countDocuments({
+      createdAt: { $gte: startOfMonth },
+    });
+
+    // ================= ANNOUNCEMENT STATS =================
+    const totalAnnouncements = await Announcement.countDocuments();
+
+    const currentMonthAnnouncements = await Announcement.countDocuments({
+      createdAt: { $gte: startOfMonth },
+    });
+
+    // ================= SUGGESTION STATS =================
+    const totalSuggestions = await Suggestion.countDocuments();
+
+    const currentMonthSuggestions = await Suggestion.countDocuments({
+      createdAt: { $gte: startOfMonth },
+    });
+
+    // ================= REVENUE STATS (NEW) =================
+    const totalRevenueData = await User.aggregate([
+      {
+        $match: {
+          premiumUser: "premium",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: {
+            $sum: { $toDouble: "$amount" },
+          },
+        },
+      },
+    ]);
+
+    const currentMonthRevenueData = await User.aggregate([
+      {
+        $match: {
+          premiumUser: "premium",
+          createdAt: { $gte: startOfMonth },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: {
+            $sum: { $toDouble: "$amount" },
+          },
+        },
+      },
+    ]);
+
+    const totalRevenue = totalRevenueData[0]?.totalRevenue || 0;
+    const currentMonthRevenue =
+      currentMonthRevenueData[0]?.totalRevenue || 0;
+
+    // ================= RESPONSE =================
+    return res.status(200).json({
+      success: true,
+      data: {
+        users: {
+          total: totalUsers,
+          active: activeUsers,
+        },
+        business: {
+          total: totalBusinessUsers,
+          currentMonth: currentMonthBusinessUsers,
+        },
+        events: {
+          total: totalEvents,
+          currentMonth: currentMonthEvents,
+        },
+        posts: {
+          total: totalPosts,
+          currentMonth: currentMonthPosts,
+        },
+        groups: {
+          total: totalGroups,
+          currentMonth: currentMonthGroups,
+        },
+        announcements: {
+          total: totalAnnouncements,
+          currentMonth: currentMonthAnnouncements,
+        },
+        suggestions: {
+          total: totalSuggestions,
+          currentMonth: currentMonthSuggestions,
+        },
+        revenue: {
+          total: totalRevenue,
+          currentMonth: currentMonthRevenue,
+        },
+      },
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+
+export const getYearlyAnalytics = async (req: Request, res: Response) => {
+  try {
+    const year = Number(req.query.year) || new Date().getFullYear();
+
+    const months = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+
+    const result = [];
+
+    for (let i = 0; i < 12; i++) {
+      const startDate = new Date(year, i, 1);
+      const endDate = new Date(year, i + 1, 0, 23, 59, 59, 999);
+
+      // ================= USERS =================
+      const userCount = await User.countDocuments({
+        createdAt: { $gte: startDate, $lte: endDate },
+      });
+
+      // ================= EVENTS =================
+      const eventCount = await Event.countDocuments({
+        createdAt: { $gte: startDate, $lte: endDate },
+      });
+
+      // ================= REVENUE (NEW LOGIC) =================
+      const revenueData = await User.aggregate([
+        {
+          $match: {
+            premiumUser: "premium",
+            createdAt: { $gte: startDate, $lte: endDate },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: {
+              $sum: { $toDouble: "$amount" }
+            },
+          },
+        },
+      ]);
+
+      const revenue = revenueData[0]?.totalRevenue || 0;
+
+      result.push({
+        month: months[i],
+        year,
+        members: userCount,
+        events: eventCount,
+        revenue: revenue,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

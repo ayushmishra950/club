@@ -19,21 +19,21 @@ export const getChatUsers = async (req: Request, res: Response) => {
 
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
-   const chats = await Chat.find({
-  members: { $in: [userObjectId] },
-}).populate([
-  {
-    path: "lastMessage",
-    populate: {
-      path: "sender",
-      select: "fullName profileImage isOnline lastSeen",
-    },
-  },
-  {
-    path: "groupId",
-    select: "title description images members",
-  },
-]);
+    const chats = await Chat.find({
+      members: { $in: [userObjectId] },
+    }).sort({ updatedAt: -1 }).populate([
+      {
+        path: "lastMessage",
+        populate: {
+          path: "sender",
+          select: "fullName profileImage isOnline lastSeen",
+        },
+      },
+      {
+        path: "groupId",
+        select: "title description images members",
+      },
+    ]);
 
     const friendsData = await Promise.all(
       chats.map(async (chat) => {
@@ -53,6 +53,7 @@ export const getChatUsers = async (req: Request, res: Response) => {
             friend: null,
             lastMessage: chat.lastMessage || null,
             deliveredMessages: [],
+            updatedAt: chat.updatedAt,
           };
         }
 
@@ -81,6 +82,7 @@ export const getChatUsers = async (req: Request, res: Response) => {
           group: null,
           lastMessage: chat.lastMessage || null,
           deliveredMessages,
+          updatedAt: chat.updatedAt,
         };
       })
     );
@@ -213,7 +215,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     let imageUrl = null;
 
     if (file && file.buffer) {
-      imageUrl = await uploadToCloudinary( file.buffer, file.mimetype, "gallery");
+      imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "gallery");
     }
 
     const message = await Message.create({
@@ -222,15 +224,15 @@ export const sendMessage = async (req: Request, res: Response) => {
       text: text || "",
       seenBy: [senderId],
       status: "delivered",
-      images: imageUrl ? [imageUrl] : [], 
+      images: imageUrl ? [imageUrl] : [],
     });
 
     await message.populate("sender", "fullName profileImage");
 
-    const chat = await Chat.findByIdAndUpdate(chatId, { lastMessage: message._id});
+    const chat = await Chat.findByIdAndUpdate(chatId, { lastMessage: message._id, updatedAt: new Date() }, { new: true });
 
-    io.emit("messageRefresh", message);
-    io.emit("messageAdminRefresh", { newMessage: message, groupId: chat?.groupId, chatId});
+    io.emit("messageRefresh", message, chat?.updatedAt);
+    io.emit("messageAdminRefresh", { newMessage: message, groupId: chat?.groupId, chatId, updatedAt: chat?.updatedAt });
 
     return res.status(201).json({
       message: "message sent successfully.",

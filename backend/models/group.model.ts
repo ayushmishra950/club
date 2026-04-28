@@ -3,13 +3,13 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IGroup extends Document {
   title: string;
   description: string;
-  images: string[]; 
-  imagesType:string;
+  images: string[];
+  imagesType: string;
   members: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
-  type:string;
-  location:string;
+  type: string;
+  location: string;
 }
 
 const GroupSchema = new Schema<IGroup>(
@@ -25,13 +25,8 @@ const GroupSchema = new Schema<IGroup>(
       default: "",
       trim: true,
     },
-    type:{
-      type:String,
-      enum:["public","private"],
-      default:"public"
-    },
-    location:{
-        type:String,
+    location: {
+      type: String,
     },
 
     images: [

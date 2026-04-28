@@ -9,20 +9,21 @@ import announcementReducer from "../slice/announcementSlice";
 import suggestionReducer from "../slice/suggestionSlice";
 import notificationReducer from "../slice/notificationSlice";
 import groupReducer from "../slice/groupSlice";
-
+import dashboardReducer from "../slice/dashboardSlice";
 
 export const store = configureStore({
-    reducer:{
-        event:eventReducer,
-        user:userReducer,
-        donation:donationReducer,
-        gallery:galleryReducer,
-        category:categoryReducer,
-        post:postReducer,
+    reducer: {
+        event: eventReducer,
+        user: userReducer,
+        donation: donationReducer,
+        gallery: galleryReducer,
+        category: categoryReducer,
+        post: postReducer,
         announcement: announcementReducer,
         suggestion: suggestionReducer,
-        notification:notificationReducer,
-        group:groupReducer
+        notification: notificationReducer,
+        group: groupReducer,
+        dashboard: dashboardReducer,
     }
 });
 

@@ -16,7 +16,11 @@ export const loginUser = async(obj:any) => {
 
 
 export const updateUser = async (obj: any) => {
-    const res = await api.put(`${base_url}/user/auth/update`, obj);
+    const res = await api.put(`${base_url}/user/auth/update`, obj, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        }
+    });
     return res;
 }
 

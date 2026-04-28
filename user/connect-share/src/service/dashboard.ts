@@ -7,14 +7,16 @@ const base_url = import.meta.env.VITE_BACKEND_URL;
 //==================================================================================================
 
 
-export const getDashboardSummary = async() =>{
+export const getDashboardSummary = async () => {
     const res = await api.get(`${base_url}/admin/dashboard/summary`);
     return res;
 };
 
 
 
-export const getDashboardGraph = async() =>{
+export const getDashboardGraph = async () => {
     const res = await api.get(`${base_url}/admin/dashboard/graph`);
     return res;
 };
+
+

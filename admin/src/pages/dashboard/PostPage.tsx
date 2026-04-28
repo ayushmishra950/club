@@ -19,20 +19,20 @@ export default function AnnouncementsPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const dispatch = useAppDispatch();
-    const postList = useAppSelector((state)=> state?.post?.postList);
+    const postList = useAppSelector((state) => state?.post?.postList);
 
 
     const handleDeletePost = async () => {
         try {
             setDeleteLoading(true);
-             const res = await  deletePost(deletePosts?._id);
+            const res = await deletePost(deletePosts?._id);
 
-             if(res?.status === 200){
-              toast({title:"User Deleted Successfully.", description:res?.data?.message});
-              setPostListRefresh(true);
-              setDeleteDialogOpen(false);
-              setDeletePosts(null);
-             }
+            if (res?.status === 200) {
+                toast({ title: "User Deleted Successfully.", description: res?.data?.message });
+                setPostListRefresh(true);
+                setDeleteDialogOpen(false);
+                setDeletePosts(null);
+            }
         }
         catch (err) {
             console.log(err);
@@ -41,8 +41,7 @@ export default function AnnouncementsPage() {
             setDeleteLoading(false);
         }
 
-    }
-
+    };
 
     const handleGetPosts = async () => {
         try {
@@ -59,8 +58,8 @@ export default function AnnouncementsPage() {
     };
 
     useEffect(() => {
-        if(postList?.length === 0 || postListRefresh){
-        handleGetPosts();
+        if (postList?.length === 0 || postListRefresh) {
+            handleGetPosts();
         }
     }, [postList?.length, postListRefresh])
 
@@ -90,126 +89,178 @@ export default function AnnouncementsPage() {
                 </div>
 
                 {/* Grid Container */}
+
                 <div className="max-w-6xl mx-auto px-4">
                     {postList?.length > 0 ? (
-                        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                            {postList.map((post) => (
-                                <Card
-                                    key={post._id}
-                                    className="shadow-card hover:shadow-elevated transition-shadow relative flex flex-col"
-                                >
-                                    {/* Image Section */}
-                                    <div className="relative w-full h-48">
-                                        {post.images?.length > 0 && (
-                                            <div className="w-full rounded-t overflow-hidden">
-                                                {(() => {
-                                                    const url = post.images[0]; // pehli file
-                                                    const extension = url.split(".").pop()?.toLowerCase();
-                                                    const isImage = ["jpg", "jpeg", "png", "webp", "gif"].includes(extension || "");
-                                                    const isVideo = ["mp4", "webm", "mov"].includes(extension || "");
-                                                    const isAudio = ["mp3", "wav", "ogg"].includes(extension || "");
+                        <>
+                            {/* ================= DESKTOP TABLE ================= */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
+                                    <thead className="bg-gray-100 text-left text-sm">
+                                        <tr>
+                                            <th className="p-3">Media</th>
+                                            <th className="p-3">Title</th>
+                                            <th className="p-3">Type</th>
+                                            <th className="p-3">Date</th>
+                                            <th className="p-3">Likes</th>
+                                            <th className="p-3">Comments</th>
+                                            <th className="p-3 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
 
-                                                    if (isImage) {
-                                                        return (
+                                    <tbody>
+                                        {postList.map((post) => {
+                                            const url = post.images?.[0];
+                                            const extension = url?.split(".").pop()?.toLowerCase();
+
+                                            const isImage = ["jpg", "jpeg", "png", "webp", "gif"].includes(extension || "");
+                                            const isVideo = ["mp4", "webm", "mov"].includes(extension || "");
+
+                                            return (
+                                                <tr key={post._id} className="border-t hover:bg-gray-50">
+                                                    {/* Media */}
+                                                    <td className="p-3">
+                                                        {url && isImage && (
                                                             <img
                                                                 src={url}
-                                                                alt={post.title}
-                                                                className="w-full h-[200px] object-cover rounded-t"
+                                                                className="w-12 h-12 rounded-full object-cover border"
                                                             />
-                                                        );
-                                                    }
+                                                        )}
 
-                                                    if (isVideo) {
-                                                        return (
+                                                        {url && isVideo && (
                                                             <video
                                                                 src={url}
-                                                                controls
-                                                                className="w-full h-[200px] object-cover rounded-t"
-                                                                autoPlay
+                                                                className="w-12 h-12 rounded-full object-cover"
                                                             />
-                                                        );
-                                                    }
+                                                        )}
+                                                    </td>
 
-                                                    if (isAudio) {
-                                                        return (
-                                                            <audio
-                                                                src={url}
-                                                                controls
-                                                                className="w-full mt-2"
-                                                            />
-                                                        );
-                                                    }
+                                                    {/* Title */}
+                                                    <td className="p-3 font-medium">{post.title}</td>
 
-                                                    return null;
-                                                })()}
+                                                    {/* Type */}
+                                                    <td className="p-3 text-sm">{post.type}</td>
+
+                                                    {/* Date */}
+                                                    <td className="p-3 text-sm">
+                                                        {new Date(post.createdAt)?.toLocaleDateString()}
+                                                    </td>
+
+                                                    {/* Likes */}
+                                                    <td className="p-3 text-sm">{post?.likes?.length}</td>
+
+                                                    {/* Comments */}
+                                                    <td className="p-3 text-sm">{post?.comments?.length}</td>
+
+                                                    {/* Actions */}
+                                                    <td className="p-3">
+                                                        <div className="flex justify-end gap-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setIntialData(post);
+                                                                    setPostDialogOpen(true);
+                                                                }}
+                                                                className="p-1.5 hover:bg-gray-100 rounded"
+                                                            >
+                                                                <Edit className="w-4 h-4" />
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => {
+                                                                    setDeletePosts(post);
+                                                                    setDeleteDialogOpen(true);
+                                                                }}
+                                                                className="p-1.5 hover:bg-red-100 rounded"
+                                                            >
+                                                                <Trash className="w-4 h-4 text-red-500" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* ================= MOBILE VIEW ================= */}
+                            <div className="md:hidden space-y-3">
+                                {postList.map((post) => {
+                                    const url = post.images?.[0];
+                                    const extension = url?.split(".").pop()?.toLowerCase();
+
+                                    const isImage = ["jpg", "jpeg", "png", "webp", "gif"].includes(extension || "");
+                                    const isVideo = ["mp4", "webm", "mov"].includes(extension || "");
+
+                                    return (
+                                        <div
+                                            key={post._id}
+                                            className="border rounded-lg p-3 flex gap-3 items-start"
+                                        >
+                                            {/* Media */}
+                                            <div>
+                                                {url && isImage && (
+                                                    <img
+                                                        src={url}
+                                                        className="w-12 h-12 rounded-full object-cover"
+                                                    />
+                                                )}
+
+                                                {url && isVideo && (
+                                                    <video
+                                                        src={url}
+                                                        className="w-12 h-12 rounded-full object-cover"
+                                                    />
+                                                )}
                                             </div>
-                                        )}
 
-                                        {/* Important Heart Icon on Image */}
-                                        {post.important && (
-                                            <div className="absolute top-2 left-2 bg-white/70 rounded-full p-1">
-                                                <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
-                                                    <Heart className="h-4 w-4 text-red-500" />
-                                                </div>
+                                            {/* Content */}
+                                            <div className="flex-1">
+                                                <h3 className="font-medium text-sm">{post.title}</h3>
+
+                                                <p className="text-xs text-gray-500">
+                                                    {new Date(post.createdAt)?.toLocaleDateString()}
+                                                </p>
+
+                                                <p className="text-xs text-gray-500">
+                                                    {post.type}
+                                                </p>
+
+                                                <p className="text-xs text-gray-500">
+                                                    ❤️ {post?.likes?.length} • 💬 {post?.comments?.length}
+                                                </p>
                                             </div>
-                                        )}
 
-                                        {/* Edit/Delete Buttons on Image */}
-                                        <div className="absolute top-2 right-2 flex gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    setIntialData(post);
-                                                    setPostDialogOpen(true);
-                                                }}
-                                                className="p-1 rounded hover:bg-gray-100"
-                                            >
-                                                <Edit className="w-4 h-4 md:w-5 md:h-5" />
-                                            </button>
-                                            <button className="p-1 rounded hover:bg-red-100" onClick={()=>{setDeletePosts(post);setDeleteDialogOpen(true);}}>
-                                                <Trash className="w-4 h-4 md:w-5 md:h-5 text-red-500" />
-                                            </button>
+                                            {/* Actions */}
+                                            <div className="flex flex-col gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setIntialData(post);
+                                                        setPostDialogOpen(true);
+                                                    }}
+                                                    className="p-1 rounded hover:bg-gray-100"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setDeletePosts(post);
+                                                        setDeleteDialogOpen(true);
+                                                    }}
+                                                    className="p-1 rounded hover:bg-red-100"
+                                                >
+                                                    <Trash className="w-4 h-4 text-red-500" />
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    {/* Card Content */}
-                                    <CardContent className="p-4 flex flex-col h-full">
-                                        {/* Title */}
-                                        <h3 className="font-display font-semibold text-lg mb-1">{post.title}</h3>
-
-                                        {/* Description */}
-                                        <p className="text-sm text-muted-foreground mb-3">{<p className="text-sm text-muted-foreground mb-4">
-                                            {post.description && post.description.length > 50
-                                                ? post.description.slice(0, 50) + "…"
-                                                : post.description}
-                                        </p>}</p>
-
-                                        {/* Post Details */}
-                                        <div className="mt-auto spacEe-y-2 text-xs text-muted-foreground">
-                                            <div className="flex items-center gap-2">
-                                                <Users className="h-3.5 w-3.5 text-secondary" />
-                                                {post.type}
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="h-3.5 w-3.5 text-secondary" />
-                                                {new Date(post.createdAt)?.toLocaleDateString()}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <HeartCrack className="h-3.5 w-3.5 text-secondary" />
-                                                {post?.likes?.length} Likes
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Users className="h-3.5 w-3.5 text-secondary" />
-                                                {post?.comments?.length} Comments
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
                     ) : (
                         <div className="flex items-center justify-center h-64">
-                            <p className="text-center text-muted-foreground">No Data Found.</p>
+                            <p className="text-muted-foreground">No Data Found.</p>
                         </div>
                     )}
                 </div>

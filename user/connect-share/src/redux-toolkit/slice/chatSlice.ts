@@ -13,9 +13,8 @@ const chatSlice = createSlice({
     setUserChatList: (state, action: PayloadAction<any[]>) => {
       state.userChatList = action.payload;
     },
-
-    setMessageRefresh: (state, action: PayloadAction<{ newMessage: any }>) => {
-      const { newMessage } = action.payload;
+    setMessageRefresh: (state, action: PayloadAction<{ newMessage: any, updatedAt: string }>) => {
+      const { newMessage, updatedAt } = action.payload;
 
       if (!newMessage || !newMessage.chatId) return;
 
@@ -23,17 +22,31 @@ const chatSlice = createSlice({
 
         if (!chat || !chat.chatId) return chat;
 
-        if (chat.chatId === newMessage.chatId) {
+        if (chat.chatId?.toString() === newMessage.chatId?.toString()) {
 
-          const deliveredMessages = Array.isArray(chat.deliveredMessages) ? chat.deliveredMessages : [];
+          const deliveredMessages = Array.isArray(chat.deliveredMessages)
+            ? chat.deliveredMessages
+            : [];
 
-          const updatedDelivered = deliveredMessages.filter((dm) => dm._id !== newMessage._id).concat(newMessage.status !== "seen" ? [newMessage] : []);
+          const updatedDelivered = deliveredMessages
+            .filter((dm) => dm._id?.toString() !== newMessage._id?.toString())
+            .concat(newMessage.status !== "seen" ? [newMessage] : []);
 
-          return { ...chat, deliveredMessages: [...updatedDelivered] };
+          return {
+            ...chat,
+            lastMessage: newMessage,
+            deliveredMessages: updatedDelivered,
+            updatedAt: updatedAt ?? new Date().toISOString(),
+          };
         }
 
         return chat;
       });
+      state.userChatList = [...state.userChatList].sort(
+        (a, b) =>
+          new Date(b.updatedAt || 0).getTime() -
+          new Date(a.updatedAt || 0).getTime()
+      );
     },
 
     setUnreadCountRemove: (state, action: PayloadAction<{ chat: any }>) => {
@@ -45,10 +58,10 @@ const chatSlice = createSlice({
       });
     },
 
-    setMessageList: (state, action:PayloadAction<any[]>) => {
+    setMessageList: (state, action: PayloadAction<any[]>) => {
       state.messageList = action.payload
     },
-    setNewMessageAdd: (state,action:PayloadAction<any>)=>{
+    setNewMessageAdd: (state, action: PayloadAction<any>) => {
       state.messageList.push(action.payload);
     }
 

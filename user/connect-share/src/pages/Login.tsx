@@ -50,6 +50,8 @@ export default function Login() {
         socket.emit("joinRoom", res?.data?.data?._id);
         toast({ title: "Login Successfully.", description: res?.data?.message });
         navigate("/home");
+        setFormData({});
+        setIsSubmited(false);
       }
     }
     catch (err) {

@@ -12,7 +12,7 @@ import Notification, { NotificationType } from "../models/notification.model.js"
 import Group from "../models/group.model.js";
 
 const getUnreadCount = async (userId: string) => {
-  const chats = await Chat.find({ members: userId });
+  const chats = await Chat.find({ members: userId }).sort({ updatedAt: -1 });
   const chatIds = chats.map(c => c._id);
 
   const count = await Message.countDocuments({
@@ -96,12 +96,7 @@ export const initSocket = (server: HTTPServer) => {
     socket.on("typingChat", () => {
       io.emit("typingChat");
     });
-
-    socket.on("event", () => {
-      io.emit("event");
-    });
-
-    socket.on("interestedcandidateFromEvent", (obj)=>{
+    socket.on("interestedcandidateFromEvent", (obj) => {
       io.emit("interestedcandidateFromEvent", obj);
     })
 
@@ -151,91 +146,93 @@ export const initSocket = (server: HTTPServer) => {
       }
     });
 
-   socket.on("notificationSeen", async (userId) => {
-  try {
-    if (!userId) return;
+    socket.on("notificationSeen", async (userId) => {
+      try {
+        if (!userId) return;
 
-    const admin = await Admin.findById(userId);
+        const admin = await Admin.findById(userId);
 
-    if (admin) {
-      await Notification.updateMany(
-        { type: "suggestion", isRead: false },
-        { $set: { isRead: true } }
-      );
-    } else {
-      await Notification.updateMany(
-        { receiver: userId, isRead: false },
-        { $set: { isRead: true } }
-      );
+        if (admin) {
+          await Notification.updateMany(
+            { type: "suggestion", isRead: false },
+            { $set: { isRead: true } }
+          );
+        } else {
+          await Notification.updateMany(
+            { receiver: userId, isRead: false },
+            { $set: { isRead: true } }
+          );
 
-      await Notification.updateMany(
-        { type: "announcement", isRead: false },
-        { $set: { isRead: true } }
-      );
-    }
+          await Notification.updateMany(
+            { type: "announcement", isRead: false },
+            { $set: { isRead: true } }
+          );
+        }
 
-    const notifications = await Notification.find({
-      $or: [{ receiver: userId }, { type: "announcement" }, { type: "suggestion" }]
-    })
-      .populate("sender", "fullName profileImage")
-      .populate("receiver", "fullName profileImage")
-      .sort({ createdAt: -1 });
-    io.to(userId).emit("notificationSeen", notifications);
+        const notifications = await Notification.find({
+          $or: [{ receiver: userId }, { type: "announcement" }, { type: "suggestion" }]
+        })
+          .populate("sender", "fullName profileImage")
+          .populate("receiver", "fullName profileImage")
+          .sort({ createdAt: -1 });
+        io.to(userId).emit("notificationSeen", notifications);
 
-  } catch (error) {
-    console.error("notificationSeen error:", error);
-  }
-});
+      } catch (error) {
+        console.error("notificationSeen error:", error);
+      }
+    });
 
     socket.on("businessVerify", (userId) => {
       if (!userId) return;
       io.to(userId).emit("businessVerify");
     });
 
-socket.on("adminMessageSeen", async (groupId) => {
-  try {
-    if (!groupId) return;
+    socket.on("adminMessageSeen", async (groupId) => {
+      try {
+        if (!groupId) return;
 
-    const chat = await Chat.findOne({ groupId });
-
-    if (chat) {
-      await Message.updateMany(
-        { chatId: chat._id, status: { $ne: "seen" } },
-        { $set: { status: "seen" } }
-      );
-    }
-
-    const groups = await Group.find()
-      .populate("members", "fullName email profileImage")
-      .sort({ createdAt: -1 });
-
-    const groupsWithMessages = await Promise.all(
-      groups.map(async (group) => {
-        const chat = await Chat.findOne({ groupId: group._id });
-
-        let unreadMessages:any = [];
+        const chat = await Chat.findOne({ groupId });
 
         if (chat) {
-          unreadMessages = await Message.find({
-            chatId: chat._id,
-            status: { $ne: "seen" },
-          }).sort({ createdAt: -1 });
+          await Message.updateMany(
+            { chatId: chat._id, status: { $ne: "seen" } },
+            { $set: { status: "seen" } }
+          );
         }
 
-        return {
-          ...group.toObject(),
-          chatId: chat ? chat._id : null,
-          unreadMessages, 
-        };
-      })
-    );
+        const groups = await Group.find()
+          .populate("members", "fullName email profileImage")
+          .sort({ createdAt: -1 });
 
-    io.emit("adminMessageSeen", groupsWithMessages);
+        const groupsWithMessages = await Promise.all(
+          groups.map(async (group) => {
+            const chat = await Chat.findOne({ groupId: group._id });
 
-  } catch (error) {
-    console.error("adminMessageSeen error:", error);
-  }
-});
+            let unreadMessages: any = [];
+
+            if (chat) {
+              unreadMessages = await Message.find({
+                chatId: chat._id,
+                status: { $ne: "seen" },
+                sender: { $ne: null },
+              }).sort({ createdAt: -1 });
+            }
+
+            return {
+              ...group.toObject(),
+              chatId: chat ? chat._id : null,
+              unreadMessages,
+              updatedAt: chat ? chat.updatedAt : group.updatedAt,
+            };
+          })
+        );
+
+        io.emit("adminMessageSeen", groupsWithMessages);
+
+      } catch (error) {
+        console.error("adminMessageSeen error:", error);
+      }
+    });
 
     // ================= DISCONNECT =================
     socket.on("disconnect", async () => {

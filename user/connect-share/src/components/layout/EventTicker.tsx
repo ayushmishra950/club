@@ -2,11 +2,22 @@ import React, { useEffect, useState } from "react";
 import { getLatestEvent } from "@/service/event";
 import { Calendar, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import socket from "@/socket/socket";
 
 const EventTicker: React.FC = () => {
     const [event, setEvent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        socket.on("event", (data) => {
+            setEvent(data);
+        })
+
+        return () => {
+            socket.off("event");
+        }
+    }, [])
 
     useEffect(() => {
         const fetchLatestEvent = async () => {

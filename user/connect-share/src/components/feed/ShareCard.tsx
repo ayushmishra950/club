@@ -20,29 +20,45 @@ const ShareModal = ({ isOpen, onOpenChange, post }) => {
         if (!isOpen) setSelectedUsers([]);
     }, [isOpen]);
 
+
+    const getShareUrl = () => {
+        return `${window.location.origin}/post/${post?._id}`;
+    };
+
+    const handleSocialShare = (platform: string) => {
+        const url = encodeURIComponent(getShareUrl());
+        const text = encodeURIComponent(post?.title || "Check this out");
+
+        let shareLink = "";
+
+        switch (platform) {
+            case "whatsapp":
+                shareLink = `https://wa.me/?text=${text}%20${url}`;
+                break;
+            case "facebook":
+                shareLink = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+                break;
+            case "twitter":
+                shareLink = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+                break;
+            case "instagram":
+                alert("Instagram direct share web se possible nahi hai 😅");
+                return;
+        }
+
+        window.open(shareLink, "_blank");
+    };
+
     const toggleSelectUser = (id: string) => {
-        setSelectedUsers(prev =>
-            prev.includes(id)
-                ? prev.filter(x => x !== id)
-                : [...prev, id]
-        );
+        setSelectedUsers(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
     };
 
     // ---------------- SHARE POST ----------------
     const handleSharePost = async () => {
         if (!user?._id || !post?._id || !selectedUsers.length) return;
-
         try {
-            const obj = {
-                fromId: user?._id,
-                toId: selectedUsers,
-                postId: post?._id,
-                activeTab: activeTab,
-
-            };
-            console.log(obj)
+            const obj = { fromId: user?._id, toId: selectedUsers, postId: post?._id, activeTab: activeTab };
             const res = await sharePost(obj);
-
             if (res.status === 200) {
                 toast({ title: "Post Shared", description: res?.data?.message });
                 onOpenChange(false);
@@ -134,8 +150,8 @@ const ShareModal = ({ isOpen, onOpenChange, post }) => {
                         <button
                             onClick={() => setActiveTab("single")}
                             className={`flex-1 py-1 rounded-md text-sm ${activeTab === "single"
-                                    ? "bg-blue-500 text-white"
-                                    : "bg-gray-100"
+                                ? "bg-blue-500 text-white"
+                                : "bg-gray-100"
                                 }`}
                         >
                             Single
@@ -144,8 +160,8 @@ const ShareModal = ({ isOpen, onOpenChange, post }) => {
                         <button
                             onClick={() => setActiveTab("group")}
                             className={`flex-1 py-1 rounded-md text-sm ${activeTab === "group"
-                                    ? "bg-blue-500 text-white"
-                                    : "bg-gray-100"
+                                ? "bg-blue-500 text-white"
+                                : "bg-gray-100"
                                 }`}
                         >
                             Group
@@ -171,35 +187,55 @@ const ShareModal = ({ isOpen, onOpenChange, post }) => {
                         >
                             <div className="flex items-center gap-3">
                                 <img
-                                    src={
-                                        item.isGroup
-                                            ? item?.group?.images?.[0]
-                                            : item?.friend?.profileImage
-                                    }
+                                    src={item.isGroup ? item?.group?.images?.[0] : item?.friend?.profileImage}
                                     className="h-10 w-10 rounded-full object-cover"
                                 />
 
-                                <span>
-                                    {item.isGroup
-                                        ? item?.group?.title
-                                        : item?.friend?.fullName}
-                                </span>
+                                <span>{item.isGroup ? item?.group?.title : item?.friend?.fullName}</span>
                             </div>
 
                             <input
                                 type="checkbox"
-                                checked={selectedUsers.includes(
-                                    item.isGroup ? item.chatId : item.friend?._id
-                                )}
-                                onChange={() =>
-                                    toggleSelectUser(
-                                        item.isGroup ? item.chatId : item.friend?._id
-                                    )
-                                }
+                                checked={selectedUsers.includes(item.isGroup ? item.chatId : item.friend?._id)}
+                                onChange={() => toggleSelectUser(item.isGroup ? item.chatId : item.friend?._id)}
                                 className="h-5 w-5 accent-blue-500"
                             />
                         </div>
                     ))}
+                </div>
+                {/* SOCIAL SHARE */}
+                <div className="px-4 p-3 border-t">
+                    <p className="text-sm font-semibold mb-2">Or share via</p>
+
+                    <div className="flex gap-3 justify-between">
+                        <button
+                            onClick={() => handleSocialShare("whatsapp")}
+                            className="flex-1 py-2 bg-green-500 text-white rounded-md text-sm"
+                        >
+                            WhatsApp
+                        </button>
+
+                        <button
+                            onClick={() => handleSocialShare("facebook")}
+                            className="flex-1 py-2 bg-blue-600 text-white rounded-md text-sm"
+                        >
+                            Facebook
+                        </button>
+
+                        <button
+                            onClick={() => handleSocialShare("twitter")}
+                            className="flex-1 py-2 bg-black text-white rounded-md text-sm"
+                        >
+                            Twitter
+                        </button>
+
+                        <button
+                            onClick={() => handleSocialShare("instagram")}
+                            className="flex-1 py-2 bg-pink-500 text-white rounded-md text-sm"
+                        >
+                            Instagram
+                        </button>
+                    </div>
                 </div>
 
                 {/* FOOTER */}

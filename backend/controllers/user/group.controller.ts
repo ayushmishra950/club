@@ -13,7 +13,10 @@ import { getIO } from "../../utils/socketHelper.js";
 // ========================
 export const getAllGroups = async (req: Request, res: Response) => {
   try {
-    const groups = await Group.find().populate("members", "fullName email profileImage").sort({ createdAt: -1 });
+    const groups = await Group.find()
+      .populate("members", "fullName email profileImage")
+      .populate("createdBy", "fullName email profileImage")
+      .sort({ createdAt: -1 });
     return res.status(200).json({ groups });
   } catch (err: any) {
     console.error(err);
@@ -70,11 +73,15 @@ export const toggleMember = async (req: Request, res: Response) => {
 
     await group.save();
 
-    io.emit("addAnRemoveUserFromGroup", req.body);
+    const populatedGroup = await group.populate([
+      { path: "createdBy", select: "fullName email profileImage" },
+      { path: "members", select: "fullName email profileImage" }
+    ]);
+    io.emit("addMembersToGroup", populatedGroup);
 
     return res.status(200).json({
       message,
-      group,
+      group: populatedGroup,
     });
   } catch (err: any) {
     console.error(err);

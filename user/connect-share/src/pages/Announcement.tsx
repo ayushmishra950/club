@@ -15,9 +15,9 @@ const AnnouncementPage = () => {
   const dispatch = useAppDispatch();
   const announcementList = useAppSelector((state)=> state?.announcement?.announcementList);
 
+  
   useEffect(()=>{
     socket.on("announcement", (data) => {
-        console.log(data);
       dispatch(setNewAnnouncement(data));
     });
     return () => {

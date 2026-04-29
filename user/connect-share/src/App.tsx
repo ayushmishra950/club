@@ -113,6 +113,8 @@ import AnnouncementPage from "@/pages/Announcement.tsx";
 
 import socket from "./socket/socket.ts";
 import { useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
+import { setUpdateSuggestion, incrementUnreadCount } from "@/redux-toolkit/slice/suggestionSlice";
 
 const queryClient = new QueryClient();
 
@@ -153,6 +155,7 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
 
 
 const App = () => {
+  const dispatch = useAppDispatch();
 
   // ✅ socket global join (always safe)
   useEffect(() => {
@@ -162,6 +165,33 @@ const App = () => {
       socket.emit("joinRoom", user._id);
     }
   }, []);
+
+  // ✅ GLOBAL SUGGESTION SOCKET LISTENERS (always active, not tied to modal)
+  useEffect(() => {
+    // ✅ For status changes (data update AND count increment)
+    const handleStatusUpdate = (data: any) => {
+      if (data?._id) {
+        dispatch(setUpdateSuggestion(data));
+        dispatch(incrementUnreadCount()); // ✅ Increment for status changes
+      }
+    };
+
+    // ✅ For replies only (both data update AND count increment)
+    const handleReplyUpdate = (data: any) => {
+      if (data?._id) {
+        dispatch(setUpdateSuggestion(data));
+        dispatch(incrementUnreadCount()); // ✅ Increment for replies
+      }
+    };
+
+    socket.on("updateSuggestionStatus", handleStatusUpdate);
+    socket.on("suggestionReply", handleReplyUpdate);
+
+    return () => {
+      socket.off("updateSuggestionStatus", handleStatusUpdate);
+      socket.off("suggestionReply", handleReplyUpdate);
+    };
+  }, [dispatch]);
 
 
   return (

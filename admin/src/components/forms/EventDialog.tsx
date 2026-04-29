@@ -22,6 +22,7 @@ interface Event {
     category: string;
     coverImage: string | File;
     type: "public" | "private";
+    isPinned: boolean;
 }
 
 const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh }) => {
@@ -43,7 +44,16 @@ const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh })
         if (initialData && isOpen) {
             console.log(initialData)
             setPreview(initialData?.coverImage);
-            setFormData({ title: initialData?.title, type:"public", coverImage: initialData?.coverImage, description: initialData?.description, category: initialData?.category, date: formatDateTimeLocal(initialData?.date), location: initialData?.location });
+            setFormData({ 
+                title: initialData?.title, 
+                type: "public", 
+                coverImage: initialData?.coverImage, 
+                description: initialData?.description, 
+                category: initialData?.category, 
+                date: formatDateTimeLocal(initialData?.date), 
+                location: initialData?.location,
+                isPinned: initialData?.isPinned || false
+            });
         }
         else if (isOpen) {
     setFormData({
@@ -53,7 +63,8 @@ const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh })
         location: "",
         category: "",
         coverImage: "",
-        type: "public"   // ✅ default yaha set karo
+        type: "public",
+        isPinned: false
     });
     setPreview(null);
 }
@@ -183,6 +194,18 @@ const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh })
                                     }}><X className="w-[18px] h-[18px] mt-0.5 ml-0.4" /></div>
                                 </div>}
                             </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 my-4">
+                            <input
+                                type="checkbox"
+                                id="isPinned"
+                                name="isPinned"
+                                checked={formData?.isPinned}
+                                onChange={(e) => setFormData({ ...formData, isPinned: e.target.checked })}
+                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <Label htmlFor="isPinned" className="cursor-pointer font-semibold text-blue-600">Pin this Event (Show on Ticker)</Label>
                         </div>
 
 

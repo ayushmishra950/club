@@ -9,9 +9,22 @@ const EventTicker: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    const fetchLatestEvent = async () => {
+        try {
+            const res = await getLatestEvent();
+            if (res.status === 200 && res.data.success) {
+                setEvent(res.data.event);
+            }
+        } catch (error) {
+            console.error("Error fetching latest event:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        socket.on("event", (data) => {
-            setEvent(data);
+        socket.on("event", () => {
+            fetchLatestEvent();
         })
 
         return () => {
@@ -20,19 +33,6 @@ const EventTicker: React.FC = () => {
     }, [])
 
     useEffect(() => {
-        const fetchLatestEvent = async () => {
-            try {
-                const res = await getLatestEvent();
-                if (res.status === 200 && res.data.success) {
-                    setEvent(res.data.event);
-                }
-            } catch (error) {
-                console.error("Error fetching latest event:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchLatestEvent();
     }, []);
 

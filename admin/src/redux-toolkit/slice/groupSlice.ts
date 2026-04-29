@@ -96,11 +96,23 @@ const groupSlice = createSlice({
           group.members = action.payload.members;
         }
       }
-    }
+    },
+    setDeleteGroup: (state, action: PayloadAction<string>) => {
+      state.groupList = state.groupList.filter(
+        (group) => group._id !== action.payload
+      );
+    },
+    setUpdateGroupDetail: (state, action: PayloadAction<any>) => {
+      const index = state.groupList.findIndex(g => g._id === action.payload?._id);
+
+      if (index !== -1) {
+        state.groupList[index] = action.payload;
+      }
+    },
   }
 });
 
-export const { setGroupList, setAddAnRemoveUserGroup, setUpdateGroup, setNewUnReadMessage, setMessageList, setCleanMessage, setNewGroup } = groupSlice.actions;
+export const { setGroupList, setAddAnRemoveUserGroup, setUpdateGroupDetail, setDeleteGroup, setUpdateGroup, setNewUnReadMessage, setMessageList, setCleanMessage, setNewGroup } = groupSlice.actions;
 
 export default groupSlice.reducer;
 

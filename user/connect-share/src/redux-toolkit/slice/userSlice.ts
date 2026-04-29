@@ -7,11 +7,11 @@ const initialState = {
     userData: null
 };
 
-
+ 
 const userSlice = createSlice({
     name: "User",
     initialState,
-    reducers: {
+    reducers: { 
         setUserList: (state, action) => {
             state.userList = action.payload;
         },
@@ -29,7 +29,7 @@ const userSlice = createSlice({
             }
         }
     }
-});
+}); 
 
 export const { setUserList, setUserCount, setUserData, setUpdateUser } = userSlice.actions;
 

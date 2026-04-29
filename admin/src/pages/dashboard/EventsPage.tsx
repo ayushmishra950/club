@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash } from "lucide-react";
+import { Plus, Edit, Trash, Pin } from "lucide-react";
 import EventDialog from "@/components/forms/EventDialog";
 import { getEvent, deleteEvent } from "@/service/event";
 import DeleteCard from "@/components/cards/DeleteCard";
@@ -119,6 +119,7 @@ export default function EventsPage() {
                     <th className="p-3">Location</th>
                     <th className="p-3">Attending</th>
                     <th className="p-3">Type</th>
+                    <th className="p-3 text-center">Pinned</th>
                     <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -154,6 +155,15 @@ export default function EventsPage() {
                         {event?.interestedCandidate?.length}
                       </td>
                       <td className="p-3">{event?.type}</td>
+                      <td className="p-3 text-center">
+                        {event?.isPinned ? (
+                          <div className="flex justify-center">
+                            <Pin className="w-4 h-4 text-blue-600 fill-blue-600" />
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 text-xs">No</span>
+                        )}
+                      </td>
 
                       <td className="p-3">
                         <div className="flex justify-end gap-2">
@@ -204,7 +214,10 @@ export default function EventsPage() {
                   {/* Content */}
                   <div className="flex-1">
                     {/* Title */}
-                    <h3 className="font-medium text-sm">{event.title}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-sm">{event.title}</h3>
+                      {event?.isPinned && <Pin className="w-3 h-3 text-blue-600 fill-blue-600" />}
+                    </div>
 
                     {/* Date + Time */}
                     <p className="text-xs text-gray-500">

@@ -174,8 +174,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getAllSuggestion } from '@/service/suggestion';
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
-import { setSuggestionList, setNewSuggestion, setUpdateSuggestion } from '@/redux-toolkit/slice/suggestionSlice';
-import socket from '@/socket/socket';
+import { setSuggestionList } from '@/redux-toolkit/slice/suggestionSlice';
 
 interface SuggestionModalProps {
   isOpen: boolean;
@@ -186,55 +185,35 @@ interface SuggestionModalProps {
 export function SuggestionModal({ isOpen, onClose, userId }: SuggestionModalProps) {
   const { toast } = useToast();
   const dispatch = useAppDispatch();
-
   const [loading, setLoading] = useState(false);
 
   const suggestionList = useAppSelector((state) => state?.suggestion?.suggestionList);
 
+  // ✅ FETCH SUGGESTIONS EVERY TIME MODAL OPENS (to get latest data from server)
   useEffect(() => {
-    socket.on("updateSuggestionStatus", (data) => {
-      dispatch(setUpdateSuggestion(data));
-    });
-
-    socket.on("addSuggestion", (data) => {
-      if (data?.createdBy?._id?.toString() === userId?.toString()) {
-        dispatch(setNewSuggestion(data));
-      }
-    })
-    return () => {
-      socket.off("updateSuggestionStatus");
-      socket.off("addSuggestion");
-    }
-  }, [])
-
-  // ---------------- FETCH SUGGESTIONS ----------------
-  const fetchSuggestions = async () => {
-    if (!userId) return;
+    if (!isOpen || !userId) return;
 
     setLoading(true);
-    try {
-      const res = await getAllSuggestion(userId);
-
-      if (res.status === 200) {
-        dispatch(setSuggestionList(res?.data?.data));
+    const fetchSuggestions = async () => {
+      try {
+        const res = await getAllSuggestion(userId);
+        if (res.status === 200) {
+          dispatch(setSuggestionList(res?.data?.data));
+        }
+      } catch (err: any) {
+        console.error('Error fetching suggestions:', err);
+        toast({
+          title: "Error",
+          description: err?.message || "Failed to fetch data",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      console.error('Error fetching suggestions:', err);
-      toast({
-        title: "Error",
-        description: err?.message || "Failed to fetch data",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
-    if (isOpen && suggestionList.length === 0) {
-      fetchSuggestions();
-    }
-  }, [isOpen]);
+    fetchSuggestions();
+  }, [isOpen, userId, dispatch, toast]);
 
   if (!isOpen) return null;
 
@@ -272,9 +251,7 @@ export function SuggestionModal({ isOpen, onClose, userId }: SuggestionModalProp
                   switch (status) {
                     case "pending":
                       return "bg-yellow-100 text-yellow-600";
-                    case "seen":
-                      return "bg-blue-100 text-blue-600";
-                    case "approved":
+                    case "accepted":
                       return "bg-green-100 text-green-600";
                     case "rejected":
                       return "bg-red-100 text-red-600";
@@ -286,21 +263,43 @@ export function SuggestionModal({ isOpen, onClose, userId }: SuggestionModalProp
                 return (
                   <div
                     key={item._id}
-                    className="flex items-center justify-between gap-4 py-2 border-b"
+                    className="flex flex-col gap-2 py-2 border-b"
                   >
-                    {/* DESCRIPTION */}
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {item?.description}
-                    </p>
+                    <div className="flex items-center justify-between gap-4">
+                      {/* DESCRIPTION */}
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {item?.description}
+                      </p>
 
-                    {/* STATUS BADGE */}
-                    <span
-                      className={`text-xs px-3 py-1 rounded-full font-medium capitalize ${getStatusStyle(
-                        item?.status
-                      )}`}
-                    >
-                      {item?.status}
-                    </span>
+                      {/* STATUS BADGE */}
+                      <span
+                        className={`text-xs px-3 py-1 rounded-full font-medium capitalize whitespace-nowrap ${getStatusStyle(
+                          item?.status
+                        )}`}
+                      >
+                        {item?.status}
+                      </span>
+                    </div>
+
+                    {/* ADMIN REPLY */}
+                    {item?.adminReplies?.length > 0 ? (
+                      <div className="space-y-2 p-3 bg-blue-50 border border-blue-100 rounded-md">
+                        <p className="text-xs font-semibold text-blue-600">Admin replies</p>
+                        {item.adminReplies.map((reply: any, idx: number) => (
+                          <div key={idx} className="space-y-1">
+                            <p className="text-xs text-blue-800">{reply.message}</p>
+                            <p className="text-[10px] text-blue-500">
+                              {new Date(reply.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : item?.adminReply ? (
+                      <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-md p-2">
+                        <span className="text-xs font-semibold text-blue-600 whitespace-nowrap">Admin:</span>
+                        <p className="text-xs text-blue-800">{item.adminReply}</p>
+                      </div>
+                    ) : null}
                   </div>
                 );
               })

@@ -1,11 +1,18 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+export interface ISuggestionReply {
+  message: string;
+  createdAt: Date;
+}
+
 export interface ISuggestion extends Document {
   description: string;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
-  status: 'pending' | 'seen' | 'approved' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected';
+  adminReply?: string;
+  adminReplies?: ISuggestionReply[];
 }
 
 const suggestionSchema: Schema<ISuggestion> = new Schema(
@@ -24,10 +31,30 @@ const suggestionSchema: Schema<ISuggestion> = new Schema(
 
     status: {
       type: String,
-      enum: ['pending', 'seen', 'approved', 'rejected'],
+      enum: ['pending', 'accepted', 'rejected'],
       default: 'pending',
     },
 
+    adminReply: {
+      type: String,
+      default: null,
+    },
+
+    adminReplies: {
+      type: [
+        {
+          message: {
+            type: String,
+            required: true,
+          },
+          createdAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+      default: [],
+    },
 
   },
   {

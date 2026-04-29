@@ -7,7 +7,7 @@ import { getAllMessage, addMessage } from "@/service/chat";
 import GroupDialog from "@/components/forms/GroupDialog";
 import socket from "@/socket/socket";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
-import { setGroupList, setAddAnRemoveUserGroup, setNewUnReadMessage, setNewGroup, setMessageList, setCleanMessage } from "@/redux-toolkit/slice/groupSlice";
+import { setGroupList, setAddAnRemoveUserGroup, setNewUnReadMessage, setUpdateGroupDetail, setDeleteGroup, setNewGroup, setMessageList, setCleanMessage } from "@/redux-toolkit/slice/groupSlice";
 import AddMemberCard from "@/components/cards/AddMemberCard";
 import DeleteCard from "@/components/cards/DeleteCard";
 import GroupInfoCard from "@/components/cards/GroupInfoCard";
@@ -41,7 +41,7 @@ export default function GroupsPage() {
   const groupList = useAppSelector((state) => state?.group?.groupList);
   const messageList = useAppSelector((state) => state?.group?.messageList);
   const liveUnreadCount = messageList?.filter((msg) => msg?.chatId === chatId && msg?.status !== "seen")?.length;
-
+  console.log(groupList, "grp list")
   const handleSelectGroup = (id: string) => { socket.emit("adminMessageSeen", id) }
 
   const scrollToBottom = () => {
@@ -74,11 +74,29 @@ export default function GroupsPage() {
       dispatch(setNewGroup(group));
     });
 
+    socket.on("deleteGroup", (groupId) => {
+      dispatch(setDeleteGroup(groupId));
+      if (selectedGroup?._id === groupId) {
+        setSelectedGroup(null);
+      }
+    })
+
+    socket.on("updateGroupDetail", (data) => {
+      dispatch(setUpdateGroupDetail(data));
+    });
+
+    socket.on("addMembersToGroup", (data) => {
+      dispatch(setUpdateGroupDetail(data));
+    })
+
     return () => {
       socket.off("messageAdminRefresh");
       socket.off("addAnRemoveUserFromGroup");
       socket.off("adminMessageSeen");
       socket.off("newGroup");
+      socket.off("deleteGroup");
+      socket.off("updateGroupDetail");
+      socket.off("addMembersToGroup");
     }
   }, [selectedGroup])
 
@@ -172,7 +190,12 @@ export default function GroupsPage() {
 
   return (
     <>
-      <GroupInfoCard isOpen={groupInfoOpen} onOpenChange={setGroupInfoOpen} groupId={selectedGroup?._id} />
+      <GroupInfoCard 
+        isOpen={groupInfoOpen} 
+        onOpenChange={setGroupInfoOpen} 
+        groupId={selectedGroup?._id} 
+        setSelectedGroup={setSelectedGroup}
+      />
       <DeleteCard
         isOpen={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

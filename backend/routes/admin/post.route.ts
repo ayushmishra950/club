@@ -1,5 +1,5 @@
 import express from 'express';
-import {createPost,getAllPosts,updatePost,markAnUnMarkPost,getSinglePost, deletePost, toggleLikePost, addComment , deleteComment} from "../../controllers/admin/post.controller.js";
+import {createPost,getAllPosts,updatePost,togglePinnedPost,getSinglePost, deletePost, toggleLikePost, addComment , deleteComment} from "../../controllers/admin/post.controller.js";
 import upload from "../../middlewares/upload.js";
 
 const router = express.Router();
@@ -13,7 +13,7 @@ router.delete("/delete/:id", deletePost);
 router.post("/toggle/like", toggleLikePost);
 router.post("/comment/add", addComment);
 router.delete("/comment/delete", deleteComment);
-router.patch("/marked/:postId", markAnUnMarkPost);
+router.patch("/pinned/:postId", togglePinnedPost);
 
 
 export default router;

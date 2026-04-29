@@ -11,7 +11,7 @@ import { getIO } from "../../utils/socketHelper.js";
 
 export const addEvent = async (req: Request, res: Response) => {
     try {
-        const { title, description, date, location, userId, category, type } = req.body;
+        const { title, description, date, location, userId, category, type, isPinned } = req.body;
         const io = getIO();
 
         const files = (req as any).files;
@@ -30,7 +30,8 @@ export const addEvent = async (req: Request, res: Response) => {
             title, description, date, location, createdBy: userId, createdAt: new Date(),
             category: category,
             coverImage: imageUrl,
-            type: type
+            type: type,
+            isPinned: isPinned === "true" || isPinned === true ? true : false
         });
 
         await createNotificationInternal(userId, userId, NotificationType.EVENT, undefined, `Admin sent a new Event.`);
@@ -85,7 +86,29 @@ export const getSingleEvent = async (req: Request, res: Response) => {
 
 export const getLatestEvent = async (req: Request, res: Response) => {
     try {
-        const event = await Event.findOne().sort({ createdAt: -1 }).populate("gallery").populate("createdBy");
+        // 1. Try to find the latest pinned event
+        let event = await Event.findOne({ isPinned: true })
+            .sort({ createdAt: -1 })
+            .populate("gallery")
+            .populate("createdBy");
+
+        // 2. If no pinned event, find the nearest future event
+        if (!event) {
+            const now = new Date();
+            event = await Event.findOne({ date: { $gte: now } })
+                .sort({ date: 1 }) // Nearest future first
+                .populate("gallery")
+                .populate("createdBy");
+        }
+
+        // 3. If still no event, fall back to the latest created event
+        if (!event) {
+            event = await Event.findOne()
+                .sort({ createdAt: -1 })
+                .populate("gallery")
+                .populate("createdBy");
+        }
+
         if (!event) return res.status(404).json({ message: "No events found.", success: false });
         res.status(200).json({ event, success: true });
     }
@@ -101,7 +124,7 @@ export const getLatestEvent = async (req: Request, res: Response) => {
 
 export const updateEvent = async (req: Request, res: Response) => {
     try {
-        const { id, title, description, date, location, userId, category, type, coverImage } = req.body;
+        const { id, title, description, date, location, userId, category, type, coverImage, isPinned } = req.body;
         const files = (req as any).files;
         const file = files?.coverImage?.[0];
 
@@ -113,7 +136,12 @@ export const updateEvent = async (req: Request, res: Response) => {
             imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "coverImage");
         }
 
-        const event = await Event.findByIdAndUpdate(id, { title, description, date, type, location, createdBy: userId, category: category, coverImage: imageUrl }, { new: true });
+        const event = await Event.findByIdAndUpdate(id, { 
+            title, description, date, type, location, 
+            createdBy: userId, category: category, 
+            coverImage: imageUrl, 
+            isPinned: isPinned === "true" || isPinned === true ? true : false 
+        }, { new: true });
         if (!event) return res.status(404).json({ message: "Event not Found." });
 
         res.status(200).json({ message: "Event Update Successfully." })

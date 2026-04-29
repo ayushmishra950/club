@@ -3,11 +3,12 @@ import Post from "../../models/post.model.js";
 import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
 import Admin from "../../models/admin.model.js";
 import User from "../../models/user.model.js";
+import { getIO } from "../../utils/socketHelper.js";
 
 // ✅ Create Post with multiple images
 export const createPost = async (req: any, res: any) => {
   try {
-    const { title, description, userId, type } = req.body;
+    const { title, description, userId, type, isPinned } = req.body;
 
     if (!title || !description || !userId || !type) {
       return res.status(400).json({ message: "Title, description, type are required." });
@@ -37,7 +38,8 @@ export const createPost = async (req: any, res: any) => {
       images: imageUrls, // store array of image URLs
       type,
       createdBy: userId,
-      create: user?.role === "admin" ? "Admin" : "User",
+      create: (user?.role === "admin" || user?.role === "super_admin") ? "Admin" : "User",
+      isPinned: isPinned === "true" || isPinned === true ? true : false,
     });
 
     res.status(201).json({
@@ -45,6 +47,9 @@ export const createPost = async (req: any, res: any) => {
       message: "Post created successfully",
       post,
     });
+
+    const io = getIO();
+    io.emit("postRefresh");
   } catch (err: any) {
     res.status(500).json({
       success: false,
@@ -60,7 +65,7 @@ export const getAllPosts = async (req: Request, res: Response) => {
     const posts = await Post.find()
       .populate("createdBy", "name email fullName profileImage occupation role")
       .populate("comments.user", "fullName name profileImage")
-      .sort({ createdAt: -1 });
+      .sort({ isPinned: -1, createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -106,7 +111,7 @@ export const getSinglePost = async (req: Request, res: Response) => {
 // ✅ Update Post with optional multiple images
 export const updatePost = async (req: any, res: any) => {
   try {
-    const { title, description, type, postId, userId } = req.body;
+    const { title, description, type, postId, userId, isPinned } = req.body;
     console.log(req.body)
 
     const post = await Post.findById(postId);
@@ -114,15 +119,13 @@ export const updatePost = async (req: any, res: any) => {
       return res.status(404).json({ success: false, message: "Post not found" });
     }
 
-    // Check owner
-    if (post.createdBy.toString() !== userId.toString()) {
-      return res.status(403).json({ success: false, message: "Unauthorized" });
-    }
-
     // Update fields
     post.title = title || post.title;
     post.description = description || post.description;
     post.type = type || post.type;
+    if (isPinned !== undefined) {
+      post.isPinned = isPinned === "true" || isPinned === true ? true : false;
+    }
 
     // Update images if new files provided
     const files = req.files?.images as any[];
@@ -142,6 +145,9 @@ export const updatePost = async (req: any, res: any) => {
       message: "Post updated successfully",
       post,
     });
+
+    const io = getIO();
+    io.emit("postRefresh");
   } catch (err: any) {
     res.status(500).json({
       success: false,
@@ -168,6 +174,9 @@ export const deletePost = async (req: Request, res: Response) => {
       success: true,
       message: "Post deleted successfully",
     });
+
+    const io = getIO();
+    io.emit("postRefresh");
   } catch (err: any) {
     res.status(500).json({
       success: false,
@@ -315,7 +324,7 @@ export const deleteComment = async (req: Request, res: Response) => {
 
 
 
-export const markAnUnMarkPost = async (req: Request, res: Response) => {
+export const togglePinnedPost = async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
     if (!postId) return res.status(400).json({ message: "PostId not Found." });
@@ -323,10 +332,13 @@ export const markAnUnMarkPost = async (req: Request, res: Response) => {
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: "Post Not Found." });
 
-    post.important = !post?.important;
+    post.isPinned = !post?.isPinned;
     await post.save();
 
-    res.status(200).json({ message: `This Post ${post?.important ? "Marked" : "Unmarked"} successfully.` })
+    res.status(200).json({ message: `This Post ${post?.isPinned ? "Pinned" : "Unpinned"} successfully.` })
+
+    const io = getIO();
+    io.emit("postRefresh");
   }
   catch (err: unknown) {
     if (err instanceof Error) {

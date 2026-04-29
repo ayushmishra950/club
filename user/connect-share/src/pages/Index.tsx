@@ -11,6 +11,7 @@ import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook"
 import { setPostList } from "@/redux-toolkit/slice/postSlice";
 import { getAllPost } from "@/service/post";
 import { useToast } from '@/hooks/use-toast';
+import socket from '@/socket/socket';
 
 const Index = () => {
   const { toast } = useToast();
@@ -22,30 +23,17 @@ const Index = () => {
   const postList = useAppSelector((state) => state?.post?.postList);
   const searchQuery = useAppSelector((state) => state?.search?.searchQuery);
   console.log(postList)
-  const adminPosts = postList.filter(
-    (post) => post?.createdBy?.role === "admin"
-  );
+  const pinnedAdminPosts = postList.filter(
+    (post) => post?.createdBy?.role === "admin" && post?.isPinned
+  ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const userPosts = postList.filter(
     (post) => post?.createdBy?.role !== "admin"
-  );
-
-  const pinnedAdminPosts = [...adminPosts]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 3);
-
-  const remainingAdminPosts = adminPosts.filter(
-    (post) => !pinnedAdminPosts.includes(post)
-  );
-
-  const sortedUserPosts = [...userPosts].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const finalPosts = [
     ...pinnedAdminPosts,
-    ...remainingAdminPosts,
-    ...sortedUserPosts
+    ...userPosts
   ];
 
   const filteredPosts = finalPosts.filter(post => {
@@ -80,6 +68,17 @@ const Index = () => {
       handleGetPosts();
     }
   }, [postList?.length, postListRefresh])
+
+  useEffect(() => {
+    socket.on("postRefresh", () => {
+      console.log("Socket: postRefresh received");
+      handleGetPosts();
+    });
+
+    return () => {
+      socket.off("postRefresh");
+    };
+  }, []);
 
 
   return (

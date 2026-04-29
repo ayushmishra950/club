@@ -8,8 +8,8 @@ export interface IGroup extends Document {
   members: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
-  type: string;
   location: string;
+  createdBy: mongoose.Types.ObjectId;
 }
 
 const GroupSchema = new Schema<IGroup>(
@@ -41,6 +41,11 @@ const GroupSchema = new Schema<IGroup>(
         ref: "User",
       },
     ],
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }
   },
   {
     timestamps: true,

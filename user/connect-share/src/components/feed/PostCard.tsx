@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Users } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Users, Pin } from 'lucide-react';
 import { type Post } from '@/data/mockData';
 import { CommentSection } from './CommentSection';
 import { FriendButton } from '@/components/connections/FriendButton';
@@ -178,12 +178,19 @@ export function PostCard({ post }) {
             ))}
           </div>
 
-          {/* Important Badge */}
-          {post.important && (
-            <div className="absolute top-2 left-2 bg-white rounded-full p-1 shadow-md">
-              <Heart className="h-5 w-5 text-red-500" />
-            </div>
-          )}
+          {/* Pinned / Important Badge */}
+          <div className="absolute top-2 left-2 flex flex-col gap-2">
+            {post.isPinned && (
+              <div className="bg-blue-600 text-white rounded-full p-1.5 shadow-lg flex items-center justify-center border border-white/20" title="Pinned by Admin">
+                <Pin className="h-4 w-4 fill-current" />
+              </div>
+            )}
+            {post.important && (
+              <div className="bg-white rounded-full p-1 shadow-md flex items-center justify-center">
+                <Heart className="h-5 w-5 text-red-500" />
+              </div>
+            )}
+          </div>
 
           {/* Slider Buttons */}
           {post.images.length > 1 && (

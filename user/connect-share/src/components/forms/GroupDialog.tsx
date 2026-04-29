@@ -8,10 +8,12 @@ import { Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createGroup, updateGroup } from "@/service/group";
 import { validateGroupForm } from "../hook/group.form";
+import { setNewGroup } from "@/redux-toolkit/slice/businessGroupSlice";
+import { useAppDispatch } from "@/redux-toolkit/customHook/hook";
 
 const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh }) => {
-  const { toast } = useToast();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const { toast } = useToast();
   const [formData, setFormData] = useState({ title: "", description: "", files: [], location: "" });
   const [previewList, setPreviewList] = useState<{ url: string; type: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,15 +21,15 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
   const [errors, setErrors] = useState<any>({});
   const isEdit = Boolean(initialData);
   const fileRef = useRef<HTMLInputElement>(null);
+  const dispatch = useAppDispatch();
 
 
-  // 🔁 Edit Mode
   useEffect(() => {
     if (initialData && isOpen) {
       setFormData({
         title: initialData?.title || "",
         description: initialData?.description || "",
-        files: [],
+        files: initialData?.images || [],
         location: initialData?.location || "",
       });
 
@@ -132,7 +134,7 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
           title: isEdit ? "Group Updated" : "Group Created",
           description: res?.data?.message,
         });
-
+        dispatch(setNewGroup(res.data.group));
         setGroupListRefresh(true);
         onOpenChange(false);
         resetForm();

@@ -5,16 +5,17 @@ import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
 import Message from "../../models/message.model.js";
 import Chat from "../../models/chat.model.js";
 import { getIO } from "../../utils/socketHelper.js";
+import User from "../../models/user.model.js";
 
 // ========================
 // Create Group
 // ========================
+
 export const createGroup = async (req: Request, res: Response) => {
   try {
-    const { title, description, members, location } = req.body;
+    const { title, description, members, location, createdBy } = req.body;
 
     const files = (req as any).files?.media || [];
-
     const images: string[] = [];
 
     for (const file of files) {
@@ -23,34 +24,54 @@ export const createGroup = async (req: Request, res: Response) => {
       images.push(url);
     }
 
+    // 🔍 Check user exists or not
+    const userExists = await User.findById(createdBy);
+
+    if (!userExists) {
+      return res.status(404).json({
+        message: "Creator user not found",
+      });
+    }
+
+    // ✅ Force creator into members array
+    const finalMembers = [createdBy];
+
     const group = new Group({
       title,
       description,
       images,
-      members: members || [],
-      location: location
+      members: finalMembers,
+      location,
+      createdBy,
     });
 
     await group.save();
-    try {
-      getIO().emit("newGroup", group);
-    } catch (e) {
-      console.error(e);
-    }
-    return res.status(201).json({ message: "Group created successfully", group });
+
+    const latestGroup = await group.populate([
+      { path: "createdBy", select: "fullName email profileImage" },
+      { path: "members", select: "fullName email profileImage" }
+    ]);
+
+    getIO().emit("newGroup", latestGroup);
+
+    return res.status(201).json({
+      message: "Group created successfully",
+      group: latestGroup,
+    });
   } catch (err: any) {
     console.error(err);
-    return res.status(500).json({ message: err.message || "Server Error" });
+    return res.status(500).json({
+      message: err.message || "Server Error",
+    });
   }
 };
-
 // ========================
 // Get All Groups
 // ========================
 export const getGroups = async (req: Request, res: Response) => {
   try {
     const groups = await Group.find()
-      .populate("members", "fullName email profileImage")
+      .populate("members", "fullName email profileImage").populate("createdBy", "fullName email profileImage")
       .sort({ createdAt: -1 });
 
     const groupsWithMessages = await Promise.all(
@@ -111,6 +132,7 @@ export const updateGroup = async (req: Request, res: Response) => {
   try {
     const { id, title, description, members, location } = req.body;
     const groupId = id as string;
+    const io = getIO();
 
     if (!mongoose.Types.ObjectId.isValid(groupId))
       return res.status(400).json({ message: "Invalid Group ID" });
@@ -133,7 +155,14 @@ export const updateGroup = async (req: Request, res: Response) => {
     }
 
     await group.save();
-    return res.status(200).json({ message: "Group updated successfully", group });
+
+    const populatedGroup = await group.populate([
+      { path: "createdBy", select: "fullName email profileImage" },
+      { path: "members", select: "fullName email profileImage" }
+    ]);
+
+    io.emit("updateGroupDetail", populatedGroup);
+    return res.status(200).json({ message: "Group updated successfully", group: populatedGroup });
   } catch (err: any) {
     console.error(err);
     return res.status(500).json({ message: err.message || "Server Error" });
@@ -147,12 +176,15 @@ export const deleteGroup = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const groupId = id as string;
+    const io = getIO();
 
     if (!mongoose.Types.ObjectId.isValid(groupId))
       return res.status(400).json({ message: "Invalid Group ID" });
 
     const group = await Group.findByIdAndDelete(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
+
+    io.emit("deleteGroup", groupId);
 
     return res.status(200).json({ message: "Group deleted successfully" });
   } catch (err: any) {
@@ -211,16 +243,18 @@ export const addMember = async (req: Request, res: Response) => {
       { upsert: true, new: true }
     );
 
+    const updateGroup = await group.populate([
+      { path: "createdBy", select: "fullName email profileImage" },
+      { path: "members", select: "fullName email profileImage" }
+    ]);
+
     // ✅ socket emit
-    io.emit("addMembersToGroup", {
-      groupId,
-      members: newMembers
-    });
+    io.emit("addMembersToGroup", updateGroup);
 
     return res.status(200).json({
       message: "Members added successfully",
       added: newMembers,
-      group
+      group: updateGroup
     });
 
   } catch (err: any) {
@@ -237,6 +271,7 @@ export const addMember = async (req: Request, res: Response) => {
 export const removeMember = async (req: Request, res: Response) => {
   try {
     const { groupId, userId } = req.body;
+    const io = getIO();
 
     if (!mongoose.Types.ObjectId.isValid(groupId) || !mongoose.Types.ObjectId.isValid(userId))
       return res.status(400).json({ message: "Invalid IDs" });
@@ -255,14 +290,14 @@ export const removeMember = async (req: Request, res: Response) => {
       },
       { upsert: true }
     );
+    const updateGroup = await group.populate([
+      { path: "createdBy", select: "fullName email profileImage" },
+      { path: "members", select: "fullName email profileImage" }
+    ]);
 
-    // Socket emit
-    getIO().emit("removeMemberFromGroup", {
-      groupId,
-      userId
-    });
+    io.emit("addMembersToGroup", updateGroup);
 
-    return res.status(200).json({ message: "Member removed successfully", group });
+    return res.status(200).json({ message: "Member removed successfully", group: updateGroup });
   } catch (err: any) {
     console.error(err);
     return res.status(500).json({ message: err.message || "Server Error" });

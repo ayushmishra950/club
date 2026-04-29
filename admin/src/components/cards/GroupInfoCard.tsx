@@ -3,9 +3,9 @@ import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook"
 import { removeMemberFromGroup } from "@/service/group";
 import { useToast } from "@/hooks/use-toast";
 import DeleteCard from "@/components/cards/DeleteCard";
-import { setAddAnRemoveUserGroup } from "@/redux-toolkit/slice/groupSlice";
+import { setAddAnRemoveUserGroup, setUpdateGroupDetail } from "@/redux-toolkit/slice/groupSlice";
 
-const GroupInfoCard = ({ isOpen, onOpenChange, groupId }) => {
+const GroupInfoCard = ({ isOpen, onOpenChange, groupId, setSelectedGroup }) => {
     const { toast } = useToast();
     const [search, setSearch] = useState("");
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -44,8 +44,14 @@ const GroupInfoCard = ({ isOpen, onOpenChange, groupId }) => {
                     description: res?.data?.message || "Member removed successfully",
                     variant: "default",
                 });
-                dispatch(setAddAnRemoveUserGroup(obj));
-                onOpenChange(false);
+                
+                if (res.data.group) {
+                    dispatch(setUpdateGroupDetail(res.data.group));
+                    if (setSelectedGroup) {
+                        setSelectedGroup(res.data.group);
+                    }
+                }
+
                 setDeleteDialogOpen(false);
                 setDeleteUser(null);
             }

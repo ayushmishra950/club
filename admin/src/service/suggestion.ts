@@ -24,3 +24,9 @@ export const updateSuggestionStatus = async (obj: any) => {
     const res = await api.put(`${base_url}/admin/suggestion/update`, obj);
     return res;
 };
+
+
+export const replyToSuggestion = async (obj: { id: string; adminReply: string }) => {
+    const res = await api.post(`${base_url}/admin/suggestion/reply`, obj);
+    return res;
+};

@@ -16,6 +16,7 @@ interface Post {
   description: string;
   type: string;
   images: (File | string)[];
+  isPinned: boolean;
 }
 
 const PostDialog = ({
@@ -33,6 +34,7 @@ const PostDialog = ({
     description: "",
     type: "public",
     images: [],
+    isPinned: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [preview, setPreview] = useState<any>(null);
@@ -51,15 +53,16 @@ const PostDialog = ({
         description: initialData?.description,
         type: initialData?.type,
         images: initialData?.images || [initialData?.image],
+        isPinned: initialData?.isPinned || false,
       });
     } else if (isOpen) {
-      setFormData({ title: "", description: "", type: "public", images: [] });
+      setFormData({ title: "", description: "", type: "public", images: [], isPinned: false });
       setPreview(null);
     }
   }, [initialData, isOpen]);
 
   const resetForm = () => {
-    setFormData({ title: "", description: "", type: "public", images: [] });
+    setFormData({ title: "", description: "", type: "public", images: [], isPinned: false });
     setPreview(null);
   };
 
@@ -304,6 +307,18 @@ const PostDialog = ({
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 my-4">
+            <input
+              type="checkbox"
+              id="isPinned"
+              name="isPinned"
+              checked={formData?.isPinned}
+              onChange={(e) => setFormData({ ...formData, isPinned: e.target.checked })}
+              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <Label htmlFor="isPinned" className="cursor-pointer font-semibold text-blue-600">Pin this Post (Show at Top)</Label>
           </div>
 
           {/* Buttons */}

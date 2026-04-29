@@ -29,7 +29,7 @@ let io: IOServer;
 export const initSocket = (server: HTTPServer) => {
   io = new IOServer(server, {
     cors: {
-      origin: ["http://localhost:8080", "http://localhost:8081", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"],
+      origin: ["http://localhost:8080", "http://localhost:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"],
     },
   });
 

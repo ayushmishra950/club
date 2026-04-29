@@ -27,12 +27,61 @@ const groupSlice = createSlice({
       }
     },
     setNewGroup: (state, action: PayloadAction<any>) => {
-      state.groupList.unshift(action.payload);
+      const newGroup = action.payload;
+
+      const index = state.groupList.findIndex(
+        (group: any) => group._id === newGroup._id
+      );
+
+      if (index !== -1) {
+        state.groupList[index] = newGroup;
+      }
+      else {
+        state.groupList.unshift(newGroup);
+      }
+    },
+
+    setDeleteGroup: (state, action: PayloadAction<string>) => {
+      const groupId = action.payload;
+
+      const groupIndex = state.groupList.findIndex(
+        (group: any) =>
+          group._id === groupId
+      );
+
+      if (groupIndex !== -1) {
+        state.groupList.splice(groupIndex, 1);
+      }
+    },
+    setUpdateGroup: (state, action: PayloadAction<any>) => {
+      const group = state.groupList.find(
+        g => g._id === action.payload._id
+      );
+
+      if (group) {
+        // ✅ update members array
+        if (action.payload.members) {
+          group.members = action.payload.members;
+        }
+      }
+    },
+
+    setUpdateGroupDetail: (state, action: PayloadAction<any>) => {
+      const updatedGroup = action.payload;
+
+      const groupIndex = state.groupList.findIndex(
+        (group: any) =>
+          group._id === updatedGroup._id
+      );
+
+      if (groupIndex !== -1) {
+        state.groupList[groupIndex] = updatedGroup;
+      }
     }
   }
 });
 
-export const { setGroupList, setGroupJoinAnUnJoin, setNewGroup } = groupSlice.actions;
+export const { setGroupList, setGroupJoinAnUnJoin, setUpdateGroup, setNewGroup, setDeleteGroup, setUpdateGroupDetail } = groupSlice.actions;
 
 export default groupSlice.reducer;
 

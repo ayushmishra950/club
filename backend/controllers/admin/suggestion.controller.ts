@@ -134,3 +134,39 @@ export const updateSuggestionStatus = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+export const replyToSuggestion = async (req: Request, res: Response) => {
+  try {
+    const { id, adminReply } = req.body;
+
+    if (!id || !adminReply) {
+      return res.status(400).json({ message: "Suggestion ID and reply are required." });
+    }
+
+    const io = getIO();
+
+    const suggestion = await Suggestion.findByIdAndUpdate(
+      id,
+      {
+        $push: { adminReplies: { message: adminReply } },
+        adminReply,
+      },
+      { new: true }
+    ).populate("createdBy", "fullName email profileImage");
+
+    if (!suggestion) {
+      return res.status(404).json({ message: "Suggestion not found." });
+    }
+
+    // Emit only suggestionReply when replying (don't emit updateSuggestionStatus to avoid duplicate count)
+    io.to(suggestion?.createdBy?._id?.toString()).emit("suggestionReply", suggestion);
+
+    return res.status(200).json({
+      message: "Reply sent successfully.",
+      data: suggestion,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error });
+  }
+};

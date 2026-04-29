@@ -13,6 +13,7 @@ export interface IEvent extends Document {
     createdAt:Date;
     coverImage:string;
      type:string;
+     isPinned:boolean;
 }
 
 
@@ -67,6 +68,10 @@ const EventSchemas = new Schema <IEvent>({
       type:String,
       required:true,
       enum:["public", "private"]
+     },
+     isPinned:{
+        type:Boolean,
+        default:false
      }
 });
 

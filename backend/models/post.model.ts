@@ -24,6 +24,7 @@ export interface IPost extends Document {
   updatedAt: Date;
   important: boolean;
   notes: string;
+  isPinned: boolean;
 }
 
 const commentSchema = new Schema<IComment>({
@@ -93,6 +94,10 @@ const postSchema = new Schema<IPost>(
       enum: ["User", "Admin"],
     },
     important: {
+      type: Boolean,
+      default: false
+    },
+    isPinned: {
       type: Boolean,
       default: false
     },

@@ -3,11 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import PostDialog from "@/components/forms/PostDialog";
 import { getAllPost, deletePost } from "@/service/post";
-import { Plus, Calendar, MapPin, Users, Clock, Edit, Trash, Heart, HeartCrack } from "lucide-react";
+import { Plus, Calendar, MapPin, Users, Clock, Edit, Trash, Heart, HeartCrack, Pin } from "lucide-react";
 import DeleteCard from "@/components/cards/DeleteCard";
 import { useToast } from "@/hooks/use-toast";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
 import { setPostList } from "@/redux-toolkit/slice/postSlice";
+import socket from "@/socket/socket";
 
 
 export default function AnnouncementsPage() {
@@ -63,6 +64,17 @@ export default function AnnouncementsPage() {
         }
     }, [postList?.length, postListRefresh])
 
+    useEffect(() => {
+        socket.on("postRefresh", () => {
+            console.log("Admin Socket: postRefresh received");
+            handleGetPosts();
+        });
+
+        return () => {
+            socket.off("postRefresh");
+        };
+    }, []);
+
     return (
         <>
             <DeleteCard
@@ -104,6 +116,7 @@ export default function AnnouncementsPage() {
                                             <th className="p-3">Date</th>
                                             <th className="p-3">Likes</th>
                                             <th className="p-3">Comments</th>
+                                            <th className="p-3 text-center">Pinned</th>
                                             <th className="p-3 text-right">Actions</th>
                                         </tr>
                                     </thead>
@@ -151,6 +164,15 @@ export default function AnnouncementsPage() {
 
                                                     {/* Comments */}
                                                     <td className="p-3 text-sm">{post?.comments?.length}</td>
+                                                    <td className="p-3 text-center">
+                                                        {post?.isPinned ? (
+                                                            <div className="flex justify-center">
+                                                                <Pin className="w-4 h-4 text-blue-600 fill-blue-600" />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-300 text-xs">No</span>
+                                                        )}
+                                                    </td>
 
                                                     {/* Actions */}
                                                     <td className="p-3">
@@ -216,7 +238,10 @@ export default function AnnouncementsPage() {
 
                                             {/* Content */}
                                             <div className="flex-1">
-                                                <h3 className="font-medium text-sm">{post.title}</h3>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="font-medium text-sm">{post.title}</h3>
+                                                    {post?.isPinned && <Pin className="w-3 h-3 text-blue-600 fill-blue-600" />}
+                                                </div>
 
                                                 <p className="text-xs text-gray-500">
                                                     {new Date(post.createdAt)?.toLocaleDateString()}

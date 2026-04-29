@@ -3,8 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Home, Users, Calendar, Briefcase, MessageCircle, Megaphone, UserPlus, Menu, X, Lightbulb } from 'lucide-react';
 import { useConnections } from '@/hooks/useConnections';
 import socket from '@/socket/socket';
-import { useAppDispatch } from '@/redux-toolkit/customHook/hook';
+import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
 import { setSearchQuery } from '@/redux-toolkit/slice/searchSlice';
+import { clearUnreadCount } from '@/redux-toolkit/slice/suggestionSlice';
 import { SuggestionModal } from '@/components/suggestions/SuggestionModal';
 import EventTicker from './EventTicker';
 
@@ -23,6 +24,9 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
   const { incomingCount } = useConnections();
   const [chatUnRead, setChatUnRead] = useState(0);
   const [friendUnRead, setFriendUnRead] = useState(0);
+  
+  // ✅ READ SUGGESTION UNREAD COUNT FROM REDUX
+  const suggestionUnreadCount = useAppSelector((state) => state?.suggestion?.unreadCount);
 
   const [navBadges, setNavBadges] = useState<{ [key: string]: number }>({
     '/groups': 0,
@@ -64,17 +68,17 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
     socket.on("totalUnReadChat", (count) => {
       setChatUnRead(count);
     });
-    console.log("chat unread", friendUnRead);
+
     socket.on("unSeenFriendRequest", (total) => {
       setFriendUnRead(total);
     });
 
     socket.on("friendRequestSeen", () => {
       socket.emit("unSeenFriendRequest", { from: user?._id });
-    })
+    });
 
     const incrementBadge = (path: string) => {
-      setNavBadges(prev => {
+      setNavBadges((prev) => {
         if (location.pathname === path) return prev;
         return { ...prev, [path]: (prev[path] || 0) + 1 };
       });
@@ -95,8 +99,8 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
       socket.off("event");
       socket.off("newGroup");
       socket.off("addAnRemoveUserFromGroup");
-    }
-  }, [chatUnRead]);
+    };
+  }, [user?._id, location.pathname]);
 
   const handleSeenRequests = () => {
     socket.emit("friendRequestSeen", user?._id);
@@ -194,10 +198,18 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
 
             <div className="relative">
               <button
-                onClick={() => setSuggestionModalOpen(true)}
+                onClick={() => {
+                  setSuggestionModalOpen(true);
+                  dispatch(clearUnreadCount());
+                }}
                 className="relative p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
               >
                 <Lightbulb className="h-5 w-5" />
+                {suggestionUnreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                    {suggestionUnreadCount}
+                  </span>
+                )}
               </button>
               <SuggestionModal
                 isOpen={suggestionModalOpen}

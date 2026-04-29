@@ -117,9 +117,9 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-sm font-bold text-primary-foreground">S</span>
+              <span className="text-sm font-bold text-primary-foreground">CC</span>
             </div>
-            <span className="font-heading font-bold text-lg text-foreground hidden sm:block">Sociio</span>
+            <span className="font-heading font-bold text-lg text-foreground hidden sm:block">Club Connect</span>
           </Link>
 
           {/* Search */}

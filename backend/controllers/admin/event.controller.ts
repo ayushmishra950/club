@@ -86,31 +86,21 @@ export const getSingleEvent = async (req: Request, res: Response) => {
 
 export const getLatestEvent = async (req: Request, res: Response) => {
     try {
-        // 1. Try to find the latest pinned event
-        let event = await Event.findOne({ isPinned: true })
+        let events = await Event.find({ isPinned: true })
             .sort({ createdAt: -1 })
             .populate("gallery")
             .populate("createdBy");
 
-        // 2. If no pinned event, find the nearest future event
-        if (!event) {
+        if (!events || events.length === 0) {
             const now = new Date();
-            event = await Event.findOne({ date: { $gte: now } })
+            events = await Event.find({ date: { $gte: now } })
                 .sort({ date: 1 }) // Nearest future first
                 .populate("gallery")
                 .populate("createdBy");
         }
 
-        // 3. If still no event, fall back to the latest created event
-        if (!event) {
-            event = await Event.findOne()
-                .sort({ createdAt: -1 })
-                .populate("gallery")
-                .populate("createdBy");
-        }
-
-        if (!event) return res.status(404).json({ message: "No events found.", success: false });
-        res.status(200).json({ event, success: true });
+        if (!events || events.length === 0) return res.status(404).json({ message: "No events found.", success: false });
+        res.status(200).json({ events, success: true });
     }
     catch (err: unknown) {
         if (err instanceof Error) {

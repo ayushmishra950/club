@@ -311,3 +311,32 @@ export const sharePost = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+
+
+export const deletePost = async (req:Request, res: Response) => {
+  try {
+    const { postId, userId } = req.body;
+    const io = getIO();
+    if (!postId || !userId) return res.status(400).json({ message: "postId or userId is required." });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "user not authorised." });
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: "Post not found." });
+
+    if (post.createdBy.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "You are not authorized to delete this post." });
+    }
+
+    await post.deleteOne();
+    io.emit("postDeleted", { postId, userId });
+    res.status(200).json({ message: "Post deleted successfully." });
+  }
+  catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+
+};

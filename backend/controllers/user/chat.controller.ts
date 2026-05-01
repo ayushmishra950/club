@@ -20,7 +20,10 @@ export const getChatUsers = async (req: Request, res: Response) => {
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
     const chats = await Chat.find({
-      members: { $in: [userObjectId] },
+      $or: [
+        { members: { $in: [userObjectId] } },
+        { pendingMembers: { $in: [userObjectId] } }
+      ]
     }).sort({ updatedAt: -1 }).populate([
       {
         path: "lastMessage",
@@ -50,6 +53,8 @@ export const getChatUsers = async (req: Request, res: Response) => {
             chatId: chat._id,
             isGroup: true,
             group: chat.groupId,
+            members: chat.members,
+            pendingMembers: chat.pendingMembers,
             friend: null,
             lastMessage: chat.lastMessage || null,
             deliveredMessages: [],
@@ -290,6 +295,76 @@ export const markAsSeen = async (req: Request, res: Response) => {
     );
 
     res.status(200).json({ message: "Messages marked as seen." });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+export const acceptGroupInvite = async (req: Request, res: Response) => {
+  try {
+    const { chatId, userId } = req.body;
+    const io = getIO();
+
+    if (!chatId || !userId) {
+      return res.status(400).json({ message: "chatId and userId required." });
+    }
+
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: "Chat not found" });
+
+
+    if (!chat.members.includes(userId)) { chat.members.push(userId); }
+
+    chat.pendingMembers = (chat.pendingMembers || []).filter(
+      (id: mongoose.Types.ObjectId) => !id.equals(userId)
+    );
+
+    await chat.save();
+
+    if (chat.groupId) {
+      const group = await Group.findByIdAndUpdate(chat.groupId, { $addToSet: { members: userId }, }, { new: true });
+      if (group) {
+        await group.populate([
+          { path: "createdBy", select: "fullName email profileImage" },
+          { path: "members", select: "fullName email profileImage" }
+        ]);
+
+        io.emit("groupInviteAccepted", { chatId, userId, group });
+      }
+
+    }
+
+    return res.status(200).json({
+      message: "Group invite accepted successfully.",
+    });
+
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+
+export const rejectGroupInvite = async (req: Request, res: Response) => {
+  try {
+    const { chatId, userId } = req.body;
+
+    const io = getIO();
+
+    if (!chatId || !userId) {
+      return res.status(400).json({ message: "chatId and userId required." });
+    }
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: "Chat not found" });
+
+    chat.pendingMembers = chat.pendingMembers.filter((id: mongoose.Types.ObjectId) => !id.equals(userId));
+
+    await chat.save();
+    io.to(userId).emit("rejectGroupInvite", { chatId, userId });
+
+    res.status(200).json({ message: "Group invite rejected successfully." });
   } catch (err: any) {
     res.status(500).json({ message: err.message });
   }

@@ -39,13 +39,10 @@ const userSlice = createSlice({
         },
 
         setAddNewUser: (state, action) => {
-            state.userList.unshift(...action.payload);
+            state.userList.unshift(action.payload);
         },
-
         setUpdateUser: (state, action) => {
-            state.userList = state.userList.map(user =>
-                user._id === action.payload._id ? action.payload : user
-            );
+            state.userList = state.userList.map(user => user._id === action.payload._id ? action.payload : user);
         },
     }
 });

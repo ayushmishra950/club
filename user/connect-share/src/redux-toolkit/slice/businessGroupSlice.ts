@@ -28,6 +28,7 @@ const groupSlice = createSlice({
     },
     setNewGroup: (state, action: PayloadAction<any>) => {
       const newGroup = action.payload;
+      console.log(action.payload, "new grp");
 
       const index = state.groupList.findIndex(
         (group: any) => group._id === newGroup._id
@@ -77,11 +78,27 @@ const groupSlice = createSlice({
       if (groupIndex !== -1) {
         state.groupList[groupIndex] = updatedGroup;
       }
-    }
+    },
+
+
+    setAddAnRemoveUserGroup: (state, action) => {
+      const { groupId, userId } = action.payload;
+
+      const group = state.groupList.find(g => g._id === groupId);
+      if (!group) return;
+
+      const isMember = group.members.some(member => member._id === userId);
+
+      if (isMember) {
+        group.members = group.members.filter(member => member._id !== userId);
+      } else {
+        group.members.push({ _id: userId });
+      }
+    },
   }
 });
 
-export const { setGroupList, setGroupJoinAnUnJoin, setUpdateGroup, setNewGroup, setDeleteGroup, setUpdateGroupDetail } = groupSlice.actions;
+export const { setGroupList, setGroupJoinAnUnJoin, setUpdateGroup, setAddAnRemoveUserGroup, setNewGroup, setDeleteGroup, setUpdateGroupDetail } = groupSlice.actions;
 
 export default groupSlice.reducer;
 

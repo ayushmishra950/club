@@ -12,7 +12,7 @@ import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
 
 export const handleSendGroupMessage = async (req: Request, res: Response) => {
   try {
-    const {groupId, message, chatId  } = req.body;
+    const { groupId, message, chatId } = req.body;
     console.log(req.body);
     const files = (req as any).files;
     const io = getIO();
@@ -37,11 +37,7 @@ export const handleSendGroupMessage = async (req: Request, res: Response) => {
     let chat = await Chat.findOne({ groupId, isGroup: true });
 
     if (!chat) {
-      chat = await Chat.create({
-        groupId,
-        isGroup: true,
-        lastMessage: null, // ✅ IMPORTANT FIX (NO BSON ERROR)
-      });
+      chat = await Chat.create({ groupId, isGroup: true, lastMessage: null });
     }
 
     // -------------------------
@@ -56,12 +52,8 @@ export const handleSendGroupMessage = async (req: Request, res: Response) => {
 
       uploadedImages = await Promise.all(
         images.map(async (file: any) => {
-          const result = await uploadToCloudinary(
-            file.buffer,
-            file.mimetype,
-            "gallery"
-          );
-          return result; // cloudinary URL
+          const result = await uploadToCloudinary(file.buffer, file.mimetype, "gallery");
+          return result;
         })
       );
     }
@@ -98,11 +90,11 @@ export const handleSendGroupMessage = async (req: Request, res: Response) => {
     await chat.save();
 
     io.emit("messageRefresh", newMessage, chat.updatedAt);
-    io.emit("messageAdminRefresh", { 
-      newMessage: newMessage, 
-      groupId: chat.groupId, 
-      chatId: chat._id, 
-      updatedAt: chat.updatedAt 
+    io.emit("messageAdminRefresh", {
+      newMessage: newMessage,
+      groupId: chat.groupId,
+      chatId: chat._id,
+      updatedAt: chat.updatedAt
     });
 
     // -------------------------
@@ -143,7 +135,7 @@ export const handleGetChatFromGroup = async (req: Request, res: Response) => {
     const messages = await Message.find({ chatId: chat._id })
       .populate("sender", "fullName profileImage email")
       .populate("postId")
-      .sort({ createdAt: 1 }) 
+      .sort({ createdAt: 1 })
       .lean();
 
     return res.status(200).json({

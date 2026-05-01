@@ -202,26 +202,6 @@ export const activeAndInactiveUser = async (req: Request, res: Response) => {
   }
 };
 
-
-
-export const addNewUser = async (req: Request, res: Response) => {
-  try {
-    const { fullName, email, phone, password } = req.body;
-
-    if (!fullName || !email || !phone || !password) return res.status(400).json({ message: "All fields are required." });
-    const user = await User.findOne({ email, phone });
-    if (user) return res.status(400).json({ message: "User already exists." });
-    const userId = `USR-${nanoid(8)}`;
-
-    const newUser = await User.create({ fullName, email, phone, password, userId });
-    res.status(201).json({ message: "New Member added successfully.", data: newUser });
-  }
-  catch (err: any) {
-    res.status(500).json({ message: err?.message || "Server Error" })
-  }
-}
-
-
 export const acceptPaymentRequest = async (req: Request, res: Response) => {
   try {
     const { id, amount } = req.body;
@@ -242,148 +222,454 @@ export const acceptPaymentRequest = async (req: Request, res: Response) => {
   catch (err: any) {
     res.status(500).json({ message: err?.message || "Server Error" })
   }
-}
-
-
-const normalize = (val: string) => val?.trim().toLowerCase();
-
-const hashPassword = async (password: string) => {
-  return bcrypt.hash(password, 10);
 };
 
-const buildUser = async (user: any, extra: any = {}) => {
-  const rawPassword =
-    user.password || `${user?.fullName?.trim()?.toLowerCase()}@123`;
 
-  const hashedPassword = await hashPassword(rawPassword);
 
-  return {
-    fullName: user.fullName,
-    email: normalize(user.email),
-    ...(user.phone && { phone: user.phone.toString() }),
-    password: hashedPassword,
-    userId: `USR-${nanoid(8)}`,
-    dob: user.dob || null,
-    spouseName: extra.spouseName || null,
-    spouseEmail: extra.spouseEmail
-      ? normalize(extra.spouseEmail)
-      : null,
-  };
+
+
+
+
+
+
+
+
+
+
+
+//   const normalize = (val?: string) => val?.trim().toLowerCase();
+
+// const parseChildren = (children: any) => {
+//   try {
+//     if (!children) return [];
+//     const parsed =
+//       typeof children === "string" ? JSON.parse(children) : children;
+//     return Array.isArray(parsed) ? parsed : [];
+//   } catch {
+//     return [];
+//   }
+// };
+
+// export const uploadExcel = async (req: Request, res: Response) => {
+//   try {
+//     const file = (req.files as any)?.excelFile?.[0];
+
+//     if (!file) {
+//       return res.status(400).json({ message: "No file uploaded" });
+//     }
+
+//     const workbook = xlsx.read(file.buffer, { type: "buffer" });
+//     const sheet = workbook.Sheets[workbook.SheetNames[0]];
+//     const rows: any[] = xlsx.utils.sheet_to_json(sheet);
+
+//     const successUsers: any[] = [];
+//     const duplicateUsers: any[] = [];
+
+//     const { nanoid } = await import("nanoid");
+
+//     // ===== Collect emails & phones =====
+//     const allEmails = rows
+//       .flatMap(r => [r.email, r.wifeEmail])
+//       .filter(Boolean)
+//       .map(normalize);
+
+//     const allPhones = rows
+//       .flatMap(r => [r.mobile, r.wifeMobile])
+//       .filter(Boolean)
+//       .map(p => p.toString());
+
+//       console.log("All Emails from Excel:", allEmails);
+//       console.log("All Phones from Excel:", allPhones);
+
+//     const existingUsers = await User.find({
+//       $or: [
+//         { "personalDetails.email": { $in: allEmails } },
+//         { "personalDetails.mobile": { $in: allPhones } }
+//       ]
+//     });
+
+//     const existingEmailSet = new Set(
+//       existingUsers.map(u => normalize(u.personalDetails?.email)).filter(Boolean)
+//     );
+
+//     const existingPhoneSet = new Set(
+//       existingUsers.map(u => u.personalDetails?.mobile?.toString()).filter(Boolean)
+//     );
+
+//     const usedEmails = new Set<string>();
+//     const usedPhones = new Set<string>();
+
+//     // ================= PROCESS =================
+//     for (const row of rows) {
+//       const userEmail = normalize(row.email);
+//       const wifeEmail = normalize(row.wifeEmail);
+
+//       const userPhone = row.mobile?.toString();
+//       const wifePhone = row.wifeMobile?.toString();
+
+//       const relationId = nanoid(10);
+
+//       // ❌ Same row validation
+//       if (
+//         userEmail &&
+//         wifeEmail &&
+//         userEmail === wifeEmail
+//       ) {
+//         duplicateUsers.push({
+//           email: userEmail,
+//           reason: "User & Wife email same"
+//         });
+//         continue;
+//       }
+
+//       if (
+//         userPhone &&
+//         wifePhone &&
+//         userPhone === wifePhone
+//       ) {
+//         duplicateUsers.push({
+//           phone: userPhone,
+//           reason: "User & Wife mobile same"
+//         });
+//         continue;
+//       }
+
+//       // ===== MAIN USER =====
+//       if (!userEmail) {
+//         duplicateUsers.push({ reason: "User email missing" });
+//         continue;
+//       }
+
+//       const isUserDuplicate =
+//         existingEmailSet.has(userEmail) ||
+//         usedEmails.has(userEmail) ||
+//         (userPhone &&
+//           (existingPhoneSet.has(userPhone) || usedPhones.has(userPhone)));
+
+//       if (!isUserDuplicate) {
+//         usedEmails.add(userEmail);
+//         if (userPhone) usedPhones.add(userPhone);
+
+//         successUsers.push({
+//           userId: `USR-${nanoid(8)}`,
+//           password: `${row.fullName?.trim()?.toLowerCase() || "user"}@123`,
+//           relationId,
+
+//           personalDetails: {
+//             fullName: row.fullName,
+//             email: userEmail,
+//             ...(userPhone && { mobile: userPhone }),
+
+//             ...(row.wifeName && { wifeName: row.wifeName }),
+//             ...(wifeEmail && { wifeEmail }),
+
+//             ...(row.address && { address: row.address }),
+//             ...(row.state && { state: row.state }),
+//             ...(row.country && { country: row.country }),
+
+//             children: parseChildren(row.children)
+//           }
+//         });
+
+//       } else {
+//         duplicateUsers.push({
+//           email: userEmail,
+//           phone: userPhone,
+//           reason: "User duplicate"
+//         });
+//       }
+
+//       // ===== WIFE USER =====
+//       if (wifeEmail && row.wifeName) {
+//         const isWifeDuplicate =
+//           existingEmailSet.has(wifeEmail) ||
+//           usedEmails.has(wifeEmail) ||
+//           (wifePhone &&
+//             (existingPhoneSet.has(wifePhone) || usedPhones.has(wifePhone)));
+
+//         if (!isWifeDuplicate) {
+//           usedEmails.add(wifeEmail);
+//           if (wifePhone) usedPhones.add(wifePhone);
+
+//           successUsers.push({
+//             userId: `USR-${nanoid(8)}`,
+//             password: `${row.wifeName?.trim()?.toLowerCase() || "user"}@123`,
+//             relationId,
+
+//             personalDetails: {
+//               fullName: row.wifeName,
+//               email: wifeEmail,
+//               ...(wifePhone && { mobile: wifePhone }),
+
+//               wifeName: row.fullName,
+//               wifeEmail: userEmail,
+
+//               ...(row.address && { address: row.address }),
+//               ...(row.state && { state: row.state }),
+//               ...(row.country && { country: row.country }),
+
+//               children: []
+//             }
+//           });
+
+//         } else {
+//           duplicateUsers.push({
+//             email: wifeEmail,
+//             phone: wifePhone,
+//             reason: "Wife duplicate"
+//           });
+//         }
+//       }
+//     }
+
+//     // ===== INSERT =====
+//     if (!successUsers.length) {
+//       return res.json({
+//         message: "No users inserted",
+//         insertedCount: 0,
+//         duplicateCount: duplicateUsers.length,
+//         duplicates: duplicateUsers
+//       });
+//     }
+
+//     const inserted = await User.insertMany(successUsers, {
+//       ordered: false
+//     });
+
+//     return res.status(201).json({
+//       message: "Upload successful",
+//       insertedCount: inserted.length,
+//       duplicateCount: duplicateUsers.length,
+//       duplicates: duplicateUsers,
+//       inserted: inserted
+//     });
+
+//   } catch (err: any) {
+//     console.error(err);
+//     return res.status(500).json({
+//       message: err.message || "Upload failed"
+//     });
+//   }
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const generatePasswordFromName = (fullName: string) => {
+  if (!fullName) return "";
+
+  const firstName = fullName.trim().split(" ")[0].toLowerCase() || "user";
+
+  const rawPassword = `${firstName}@123`;
+
+  const hashedPassword = bcrypt.hashSync(rawPassword, 10);
+
+  return hashedPassword;
 };
 
+
+  const normalize = (val?: string) => val?.trim().toLowerCase();
+
+const parseExcelChildren = (row: any) => {
+  const children = [];
+
+  for (let i = 1; i <= 10; i++) {
+    const name = row[`kid${i}name`];
+    const age = row[`kid${i}age`];
+
+    if (name && age) {
+      children.push({
+        name: name.toString().trim(),
+        age: Number(age)
+      });
+    }
+  }
+
+  return children;
+};
 export const uploadExcel = async (req: Request, res: Response) => {
   try {
     const file = (req.files as any)?.excelFile?.[0];
-
     if (!file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
     const workbook = xlsx.read(file.buffer, { type: "buffer" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const jsonData: any[] = xlsx.utils.sheet_to_json(sheet);
+    const rows: any[] = xlsx.utils.sheet_to_json(sheet);
 
     const successUsers: any[] = [];
     const duplicateUsers: any[] = [];
 
-    // 🔹 Normalize all emails/phones from Excel
-    const emails = jsonData
-      .flatMap(u => [u.email, u.spouseEmail])
+    const { nanoid } = await import("nanoid");
+
+    // ===== Collect emails & phones =====
+    const allEmails = rows
+      .flatMap(r => [r.email, r.wifeEmail])
       .filter(Boolean)
       .map(normalize);
 
-    const phones = jsonData
-      .flatMap(u => [u.phone])
+    const allPhones = rows
+      .flatMap(r => [r.mobile, r.wifeMobile])
       .filter(Boolean)
-      .map(p => p.toString());
+      .map(p => p?.toString());
 
-    // 🔹 Existing users from DB
+    // ===== existing DB users =====
     const existingUsers = await User.find({
       $or: [
-        { email: { $in: emails } },
-        { phone: { $in: phones } }
+        { "email": { $in: allEmails } },
+        { "mobile": { $in: allPhones } }
       ]
     });
 
     const existingEmailSet = new Set(
-      existingUsers.map(u => normalize(u.email))
+      existingUsers.map(u => normalize(u.email)).filter(Boolean)
     );
 
     const existingPhoneSet = new Set(
-      existingUsers.map(u => u.phone)
+      existingUsers.map(u => u.mobile?.toString()).filter(Boolean)
     );
 
-    // 🔹 Excel-level tracking
     const usedEmails = new Set<string>();
     const usedPhones = new Set<string>();
 
-    for (const user of jsonData) {
-      const email = normalize(user.email);
-      const phone = user.phone ? user.phone.toString() : null;
+    // ================= PROCESS =================
+    for (const row of rows) {
+      const userEmail = normalize(row.email);
+      const wifeEmail = normalize(row.wifeEmail);
 
-      // =========================
-      // 👤 MAIN USER CHECK
-      // =========================
-      if (existingEmailSet.has(email) || usedEmails.has(email) || (phone && (existingPhoneSet.has(phone) || usedPhones.has(phone)))) {
-        duplicateUsers.push({ email, phone, reason: "Main user duplicate" });
+      const userPhone = row.mobile?.toString();
+      const wifePhone = row.wifeMobile?.toString();
+
+      const relationId = nanoid(10);
+
+      if (!userEmail) {
+        duplicateUsers.push({ reason: "User email missing" });
         continue;
       }
 
-      usedEmails.add(email);
-      if (phone) usedPhones.add(phone);
+      // ❌ same row validation
+      if (userEmail && wifeEmail && userEmail === wifeEmail) {
+        duplicateUsers.push({ email: userEmail, reason: "Same email in row" });
+        continue;
+      }
 
-      const mainUser = await buildUser(user);
-      successUsers.push(mainUser);
+      if (userPhone && wifePhone && userPhone === wifePhone) {
+        duplicateUsers.push({ phone: userPhone, reason: "Same phone in row" });
+        continue;
+      }
 
-      // =========================
-      // 🔗 SPOUSE USER CHECK
-      // =========================
-      if (user.spouseEmail && user.spouseName) {
-        const spouseEmail = normalize(user.spouseEmail);
-        if (
-          existingEmailSet.has(spouseEmail) ||
-          usedEmails.has(spouseEmail)
-        ) {
-          duplicateUsers.push({
-            email: spouseEmail,
-            reason: "Spouse email duplicate"
+      // ================= MAIN USER =================
+      const isUserDuplicate =
+        existingEmailSet.has(userEmail) ||
+        usedEmails.has(userEmail) ||
+        (userPhone && (existingPhoneSet.has(userPhone) || usedPhones.has(userPhone)));
+
+      if (!isUserDuplicate) {
+        usedEmails.add(userEmail);
+        if (userPhone) usedPhones.add(userPhone);
+
+        successUsers.push({
+          userId: row?.userId?.toString() || `USR-${nanoid(8)}`,
+          password: generatePasswordFromName(row.fullName),
+          relationId,
+
+          fullName: row.fullName,
+          email: userEmail,
+          mobile: userPhone || undefined,
+          dob: row.dob ? new Date(row.dob) : undefined,
+          occupation: row.occupation || undefined,
+          wifeName: row.wifeName || undefined,
+          wifeEmail: wifeEmail || undefined,
+          wifeOccupation: row.wifeOccupation || undefined,
+          wifeDob: row.wifeDob ? new Date(row.wifeDob) : undefined,
+          wifeMobile: wifePhone || undefined,
+          address: row.address,
+          state: row.state,
+          country: row.country,
+          anniversaryDate: row.anniversaryDate ? new Date(row.anniversaryDate) : undefined,
+          children: parseExcelChildren(row)
+        });
+      } else {
+        duplicateUsers.push({ email: userEmail, reason: "User duplicate" });
+      }
+
+      // ================= WIFE USER =================
+      if (wifeEmail && row.wifeName) {
+        const isWifeDuplicate =
+          existingEmailSet.has(wifeEmail) ||
+          usedEmails.has(wifeEmail) ||
+          (wifePhone && (existingPhoneSet.has(wifePhone) || usedPhones.has(wifePhone)));
+
+        if (!isWifeDuplicate) {
+          usedEmails.add(wifeEmail);
+          if (wifePhone) usedPhones.add(wifePhone);
+
+          successUsers.push({
+            userId: row?.wifeUserId?.toString() || `USR-${nanoid(8)}`,
+            password: generatePasswordFromName(row.wifeName),
+            relationId,
+
+            fullName: row.wifeName,
+            email: wifeEmail,
+            mobile: wifePhone || undefined,
+            dob: row.wifeDob ? new Date(row.wifeDob) : undefined,
+            occupation: row.wifeOccupation || undefined,
+            wifeName: row.fullName,
+            wifeEmail: userEmail,
+            wifeOccupation: row.wifeOccupation || undefined,
+            wifeDob: row.wifeDob ? new Date(row.wifeDob) : undefined,
+            wifeMobile: wifePhone || undefined,
+            address: row.address,
+            state: row.state,
+            country: row.country,
+            anniversaryDate: row.anniversaryDate ? new Date(row.anniversaryDate) : undefined,
+            children: parseExcelChildren(row)
           });
-          continue;
+        } else {
+          duplicateUsers.push({ email: wifeEmail, reason: "Wife duplicate" });
         }
-
-        usedEmails.add(spouseEmail);
-
-        const spouseUser = await buildUser(
-          {
-            fullName: user.spouseName,
-            email: spouseEmail,
-            phone: null,
-            password: user.password
-          },
-          {
-            spouseName: user.fullName,
-            spouseEmail: email
-          }
-        );
-
-        successUsers.push(spouseUser);
       }
     }
 
-    const result = await User.insertMany(successUsers);
+    // ================= INSERT =================
+    if (!successUsers.length) {
+      return res.json({
+        message: "No users inserted",
+        insertedCount: 0,
+        duplicateCount: duplicateUsers.length,
+        duplicates: duplicateUsers
+      });
+    }
+
+    const inserted = await User.insertMany(successUsers, { ordered: false });
 
     return res.status(201).json({
-      message: "Excel upload completed successfully",
-      insertedCount: result.length,
+      message: "Upload successful",
+      insertedCount: inserted.length,
       duplicateCount: duplicateUsers.length,
       duplicates: duplicateUsers,
-      inserted: result
+      inserted
     });
 
-  } catch (error: any) {
-    console.error(error);
+  } catch (err: any) {
+    console.error(err);
     return res.status(500).json({
-      message: error.message
+      message: err.message || "Upload failed"
     });
   }
 };

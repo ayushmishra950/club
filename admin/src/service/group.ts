@@ -14,6 +14,12 @@ export const getAllGroups = async () => {
     return res;
 };
 
+
+export const getAllGroupsByAdmin = async (id: string) => {
+    const res = await api.get(`${base_url}/admin/group/getallbyadmin/${id}`);
+    return res;
+};
+
 export const getGroupById = async (id: string) => {
     const res = await api.get(`${base_url}/admin/group/getbyid/${id}`);
     return res;

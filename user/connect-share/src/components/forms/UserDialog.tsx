@@ -1,10 +1,9 @@
 
 // import { useEffect, useRef, useState } from "react";
-// import { Eye, EyeOff, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+// import { Eye, EyeOff, Loader2, ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 // import { getSingleUser, updateUser } from "@/service/auth";
 // import { useToast } from "@/hooks/use-toast";
 // import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "../ui/select";
-
 
 // export default function UserPage() {
 //     const { toast } = useToast();
@@ -18,9 +17,12 @@
 //     const [accountType, setAccountType] = useState("user");
 
 //     const [formData, setFormData] = useState<any>({
+//         userId: user?._id,
 //         accountType: "user",
-//         type: "public"
+//         type: "public",
+//         businesses: [] // Start empty - will be populated from API
 //     });
+
 //     const [errors, setErrors] = useState({
 //         skills: "",
 //         hobbies: "",
@@ -29,7 +31,7 @@
 //     const [preview, setPreview] = useState<any>({
 //         profileImage: "",
 //         coverImage: "",
-//         businessCoverImage: "",
+//         businessCoverImages: {} as Record<number, string>,
 //     });
 
 //     const handleChange = (e: any) => {
@@ -46,11 +48,9 @@
 //         } else if (type === "checkbox") {
 //             setFormData({ ...formData, [name]: checked });
 //         } else {
-//             // Split the input by commas and trim each item
 //             const items = value.split(",").map((item: string) => item.trim()).filter(Boolean);
 
-//             // Check if items exceed 5
-//             if (items.length > 5) {
+//             if (items.length > 5 && (name === "skills" || name === "hobbies")) {
 //                 setErrors({ ...errors, [name]: "Maximum 5 items allowed" });
 //             } else {
 //                 setErrors({ ...errors, [name]: "" });
@@ -59,24 +59,133 @@
 //         }
 //     };
 
+//     // Business Handlers
+//     const handleBusinessChange = (index: number, e: any) => {
+//         const { name, value, files } = e.target;
+//         const updatedBusinesses = [...formData.businesses];
+
+//         if (files) {
+//             const file = files[0];
+//             updatedBusinesses[index][name] = file;
+
+//             // Preview for business cover image
+//             setPreview({
+//                 ...preview,
+//                 businessCoverImages: {
+//                     ...preview.businessCoverImages,
+//                     [index]: URL.createObjectURL(file)
+//                 }
+//             });
+//         } else {
+//             updatedBusinesses[index][name] = value;
+//         }
+
+//         setFormData({
+//             ...formData,
+//             businesses: updatedBusinesses
+//         });
+//     };
+
+//     const addBusiness = () => {
+//         setFormData({
+//             ...formData,
+//             businesses: [
+//                 ...formData.businesses,
+//                 {
+//                     businessName: "",
+//                     businessCategory: "",
+//                     website: "",
+//                     businessDescription: "",
+//                     businessPhone: "",
+//                     workingHours: "",
+//                     businessAddress: "",
+//                     businessCoverImage: null
+//                 }
+//             ]
+//         });
+//     };
+
+//     const removeBusiness = (index: number) => {
+//         const updatedBusinesses = formData.businesses.filter((_: any, i: number) => i !== index);
+
+//         // Remove preview for deleted business
+//         const updatedPreviews = { ...preview.businessCoverImages };
+//         delete updatedPreviews[index];
+
+//         setPreview({
+//             ...preview,
+//             businessCoverImages: updatedPreviews
+//         });
+
+//         setFormData({
+//             ...formData,
+//             businesses: updatedBusinesses
+//         });
+//     };
+
 //     const handleSubmit = async (e: any) => {
 //         e.preventDefault();
+
 //         try {
 //             setIsLoading(true);
-//             let obj = { ...formData, userId: user?._id };
-//             const convertFormData = new FormData();
-//             Object.keys(obj).forEach((key) => {
-//                 convertFormData.append(key, obj[key]);
-//             });
-//             const res = await updateUser(convertFormData);
-//             console.log(res);
-//             if (res.status === 200) {
-//                 toast({ title: "Profile Updated Successfully.", description: res?.data?.message });
+
+//             const form = new FormData();
+
+//             // Explicitly add userId from the logged-in user context or formData
+//             const finalUserId = user?._id || formData?._id || formData?.userId;
+//             if (finalUserId) {
+//                 form.append("userId", finalUserId);
 //             }
-//         }
-//         catch (err) {
-//             console.log(err);
-//             toast({ title: "Profile Update Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
+
+//             Object.keys(formData).forEach((key) => {
+//                 const excluded = ["businesses", "userId", "_id", "friends", "isOnline", "lastSeen", "role", "blocked"];
+//                 if (!excluded.includes(key)) {
+//                     if (formData[key] !== undefined && formData[key] !== null) {
+//                         form.append(key, formData[key]);
+//                     }
+//                 }
+//             });
+
+//             // Clean businesses array for JSON (remove File objects to avoid {})
+//             const businessesForJSON = formData.businesses.map((biz: any) => {
+//                 const bizCopy = { ...biz };
+//                 if (bizCopy.businessCoverImage instanceof File) {
+//                     delete bizCopy.businessCoverImage;
+//                 }
+//                 return bizCopy;
+//             });
+
+//             form.append("businesses", JSON.stringify(businessesForJSON));
+
+//             formData.businesses.forEach((biz: any, index: number) => {
+//                 if (biz.businessCoverImage instanceof File) {
+//                     form.append(`businessCoverImage_${index}`, biz.businessCoverImage);
+//                 }
+//             });
+
+//             const res = await updateUser(form);
+
+//             if (res.status === 200) {
+//                 // Update localStorage with updated user data
+//                 const updatedUser = res.data.user;
+//                 if (updatedUser) {
+//                     localStorage.setItem("user", JSON.stringify(updatedUser));
+//                 }
+
+//                 toast({
+//                     title: "Profile Updated Successfully",
+//                     description: res.data.message
+//                 });
+
+//                 // Refresh data from server
+//                 handleGetUser();
+//             }
+//         } catch (err: any) {
+//             toast({
+//                 title: "Update Failed",
+//                 description: err?.response?.data?.message || err?.message,
+//                 variant: "destructive"
+//             });
 //         } finally {
 //             setIsLoading(false);
 //         }
@@ -85,10 +194,27 @@
 //     const handleGetUser = async () => {
 //         try {
 //             const res = await getSingleUser(user?._id);
-//             console.log(res);
 //             if (res.status === 200) {
 //                 const data = res?.data?.data || {};
-//                 setFormData(data);
+
+//                 setFormData({
+//                     ...data,
+//                     skills: Array.isArray(data.skills) ? data.skills.join(", ") : data.skills || "",
+//                     hobbies: Array.isArray(data.hobbies) ? data.hobbies.join(", ") : data.hobbies || "",
+//                     businesses: data.businesses?.length > 0
+//                         ? data.businesses
+//                         : [{
+//                             businessName: "",
+//                             businessCategory: "",
+//                             website: "",
+//                             businessDescription: "",
+//                             businessPhone: "",
+//                             workingHours: "",
+//                             businessAddress: "",
+//                             businessCoverImage: ""
+//                         }]
+//                 });
+
 //                 setAccountType(data?.accountType || "user");
 //                 if (data.accountType === "business") setShowBusiness(true);
 //             }
@@ -111,9 +237,8 @@
 //                 </div>
 
 //                 <form onSubmit={handleSubmit} className="space-y-8">
-//                     {/* Cover + Profile Image Section */}
+//                     {/* Cover + Profile Image Section - Unchanged */}
 //                     <div className="relative rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-200">
-//                         {/* Cover Image */}
 //                         <div className="h-48 md:h-64 bg-gradient-to-r from-blue-600 to-indigo-600 relative">
 //                             {preview.coverImage || formData.coverImage ? (
 //                                 <img
@@ -125,7 +250,6 @@
 //                                 <div className="absolute inset-0 bg-[radial-gradient(#ffffff33_1px,transparent_1px)] [background-size:20px_20px]"></div>
 //                             )}
 
-//                             {/* Profile Image Overlay */}
 //                             <div className="absolute -bottom-12 left-8">
 //                                 <div className="relative">
 //                                     <div className="w-28 h-28 rounded-2xl border-4 border-white overflow-hidden bg-white shadow-md">
@@ -141,8 +265,6 @@
 //                                             </div>
 //                                         )}
 //                                     </div>
-
-//                                     {/* Upload Buttons */}
 //                                     <label htmlFor="profileImage" className="absolute bottom-1 right-1 bg-white p-1.5 rounded-full shadow cursor-pointer hover:bg-gray-100">
 //                                         <input
 //                                             id="profileImage"
@@ -156,7 +278,6 @@
 //                                 </div>
 //                             </div>
 
-//                             {/* Cover Upload */}
 //                             <label htmlFor="coverImage" className="absolute top-4 right-4 bg-white/90 hover:bg-white px-4 py-2 rounded-xl text-sm font-medium cursor-pointer shadow flex items-center gap-2">
 //                                 <input
 //                                     id="coverImage"
@@ -168,12 +289,10 @@
 //                                 Change Cover
 //                             </label>
 //                         </div>
-
-//                         {/* Spacer for profile image */}
 //                         <div className="h-14"></div>
 //                     </div>
 
-//                     {/* Account Type */}
+//                     {/* Account Type - Unchanged */}
 //                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
 //                         <label className="text-sm font-semibold text-gray-700 mb-3 block">Account Type</label>
 //                         <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit">
@@ -207,40 +326,22 @@
 //                         </div>
 //                     </div>
 
-//                     {/* Basic Information */}
+//                     {/* Basic Information - Unchanged */}
 //                     <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
 //                         <h2 className="text-xl font-semibold mb-6 text-gray-900">Basic Information</h2>
-
+//                         {/* All your original Basic Information fields remain exactly same */}
 //                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 //                             <div>
 //                                 <label className="text-sm font-medium text-gray-700">Full Name</label>
-//                                 <input
-//                                     name="fullName"
-//                                     value={formData.fullName || ""}
-//                                     onChange={handleChange}
-//                                     className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-//                                     placeholder="Enter full name"
-//                                 />
+//                                 <input name="fullName" value={formData.fullName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter full name" />
 //                             </div>
 //                             <div>
 //                                 <label className="text-sm font-medium text-gray-700">Father's Name</label>
-//                                 <input
-//                                     name="fatherName"
-//                                     value={formData.fatherName || ""}
-//                                     onChange={handleChange}
-//                                     className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-//                                     placeholder="Father's name"
-//                                 />
+//                                 <input name="fatherName" value={formData.fatherName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Father's name" />
 //                             </div>
 //                             <div>
 //                                 <label className="text-sm font-medium text-gray-700">Mother's Name</label>
-//                                 <input
-//                                     name="motherName"
-//                                     value={formData.motherName || ""}
-//                                     onChange={handleChange}
-//                                     className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-//                                     placeholder="Mother's name"
-//                                 />
+//                                 <input name="motherName" value={formData.motherName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Mother's name" />
 //                             </div>
 //                         </div>
 
@@ -282,6 +383,48 @@
 //                                     <option value="single">Single</option>
 //                                     <option value="married">Married</option>
 //                                 </select>
+//                             </div>
+//                         </div>
+//                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+//                             <div>
+//                                 <label className="text-sm font-medium text-gray-700">Wife Name</label>
+//                                 <input name="fullName" value={formData.fullName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter full name" />
+//                             </div>
+//                             <div>
+//                                 <label className="text-sm font-medium text-gray-700">Father's Name</label>
+//                                 <input name="fatherName" value={formData.fatherName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Father's name" />
+//                             </div>
+//                             <div>
+//                                 <label className="text-sm font-medium text-gray-700">Mother's Name</label>
+//                                 <input name="motherName" value={formData.motherName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Mother's name" />
+//                             </div>
+//                         </div>
+//                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+//                             <div>
+//                                 <label className="text-sm font-medium text-gray-700">Full Name</label>
+//                                 <input name="fullName" value={formData.fullName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter full name" />
+//                             </div>
+//                             <div>
+//                                 <label className="text-sm font-medium text-gray-700">Father's Name</label>
+//                                 <input name="fatherName" value={formData.fatherName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Father's name" />
+//                             </div>
+//                             <div>
+//                                 <label className="text-sm font-medium text-gray-700">Mother's Name</label>
+//                                 <input name="motherName" value={formData.motherName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Mother's name" />
+//                             </div>
+//                         </div>
+//                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+//                             <div>
+//                                 <label className="text-sm font-medium text-gray-700">Full Name</label>
+//                                 <input name="fullName" value={formData.fullName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter full name" />
+//                             </div>
+//                             <div>
+//                                 <label className="text-sm font-medium text-gray-700">Father's Name</label>
+//                                 <input name="fatherName" value={formData.fatherName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Father's name" />
+//                             </div>
+//                             <div>
+//                                 <label className="text-sm font-medium text-gray-700">Mother's Name</label>
+//                                 <input name="motherName" value={formData.motherName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Mother's name" />
 //                             </div>
 //                         </div>
 //                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
@@ -363,7 +506,6 @@
 //                             </div>
 //                         </div>
 //                     </div>
-
 //                     {/* Skills & Hobbies */}
 //                     <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-8">
 //                         <div>
@@ -407,7 +549,6 @@
 //                     </div>
 
 //                     {/* Verified Checkbox */}
-
 //                     <div className="flex items-center gap-3 bg-white px-6 py-4 rounded-2xl border border-gray-200">
 //                         <div className="pointer-events-none flex items-center gap-3">
 //                             <input
@@ -421,8 +562,8 @@
 //                         </div>
 //                     </div>
 
-//                     {/* Business Details - Toggleable */}
-//                     {accountType === "business" && (
+//                     {/* ==================== IMPROVED MULTIPLE BUSINESS SECTION ==================== */}
+//                     {formData?.accountType === "business" && (
 //                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
 //                             <button
 //                                 type="button"
@@ -431,87 +572,90 @@
 //                             >
 //                                 <div>
 //                                     <h2 className="text-xl font-semibold text-gray-900">Business Details</h2>
-//                                     <p className="text-sm text-gray-500">Add information about your business</p>
+//                                     <p className="text-sm text-gray-500">Add and manage multiple businesses</p>
 //                                 </div>
 //                                 {showBusiness ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
 //                             </button>
 
 //                             {showBusiness && (
-//                                 <div className="px-8 pb-8 space-y-6 border-t pt-6">
-//                                     {/* Business Name + Image Upload */}
-//                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//                                 <div className="px-8 pb-8 space-y-8 border-t pt-6">
+//                                     {formData.businesses.map((biz: any, index: number) => (
+//                                         <div key={index} className="border border-gray-200 rounded-2xl p-6 bg-gray-50 relative">
+//                                             <div className="flex justify-between items-center mb-6">
+//                                                 <h3 className="text-lg font-semibold">Business {index + 1}</h3>
+//                                                 {formData.businesses.length > 1 && (
+//                                                     <button
+//                                                         type="button"
+//                                                         onClick={() => removeBusiness(index)}
+//                                                         className="text-red-600 hover:text-red-700 p-1"
+//                                                     >
+//                                                         <Trash2 size={20} />
+//                                                     </button>
+//                                                 )}
+//                                             </div>
 
-//                                         {/* Business Name (width automatically half ho jayegi) */}
-//                                         <div>
-//                                             <label className="text-sm font-medium text-gray-700">Business Name</label>
-//                                             <input
-//                                                 name="businessName"
-//                                                 value={formData.businessName || ""}
-//                                                 onChange={handleChange}
-//                                                 className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-//                                             />
+//                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//                                                 <div>
+//                                                     <label className="text-sm font-medium text-gray-700">Business Name</label>
+//                                                     <input
+//                                                         name="businessName"
+//                                                         value={biz.businessName || ""}
+//                                                         onChange={(e) => handleBusinessChange(index, e)}
+//                                                         className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+//                                                         placeholder="Business Name"
+//                                                     />
+//                                                 </div>
+
+//                                                 <div>
+//                                                     <label className="text-sm font-medium text-gray-700">Business Cover Image</label>
+//                                                     <input
+//                                                         type="file"
+//                                                         name="businessCoverImage"
+//                                                         accept="image/*"
+//                                                         onChange={(e) => handleBusinessChange(index, e)}
+//                                                         className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl"
+//                                                     />
+//                                                     {(preview.businessCoverImages[index] || (typeof biz.businessCoverImage === "string" && biz.businessCoverImage)) && (
+//                                                         <img
+//                                                             src={preview.businessCoverImages[index] || biz.businessCoverImage}
+//                                                             className="mt-3 h-32 w-full object-cover rounded-xl border"
+//                                                             alt="Business Cover"
+//                                                         />
+//                                                     )}
+//                                                 </div>
+//                                             </div>
+
+//                                             {/* Rest of business fields - same as your original but inside map */}
+//                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+//                                                 <input name="businessCategory" placeholder="Category" value={biz.businessCategory || ""} onChange={(e) => handleBusinessChange(index, e)} className="px-4 py-3 border border-gray-300 rounded-xl" />
+//                                                 <input name="website" placeholder="Website" value={biz.website || ""} onChange={(e) => handleBusinessChange(index, e)} className="px-4 py-3 border border-gray-300 rounded-xl" />
+//                                             </div>
+
+//                                             <textarea name="businessDescription" placeholder="Description" value={biz.businessDescription || ""} onChange={(e) => handleBusinessChange(index, e)} className="w-full px-4 py-3 border border-gray-300 rounded-xl mt-6" />
+
+//                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+//                                                 <input name="businessPhone" placeholder="Phone" value={biz.businessPhone || ""} onChange={(e) => handleBusinessChange(index, e)} className="px-4 py-3 border border-gray-300 rounded-xl" />
+//                                                 <input name="workingHours" placeholder="Working Hours" value={biz.workingHours || ""} onChange={(e) => handleBusinessChange(index, e)} className="px-4 py-3 border border-gray-300 rounded-xl" />
+//                                             </div>
+
+//                                             <input name="businessAddress" placeholder="Address" value={biz.businessAddress || ""} onChange={(e) => handleBusinessChange(index, e)} className="w-full px-4 py-3 border border-gray-300 rounded-xl mt-6" />
 //                                         </div>
+//                                     ))}
 
-//                                         {/* Business Cover Image */}
-//                                         <div>
-//                                             <label className="text-sm font-medium text-gray-700">Business Cover Image</label>
-
-//                                             <input
-//                                                 name="businessCoverImage"
-//                                                 type="file"
-//                                                 accept="image/*"
-//                                                 onChange={handleChange}
-//                                                 className="mt-1 w-full text-sm"
-//                                             />
-
-//                                             {/* Preview */}
-//                                             {(preview.businessCoverImage || formData.businessCoverImage) && (
-//                                                 <img
-//                                                     src={preview.businessCoverImage || formData.businessCoverImage}
-//                                                     alt="preview"
-//                                                     className="mt-3 h-24 w-full object-cover rounded-lg border"
-//                                                 />
-//                                             )}
-//                                         </div>
-//                                     </div>
-
-//                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//                                         <div>
-//                                             <label className="text-sm font-medium text-gray-700">Category</label>
-//                                             <input name="businessCategory" value={formData.businessCategory || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Restaurant, IT Services" />
-//                                         </div>
-//                                         <div>
-//                                             <label className="text-sm font-medium text-gray-700">Website</label>
-//                                             <input name="website" value={formData.website || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com" />
-//                                         </div>
-//                                     </div>
-
-//                                     <div>
-//                                         <label className="text-sm font-medium text-gray-700">Business Description</label>
-//                                         <textarea name="businessDescription" value={formData.businessDescription || ""} onChange={handleChange} rows={4} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
-//                                     </div>
-
-//                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//                                         <div>
-//                                             <label className="text-sm font-medium text-gray-700">Business Phone</label>
-//                                             <input name="businessPhone" value={formData.businessPhone || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
-//                                         </div>
-//                                         <div>
-//                                             <label className="text-sm font-medium text-gray-700">Working Hours</label>
-//                                             <input name="workingHours" value={formData.workingHours || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="9:00 AM - 7:00 PM" />
-//                                         </div>
-//                                     </div>
-
-//                                     <div>
-//                                         <label className="text-sm font-medium text-gray-700">Business Address</label>
-//                                         <input name="businessAddress" value={formData.businessAddress || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
-//                                     </div>
+//                                     <button
+//                                         type="button"
+//                                         onClick={addBusiness}
+//                                         className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-blue-400 hover:border-blue-600 text-blue-600 hover:text-blue-700 rounded-2xl transition-all font-medium"
+//                                     >
+//                                         <Plus size={20} />
+//                                         Add Another Business
+//                                     </button>
 //                                 </div>
 //                             )}
 //                         </div>
 //                     )}
 
-//                     {/* Password Section */}
+//                     {/* Password Section - Unchanged */}
 //                     <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
 //                         <h2 className="text-xl font-semibold mb-6 text-gray-900">Security</h2>
 //                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -525,15 +669,10 @@
 //                                     className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500"
 //                                     placeholder="••••••••"
 //                                 />
-//                                 <button
-//                                     type="button"
-//                                     onClick={() => setShowPassword(!showPassword)}
-//                                     className="absolute right-4 top-10 text-gray-500 hover:text-gray-700"
-//                                 >
+//                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-10 text-gray-500 hover:text-gray-700">
 //                                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
 //                                 </button>
 //                             </div>
-
 //                             <div>
 //                                 <label className="text-sm font-medium text-gray-700">Confirm New Password</label>
 //                                 <input
@@ -548,7 +687,7 @@
 //                         </div>
 //                     </div>
 
-//                     {/* Submit Button */}
+//                     {/* Submit Button - Unchanged */}
 //                     <div className="flex justify-end pt-4">
 //                         <button
 //                             type="submit"
@@ -564,6 +703,7 @@
 //         </div>
 //     );
 // }
+
 
 
 
@@ -668,6 +808,23 @@ export default function UserPage() {
         }
     };
 
+
+    const handleChildChange = (index: number, e: any) => {
+        const { name, value } = e.target;
+
+        const updatedChildren = [...(formData.children || [])];
+
+        updatedChildren[index] = {
+            ...updatedChildren[index],
+            [name]: name === "age" ? Number(value) : value
+        };
+
+        setFormData({
+            ...formData,
+            children: updatedChildren
+        });
+    };
+
     // Business Handlers
     const handleBusinessChange = (index: number, e: any) => {
         const { name, value, files } = e.target;
@@ -739,7 +896,7 @@ export default function UserPage() {
             setIsLoading(true);
 
             const form = new FormData();
-            
+
             // Explicitly add userId from the logged-in user context or formData
             const finalUserId = user?._id || formData?._id || formData?.userId;
             if (finalUserId) {
@@ -747,13 +904,16 @@ export default function UserPage() {
             }
 
             Object.keys(formData).forEach((key) => {
-                const excluded = ["businesses", "userId", "_id", "friends", "isOnline", "lastSeen", "role", "blocked"];
+                const excluded = ["businesses", "userId", "_id", "friends", "isOnline", "lastSeen", "role", "blocked", "children"];
                 if (!excluded.includes(key)) {
                     if (formData[key] !== undefined && formData[key] !== null) {
                         form.append(key, formData[key]);
                     }
                 }
             });
+            if (formData.children) {
+                form.append("children", JSON.stringify(formData.children));
+            }
 
             // Clean businesses array for JSON (remove File objects to avoid {})
             const businessesForJSON = formData.businesses.map((biz: any) => {
@@ -775,26 +935,17 @@ export default function UserPage() {
             const res = await updateUser(form);
 
             if (res.status === 200) {
-                // Update localStorage with updated user data
                 const updatedUser = res.data.user;
                 if (updatedUser) {
                     localStorage.setItem("user", JSON.stringify(updatedUser));
                 }
 
-                toast({
-                    title: "Profile Updated Successfully",
-                    description: res.data.message
-                });
-
-                // Refresh data from server
+                toast({ title: "Profile Updated Successfully", description: res.data.message });
                 handleGetUser();
             }
         } catch (err: any) {
-            toast({
-                title: "Update Failed",
-                description: err?.response?.data?.message || err?.message,
-                variant: "destructive"
-            });
+            console.log(err?.response?.data?.message || err.message);
+            toast({ title: "Update Failed", description: err?.response?.data?.message || err?.message, variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
@@ -803,13 +954,12 @@ export default function UserPage() {
     const handleGetUser = async () => {
         try {
             const res = await getSingleUser(user?._id);
+            console.log(res);
             if (res.status === 200) {
                 const data = res?.data?.data || {};
 
                 setFormData({
                     ...data,
-                    skills: Array.isArray(data.skills) ? data.skills.join(", ") : data.skills || "",
-                    hobbies: Array.isArray(data.hobbies) ? data.hobbies.join(", ") : data.hobbies || "",
                     businesses: data.businesses?.length > 0
                         ? data.businesses
                         : [{
@@ -939,22 +1089,11 @@ export default function UserPage() {
                     <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
                         <h2 className="text-xl font-semibold mb-6 text-gray-900">Basic Information</h2>
                         {/* All your original Basic Information fields remain exactly same */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             <div>
                                 <label className="text-sm font-medium text-gray-700">Full Name</label>
                                 <input name="fullName" value={formData.fullName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter full name" />
                             </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-700">Father's Name</label>
-                                <input name="fatherName" value={formData.fatherName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Father's name" />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-700">Mother's Name</label>
-                                <input name="motherName" value={formData.motherName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Mother's name" />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                             <div>
                                 <label className="text-sm font-medium text-gray-700">Date of Birth</label>
                                 <input
@@ -967,62 +1106,132 @@ export default function UserPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-gray-700">Gender</label>
-                                <select
-                                    name="gender"
-                                    value={formData.gender || ""}
-                                    onChange={handleChange}
-                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                >
-                                    <option value="">Select Gender</option>
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                    <option value="other">Other</option>
-                                </select>
+                                <label className="text-sm font-medium text-gray-700">Occupation</label>
+                                <input name="occupation" value={formData.occupation || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-gray-700">Marital Status</label>
-                                <select
-                                    name="maritalStatus"
-                                    value={formData.maritalStatus || ""}
+                                <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                                <input
+                                    name="mobile"
+                                    value={formData.mobile || ""}
                                     onChange={handleChange}
                                     className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                >
-                                    <option value="">Select</option>
-                                    <option value="single">Single</option>
-                                    <option value="married">Married</option>
-                                </select>
+                                    placeholder="+91 98765 43210"
+                                />
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
                             <div>
-                                <label className="text-sm font-medium text-gray-700">Spouse Name</label>
+                                <label className="text-sm font-medium text-gray-700">Wife Name (Optional)</label>
+                                <input name="wifeName" value={formData.wifeName || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter full name" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Date of Birth (Optional)</label>
                                 <input
-                                    name="spouseName"
-                                    value={formData.spouseName || ""}
+                                    type="date"
+                                    ref={dateRef}
+                                    name="wifeDob"
+                                    value={formData?.wifeDob ? new Date(formData.wifeDob).toISOString().split("T")[0] : ""}
                                     onChange={handleChange}
                                     className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Enter spouse name"
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-gray-700">Spouse Email</label>
+                                <label className="text-sm font-medium text-gray-700">Occupation (Optional)</label>
+                                <input name="wifeOccupation" value={formData.wifeOccupation || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Phone Number (Optional)</label>
                                 <input
-                                    name="spouseEmail"
-                                    value={formData.spouseEmail || ""}
+                                    name="wifeMobile"
+                                    value={formData.wifeMobile || ""}
                                     onChange={handleChange}
                                     className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Enter spouse email"
+                                    placeholder="+91 98765 43210"
                                 />
                             </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Aniversary Date (Optional)</label>
+                                <input
+                                    type="date"
+                                    ref={dateRef}
+                                    name="anniversaryDate"
+                                    value={formData?.anniversaryDate ? new Date(formData.anniversaryDate).toISOString().split("T")[0] : ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Address</label>
+                                <input
+                                    type="text"
+                                    name="address"
+                                    value={formData.address || ""}
+                                    onChange={handleChange}
+                                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">State</label>
+                                <input name="state" value={formData.state || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">Country</label>
+                                <input name="country" value={formData.country || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            </div>
+                        </div>
+                        <div className="mt-6 space-y-6">
+                            {formData.children?.map((child, index) => (
+                                <div key={index} className="border p-4 rounded-xl bg-gray-50">
+
+                                    {/* Child Label */}
+                                    <h3 className="text-md font-semibold text-gray-800 mb-4">
+                                        Child {index + 1}
+                                    </h3>
+
+                                    {/* Inputs Row */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                        {/* Name */}
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700">
+                                                Child Name
+                                            </label>
+                                            <input
+                                                name="name"
+                                                value={child.name || ""}
+                                                onChange={(e) => handleChildChange(index, e)}
+                                                className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Enter child name"
+                                            />
+                                        </div>
+
+                                        {/* Age */}
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-700">
+                                                Age
+                                            </label>
+                                            <input
+                                                name="age"
+                                                value={child.age || ""}
+                                                onChange={(e) => handleChildChange(index, e)}
+                                                className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Enter age"
+                                            />
+                                        </div>
+
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
                     {/* Contact & Location */}
                     <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
-                        <h2 className="text-xl font-semibold mb-6 text-gray-900">Contact & Location</h2>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <h2 className="text-xl font-semibold mb-6 text-gray-900">All Email Addresses</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                             <div>
                                 <label className="text-sm font-medium text-gray-700">Email Address</label>
                                 <input
@@ -1036,82 +1245,15 @@ export default function UserPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                                <label className="text-sm font-medium text-gray-700">Wife Email (Optional)</label>
                                 <input
-                                    name="phone"
-                                    value={formData.phone || ""}
+                                    name="wifeEmail"
+                                    value={formData.wifeEmail || ""}
                                     onChange={handleChange}
                                     className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="+91 98765 43210"
+                                    placeholder="Enter wife email"
                                 />
                             </div>
-                        </div>
-
-                        <div className="mt-6">
-                            <label className="text-sm font-medium text-gray-700">Full Address</label>
-                            <input
-                                name="address"
-                                value={formData.address || ""}
-                                onChange={handleChange}
-                                className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="House no, Street, Area"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                            <div>
-                                <label className="text-sm font-medium text-gray-700">City</label>
-                                <input name="city" value={formData.city || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-700">State</label>
-                                <input name="state" value={formData.state || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-700">Occupation</label>
-                                <input name="occupation" value={formData.occupation || ""} onChange={handleChange} className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                            </div>
-                        </div>
-                    </div>
-                    {/* Skills & Hobbies */}
-                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                            <label className="text-sm font-medium text-gray-700">Skills</label>
-                            <textarea
-                                name="skills"
-                                value={formData.skills}
-                                onChange={handleChange}
-                                rows={4}
-                                className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
-                                placeholder="e.g. React, Tailwind, UI/UX..."
-                            />
-                            {errors?.skills && <p className="text-red-500 text-sm mt-1">{errors.skills}</p>}
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium text-gray-700">Hobbies</label>
-                            <textarea
-                                name="hobbies"
-                                value={formData.hobbies}
-                                onChange={handleChange}
-                                rows={4}
-                                className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
-                                placeholder="e.g. Reading, Travelling, Photography..."
-                            />
-                            {errors?.hobbies && <p className="text-red-500 text-sm mt-1">{errors.hobbies}</p>}
-                        </div>
-
-                        <div>
-                            <label>Type</label>
-                            <Select value={formData?.type} onValueChange={(value) => { setFormData({ ...formData, type: value }) }}>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="public">Public</SelectItem>
-                                    <SelectItem value="private">Private</SelectItem>
-                                </SelectContent>
-                            </Select>
-
                         </div>
                     </div>
 

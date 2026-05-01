@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Users, Pin } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, Users, Pin, MoreVertical } from 'lucide-react';
 import { type Post } from '@/data/mockData';
 import { CommentSection } from './CommentSection';
 import { FriendButton } from '@/components/connections/FriendButton';
 import { useConnections } from '@/hooks/useConnections';
-import { likeAnUnLikePost, addCommentPost, likeAnUnLikeComment, replyToComment } from "@/service/post";
+import { likeAnUnLikePost, addCommentPost, likeAnUnLikeComment, replyToComment, deletePostByUser } from "@/service/post";
 import { useToast } from '@/hooks/use-toast';
-import { setPostLikeAnUnLike, setPostComment, setPostLikeAnUnLikeComment, setPostReplyComment } from "@/redux-toolkit/slice/postSlice";
+import { setPostLikeAnUnLike, setPostComment, setPostLikeAnUnLikeComment,setDeletePostFromList, setPostReplyComment } from "@/redux-toolkit/slice/postSlice";
 import { useAppDispatch } from '@/redux-toolkit/customHook/hook';
 import { useNavigate } from 'react-router-dom';
 import ShareModal from "./ShareCard";
+import DeleteCard from "@/components/card/DeleteCard";
+import socket from '@/socket/socket';
 
 
 export function PostCard({ post }) {
@@ -21,10 +23,47 @@ export function PostCard({ post }) {
   const [newComment, setNewComment] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deletePostData, setDeletePostData] = useState(null);
+
   const { getStatus } = useConnections();
   const status = getStatus(post?.user?.id);
   const navigate = useNavigate();
    const [shareModelOpen, setShareModelOpen] = useState(false);
+
+   useEffect(() => {
+      socket.on("postDeleted", (data) => {
+                dispatch(setDeletePostFromList(data))
+             });
+
+            return () => {
+                socket.off("postDeleted");
+            }
+   },[])
+
+   const handleDeletePost = async() => {
+    let obj = { postId: post?._id, userId: user?._id }
+    try {
+      setDeleteLoading(true);
+      const res = await deletePostByUser(obj);
+      console.log(res)
+      if (res?.status === 200) {
+        toast({ title: "Post Delete.", description: res?.data?.message });
+        // dispatch(setPostComment({ postId: postId, text: newComment, fullName: user?.fullName, userId: user?._id, createdAt: res?.data?.comment?.createdAt }))
+        dispatch(setDeletePostFromList({ postId: post?._id , userId: user?._id }));
+        setDeleteDialogOpen(false);
+        setDeletePostData(null);
+      }
+    } catch (err) {
+      console.log(err);
+      toast({ title: "Post Delete Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
+    }finally{
+      setDeleteLoading(false);
+    }
+   };
+
+
   const handleLike = async (postId: string) => {
     if (!user?._id || !postId) return;
     let obj = { userId: user?._id, postId: postId };
@@ -104,6 +143,16 @@ export function PostCard({ post }) {
 
   return (
     <>
+      <DeleteCard
+        isOpen={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        isLoading={deleteLoading}
+        buttonName="Delete"
+        title={`Delete Post: ${deletePostData?.title}`}
+        description={`Are you sure you want to delete the post "${deletePostData?.title}"? This action cannot be undone.`}
+        onConfirm={handleDeletePost}
+      />
+
     <ShareModal isOpen={shareModelOpen} onOpenChange={setShareModelOpen} post={post} />
     <div className="bg-card rounded-xl shadow-card mb-4 overflow-hidden">
       {/* Header */}
@@ -135,9 +184,9 @@ export function PostCard({ post }) {
         </div>
 
         {/* Edit/Delete */}
-        <div className="flex items-center gap-1">
+        <div className={`flex items-center gap-1 ${post?.createdBy?._id === user?._id ? "cursor-pointer" : ""}`} onClick={() => {if(post?.createdBy?._id === user?._id){setDeletePostData(post);setDeleteDialogOpen(true)} else{};}}>
           <button className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground">
-            <MoreHorizontal className="h-5 w-5" />
+            <MoreVertical className="h-5 w-5" />
           </button>
         </div>
       </div>

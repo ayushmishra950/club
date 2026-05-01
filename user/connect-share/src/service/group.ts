@@ -48,3 +48,9 @@ export const removeMemberFromGroup = async (obj: any) => {
     const res = await api.put(`${base_url}/admin/group/removemember`, obj);
     return res;
 };   
+  
+
+export const exitMemberFromGroup = async (obj: any) => {
+    const res = await api.post(`${base_url}/user/group/remove-member`, obj);
+    return res;
+};

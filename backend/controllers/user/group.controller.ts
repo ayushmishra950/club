@@ -90,3 +90,86 @@ export const toggleMember = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const removeMemberFromGroup = async (req: Request, res: Response) => {
+  try {
+    const { chatId, userId } = req.body;
+    const io = getIO();
+
+    if (
+      !mongoose.Types.ObjectId.isValid(chatId) ||
+      !mongoose.Types.ObjectId.isValid(userId)
+    ) {
+      return res.status(400).json({ message: "Invalid IDs" });
+    }
+
+    // 🔍 Find chat first
+    const chat = await Chat.findById(chatId);
+
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    // ================= SINGLE CHAT =================
+    if (!chat.isGroup) {
+      await Chat.findByIdAndDelete(chatId);
+
+      io.emit("chatDeleted", {
+        chatId,
+        userId,
+      });
+
+      return res.status(200).json({
+        message: "Single chat deleted successfully",
+      });
+    }
+
+    // ================= GROUP CHAT =================
+    const groupId = chat.groupId;
+
+    if (!groupId) {
+      return res.status(400).json({
+        message: "Group ID not found in chat",
+      });
+    }
+
+    // 🔍 Check group exists
+    const group = await Group.findById(groupId);
+
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    // ✅ Remove user from Group
+    await Group.findByIdAndUpdate(groupId, {
+      $pull: { members: userId },
+    });
+
+    // ✅ Remove user from Chat members
+    await Chat.findByIdAndUpdate(chatId, {
+      $pull: { members: userId },
+    });
+
+    // 🔄 Updated group
+    const updatedGroup = await Group.findById(groupId).populate(
+      "members",
+      "fullName email profileImage"
+    );
+
+    io.emit("addAnRemoveUserFromGroup", {
+      groupId,
+      userId,
+    });
+
+    return res.status(200).json({
+      message: "Member removed successfully from group",
+      group: updatedGroup,
+    });
+
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json({
+      message: err.message || "Server Error",
+    });
+  }
+};

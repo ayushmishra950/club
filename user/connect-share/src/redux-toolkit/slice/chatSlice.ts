@@ -63,12 +63,64 @@ const chatSlice = createSlice({
     },
     setNewMessageAdd: (state, action: PayloadAction<any>) => {
       state.messageList.push(action.payload);
-    }
+    },
 
+
+    setGroupInvited: (state, action: PayloadAction<any>) => {
+      const { groupId, chatId, userId } = action.payload;
+      const group = state.userChatList.find((chat) => chat.chatId?.toString() === chatId?.toString());
+      if (group) {
+        group.groupId = groupId;
+      }
+    },
+
+    setRejectGroupInvite: (state, action: PayloadAction<any>) => {
+      const { chatId, userId } = action.payload;
+
+      // 🔍 find chat index
+      const index = state.userChatList.findIndex(
+        (chat) => chat.chatId?.toString() === chatId?.toString()
+      );
+
+      if (index !== -1) {
+        const group = state.userChatList[index];
+
+        // 1️⃣ remove from pendingMembers
+        if (group.pendingMembers) {
+          group.pendingMembers = group.pendingMembers.filter(
+            (id: string) => id.toString() !== userId.toString()
+          );
+        }
+
+        state.userChatList.splice(index, 1);
+      }
+    },
+
+    setAcceptedInvite: (state, action) => {
+      const { chatId, userId } = action.payload;
+
+      const chat = state.userChatList.find((c) => c.chatId?.toString() === chatId?.toString());
+
+      if (chat) {
+        if (chat.pendingMembers) {
+          chat.pendingMembers = chat.pendingMembers.filter((id: string) => id.toString() !== userId.toString());
+        }
+
+        if (!chat.members) {
+          chat.members = [];
+        }
+
+        const exists = chat.members.some((id: string) => id.toString() === userId.toString());
+
+        if (!exists) {
+          chat.members.push(userId);
+        }
+      }
+    }
   }
 });
 
-export const { setUserChatList, setMessageRefresh, setUnreadCountRemove, setMessageList, setNewMessageAdd } = chatSlice.actions;
+export const { setUserChatList, setAcceptedInvite, setMessageRefresh, setRejectGroupInvite, setGroupInvited, setUnreadCountRemove, setMessageList, setNewMessageAdd } = chatSlice.actions;
 
 export default chatSlice.reducer;
 

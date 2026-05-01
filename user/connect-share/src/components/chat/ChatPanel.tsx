@@ -1,26 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Send, Smile, Image, ArrowLeft, Users } from 'lucide-react';
+import { X, Send, Smile, Image, ArrowLeft, Users, LogOut, Phone, Video, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getChatUsers, sendMessage, getMessages } from "@/service/chat";
+import { getChatUsers, sendMessage, getMessages, rejectGroupInvite, acceptGroupInvite } from "@/service/chat";
 import { formatChatDate, formatMessageTimestamp, formatMongoDate } from "@/service/global";
 import socket from '@/socket/socket';
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
-import { setMessageList, setMessageRefresh, setNewMessageAdd, setUnreadCountRemove, setUserChatList } from '@/redux-toolkit/slice/chatSlice';
+import { setMessageList, setMessageRefresh, setNewMessageAdd, setAcceptedInvite, setGroupInvited, setRejectGroupInvite, setUnreadCountRemove, setUserChatList } from '@/redux-toolkit/slice/chatSlice';
+import { exitMemberFromGroup } from "@/service/group";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import DeleteCard from "@/components/card/DeleteCard";
 
 interface Props {
   open: boolean;
   onClose: () => void;
 }
 
-
-
 export function ChatPanel({ open, onClose }: Props) {
   const { toast } = useToast();
   const user = JSON.parse(localStorage.getItem("user"));
   const [activeChat, setActiveChat] = useState(null);
   const [message, setMessage] = useState('');
-  // const [messageList, setMessageList] = useState([]);
-  // const [userList, setUserList] = useState([]);
   const messageEndRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
   const [checkUserId, setCheckUserId] = useState(null);
@@ -30,6 +29,12 @@ export function ChatPanel({ open, onClose }: Props) {
   const dispatch = useAppDispatch();
   const [chatType, setChatType] = useState<"single" | "group">("single");
   const [sendLoading, setSendLoading] = useState(false);
+  const [showProfileCard, setShowProfileCard] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
+  const [acceptLoading, setAcceptLoading] = useState(false);
+  const [deleteChatData, setDeleteChatData] = useState(null);
   const userList = useAppSelector((state) => state?.chat?.userChatList);
   const messageList = useAppSelector((state) => state?.chat?.messageList);
   const filteredChats = userList?.filter((chat: any) =>
@@ -58,10 +63,18 @@ export function ChatPanel({ open, onClose }: Props) {
       }, 3000);
     });
 
+    socket.on("groupInvite", (data) => {
+      handleGetFriendList();
+    })
+
     socket.on("messageSeen", (data) => {
       if (data?.chatId === activeChat?.chatId) {
         dispatch(setMessageList(data?.messages));
       }
+    });
+
+    socket.on("groupInviteAccepted", (data) => {
+      dispatch(setAcceptedInvite(data));
     })
 
     socket.on("userOnline", (userId: string) => {
@@ -69,8 +82,7 @@ export function ChatPanel({ open, onClose }: Props) {
     });
     socket.on("onlineUsersList", (users: string[]) => {
       setOnlineUsers(users);
-    })
-
+    });
     socket.on("userOffline", (userId: string) => {
       setOnlineUsers(prev => prev.filter(id => id !== userId));
     });
@@ -91,8 +103,46 @@ export function ChatPanel({ open, onClose }: Props) {
       socket.off("userOffline");
       socket.off("messageSeen");
       socket.off("userListUnReadChatCount");
+      socket.off("groupInvite");
+      socket.off("groupInviteAccepted");
     }
   }, [activeChat])
+
+  const handleAcceptGroupInvite = async (chatId: string, userId: string) => {
+    try {
+      setAcceptLoading(true);
+      const res = await acceptGroupInvite({ chatId, userId });
+      if (res.status === 200 || res.status === 201) {
+        toast({ title: "Group invite accepted successfully.", description: res?.data?.message || "invite accepted successfully" });
+      } else {
+        toast({ title: "Failed to accept group invite", description: res?.data?.message || "invite accepted failed", variant: "destructive" });
+      }
+    } catch (err: any) {
+      console.log(err);
+      toast({ title: "Failed to accept group invite", description: err?.response?.data?.message || err?.message, variant: "destructive" });
+    } finally {
+      setAcceptLoading(false);
+    }
+  };
+
+  const handleRejectGroupInvite = async (chatId: string, userId: string) => {
+    try {
+      setRejectLoading(true);
+      const res = await rejectGroupInvite({ chatId, userId });
+      if (res.status === 200 || res.status === 201) {
+        toast({ title: "Group invite rejected successfully.", description: res?.data?.message || "invite rejected successfully" });
+        setActiveChat(null);
+        dispatch(setRejectGroupInvite({ chatId, userId }));
+      } else {
+        toast({ title: "Failed to reject group invite", description: res?.data?.message || "invite rejected failed", variant: "destructive" });
+      }
+    } catch (err: any) {
+      console.log(err);
+      toast({ title: "Failed to reject group invite", description: err?.response?.data?.message || err?.message, variant: "destructive" });
+    } finally {
+      setRejectLoading(false);
+    }
+  };
 
   const handleTyping = (e) => {
     setMessage(e.target.value);
@@ -110,7 +160,6 @@ export function ChatPanel({ open, onClose }: Props) {
 
   const handleSendMessage = async () => {
     try {
-      let obj = { chatId: activeChat?.chatId, senderId: user?._id, text: message, image: selectedFile || null };
       const form = new FormData();
       form.append("chatId", activeChat?.chatId);
       form.append("senderId", user?._id);
@@ -179,50 +228,186 @@ export function ChatPanel({ open, onClose }: Props) {
     }
   }, [open, user?._id]);
 
+
+
+  const handleExitGroup = async () => {
+    try {
+      setDeleteLoading(true);
+      const res = await exitMemberFromGroup({ chatId: activeChat?.chatId, userId: user?._id });
+      if (res.status === 200 || res.status === 201) {
+        toast({ title: "exit the group", description: res?.data?.message || "You have exited the group successfully" });
+        setShowProfileCard(false);
+        setActiveChat(null);
+        setDeleteChatData(null);
+        setDeleteDialogOpen(false);
+        await handleGetFriendList();
+      }
+    } catch (err) {
+      console.log(err);
+      toast({ title: "Failed to exit group", description: err?.response?.data?.message || err?.message, variant: "destructive" });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   if (!open) return null;
+  console.log(filteredChats)
   return (
     <>
+      <DeleteCard
+        isOpen={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        isLoading={deleteLoading}
+        buttonName="Delete"
+        title={`Delete Post: ${deleteChatData?.friend?.fullName || deleteChatData?.group?.title || ""}`}
+        description={`Are you sure you want to delete the post "${deleteChatData?.friend?.fullName || deleteChatData?.group?.title || ""}"? This action cannot be undone.`}
+        onConfirm={handleExitGroup}
+      />
+
       <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm md:hidden" onClick={() => { setChatType("single"); setActiveChat(null); onClose() }} />
       <div className="fixed right-0 top-0 z-50 h-full w-full sm:w-96 bg-card border-l border-border shadow-elevated animate-slide-in-right flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           {activeChat ? (
-            <button onClick={() => setActiveChat(null)} className="flex items-center gap-2 text-foreground">
-              <ArrowLeft className="h-5 w-5" />
-              <div className="relative">
-                <img
-                  src={chatType === "single" ? activeChat?.friend?.profileImage : activeChat?.group?.images?.[0]}
-                  alt=""
-                  className="h-8 w-8 rounded-full object-cover"
-                />
-                {/* Online Badge */}
-                {chatType === "single" && (activeChat?.friend?.isOnline || (activeChat?.friend?._id !== user?._id)) && onlineUsers.includes(activeChat.friend._id) && (
-                  <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 ring-2 ring-card" />
-                )}
-              </div>
-              <div>
-                <p className="font-heading font-semibold text-sm text-left">{chatType === "single" ? activeChat?.friend?.fullName : activeChat?.group?.title}</p>
-                {/* Online / Offline text */}
-                <p className="text-xs text-muted-foreground text-left">
-                  <p className="text-xs text-muted-foreground text-left">
-                    {chatType === "group"
-                      ? "Group Chat"
-                      : chatType === "single" &&
-                        activeChat?.friend?._id !== user?._id &&
-                        onlineUsers.includes(activeChat.friend?._id)
-                        ? "Online"
-                        : formatMongoDate(activeChat?.friend?.lastSeen)}
-                  </p>
-                </p>
-              </div>
-            </button>
+            <div className="flex items-center gap-2 flex-1">
+              <button
+                onClick={() => { setShowProfileCard(false); setActiveChat(null); }}
+                className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground shrink-0"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+
+              <Popover open={showProfileCard} onOpenChange={setShowProfileCard}>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity flex-1 text-left min-w-0">
+                    <div className="relative shrink-0">
+                      <img
+                        src={chatType === "single" ? activeChat?.friend?.profileImage : activeChat?.group?.images?.[0]}
+                        alt=""
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                      {/* Online Badge */}
+                      {chatType === "single" && (activeChat?.friend?.isOnline || (activeChat?.friend?._id !== user?._id)) && onlineUsers.includes(activeChat.friend._id) && (
+                        <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 ring-2 ring-card" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-heading font-semibold text-sm text-left truncate">{chatType === "single" ? activeChat?.friend?.fullName : activeChat?.group?.title}</p>
+                      {/* Online / Offline text */}
+                      <p className="text-xs text-muted-foreground text-left truncate">
+                        {chatType === "group"
+                          ? "Group Chat"
+                          : chatType === "single" &&
+                            activeChat?.friend?._id !== user?._id &&
+                            onlineUsers.includes(activeChat.friend?._id)
+                            ? "Online"
+                            : formatMongoDate(activeChat?.friend?.lastSeen)}
+                      </p>
+                    </div>
+                  </button>
+                </PopoverTrigger>
+
+                {/* Profile Card Popover */}
+                <PopoverContent align="start" className="w-80 p-0 border-0 shadow-lg rounded-2xl">
+                  <div className="bg-gradient-to-b from-primary/10 to-transparent p-6 rounded-t-2xl">
+                    {/* Profile Image */}
+                    <div className="flex justify-center mb-4">
+                      <div className="relative">
+                        <img
+                          src={chatType === "single" ? activeChat?.friend?.profileImage : activeChat?.group?.images?.[0]}
+                          alt=""
+                          className="h-24 w-24 rounded-full object-cover border-4 border-card"
+                        />
+                        {chatType === "single" && onlineUsers.includes(activeChat?.friend?._id) && (
+                          <div className="absolute bottom-2 right-2 h-4 w-4 rounded-full bg-green-500 ring-2 ring-card" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Name & Status */}
+                    <div className="text-center mb-6">
+                      <h3 className="font-heading font-bold text-lg text-foreground">
+                        {chatType === "single" ? activeChat?.friend?.fullName : activeChat?.group?.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {chatType === "group"
+                          ? `${activeChat?.group?.members?.length || 0} members`
+                          : activeChat?.friend?._id !== user?._id && onlineUsers.includes(activeChat?.friend?._id)
+                            ? "Active now"
+                            : `Last seen ${formatMongoDate(activeChat?.friend?.lastSeen)}`}
+                      </p>
+                    </div>
+                    {/* Divider */}
+                    <div className="border-t border-border"></div>
+                  </div>
+
+                  {/* Details Section */}
+                  <div className="p-4">
+                    {chatType === "single" && (
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground font-semibold mb-1">PHONE</p>
+                          <p className="text-sm text-foreground">{activeChat?.friend?.phoneNumber || "Not available"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground font-semibold mb-1">EMAIL</p>
+                          <p className="text-sm text-foreground">{activeChat?.friend?.email || "Not available"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground font-semibold mb-1">BIO</p>
+                          <p className="text-sm text-foreground">{activeChat?.friend?.bio || "No bio added"}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {chatType === "group" && (
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground font-semibold mb-2">GROUP MEMBERS ({activeChat?.group?.members?.length || 0})</p>
+                          <div className="space-y-2 max-h-32 overflow-y-auto">
+                            {activeChat?.group?.members?.slice(0, 5).map((member: any, idx: number) => (
+                              <div key={idx} className="flex items-center gap-2 text-sm">
+                                <img src={member?.profileImage} alt="" className="h-6 w-6 rounded-full object-cover" />
+                                <span className="text-foreground truncate">{member?.fullName}</span>
+                                {member?._id === activeChat?.group?.admin?._id && (
+                                  <span className="text-[10px] px-2 py-1 bg-primary/20 text-primary rounded-full">Admin</span>
+                                )}
+                              </div>
+                            ))}
+                            {activeChat?.group?.members?.length > 5 && (
+                              <p className="text-xs text-muted-foreground">+{activeChat?.group?.members?.length - 5} more</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setDeleteChatData(activeChat);
+                        setDeleteDialogOpen(true);
+                      }}
+                      disabled={deleteLoading}
+                      className="w-full flex items-center justify-center gap-2 p-3 mt-4 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-600 transition-colors text-sm font-medium disabled:opacity-50"
+                    >
+                      {deleteLoading ? (
+                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <LogOut className="h-4 w-4" />
+                      )}
+                      {deleteLoading ? "Deleting..." : chatType === "group" ? "Exit Group" : "Leave Chat"}
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           ) : (
             <h3 className="font-heading font-semibold text-foreground">Messages</h3>
           )}
 
           <button
-            onClick={() => { setActiveChat(null); onClose(); }}
-            className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+            onClick={() => { setShowProfileCard(false); setActiveChat(null); onClose(); }}
+            className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground shrink-0"
           >
             <X className="h-5 w-5" />
           </button>
@@ -507,46 +692,113 @@ export function ChatPanel({ open, onClose }: Props) {
 
             <div className="flex-1 overflow-y-auto">
               {filteredChats?.length > 0 ? (
-                filteredChats.map((chat: any) => (
-                  <button
-                    key={chat._id}
-                    onClick={() => { handleSeenMessages(chat); setActiveChat(chat); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
-                  >
-                    <div className="relative shrink-0">
-                      <img
-                        src={chat.isGroup ? chat?.group?.images?.[0] || "/group.png" : chat?.friend?.profileImage} alt="" className="h-12 w-12 rounded-full object-cover" />
+                filteredChats.map((chat: any) => {
 
-                      {!chat.isGroup && chat?.friend?._id !== user?._id &&
-                        onlineUsers.includes(chat.friend._id) && (
-                          <div className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-green-500 ring-2 ring-card" />
-                        )}
-                    </div>
+                  const isPending = chat?.pendingMembers?.some(
+                    (id: any) => id.toString() === user?._id
+                  );
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-sm text-foreground truncate"> {chat.isGroup ? chat?.group?.title : chat?.friend?.fullName}</p>
+                  return (
+                    <button
+                      key={chat._id}
+                      onClick={() => {
+                        if (!isPending) {
+                          handleSeenMessages(chat);
+                          setActiveChat(chat);
+                        }
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                    >
+                      <div className="relative shrink-0">
+                        <img
+                          src={
+                            chat.isGroup
+                              ? chat?.group?.images?.[0] || "/group.png"
+                              : chat?.friend?.profileImage
+                          }
+                          alt=""
+                          className="h-12 w-12 rounded-full object-cover"
+                        />
 
-                        {chat?.lastMessage?.createdAt && (
-                          <span className="text-xs text-muted-foreground shrink-0">
-                            {formatMessageTimestamp(chat.lastMessage.createdAt)}
-                          </span>
+                        {!chat.isGroup &&
+                          chat?.friend?._id !== user?._id &&
+                          onlineUsers.includes(chat.friend._id) && (
+                            <div className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-green-500 ring-2 ring-card" />
+                          )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-sm text-foreground truncate">
+                            {chat.isGroup
+                              ? chat?.group?.title
+                              : chat?.friend?.fullName}
+                          </p>
+
+                          {chat?.lastMessage?.createdAt && (
+                            <span className="text-xs text-muted-foreground shrink-0">
+                              {formatMessageTimestamp(chat.lastMessage.createdAt)}
+                            </span>
+                          )}
+                        </div>
+
+                        {chat?.lastMessage?.text && (
+                          <p className="text-sm text-muted-foreground truncate">
+                            <span className="font-medium">
+                              {chat?.lastMessage?.sender?._id === user?._id
+                                ? "You: "
+                                : ""}
+                            </span>
+
+                            {chat.lastMessage.text.length > 40
+                              ? chat.lastMessage.text.slice(0, 40) + "..."
+                              : chat.lastMessage.text}
+                          </p>
                         )}
                       </div>
 
-                      {chat?.lastMessage?.text && (
-                        <p className="text-sm text-muted-foreground truncate">
-                          <span className="font-medium">{chat?.lastMessage?.sender?._id === user?._id ? "You: " : ""}</span>
+                      {/* 🔥 RIGHT SIDE */}
+                      {isPending ? (
+                        <div className="flex items-center gap-1.5 shrink-0">
 
-                          {chat.lastMessage.text.length > 40 ? chat.lastMessage.text.slice(0, 40) + "..." : chat.lastMessage.text} </p>
+                          {/* ✅ Accept */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAcceptGroupInvite(chat?.chatId, user?._id);
+                            }}
+                            disabled={acceptLoading}
+                            className="flex items-center justify-center h-7 w-7 rounded-full bg-green-500/10 hover:bg-green-500/20 text-green-600 transition"
+                          >
+                            {acceptLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} strokeWidth={2.5} />}
+                          </button>
+
+                          {/* ❌ Reject */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRejectGroupInvite(chat?.chatId, user?._id);
+                            }}
+                            disabled={rejectLoading}
+                            className="flex items-center justify-center h-7 w-7 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500 transition"
+                          >
+                            {rejectLoading ? <Loader2 size={16} className="animate-spin" /> : <X size={16} strokeWidth={2.5} />}
+                          </button>
+
+                        </div>
+                      ) : (
+                        chat?.deliveredMessages?.filter(
+                          (msg: any) =>
+                            (msg.sender?._id || msg.sender) !== user?._id
+                        )?.length > 0 && (
+                          <span className="h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center shrink-0">
+                            {chat.deliveredMessages.filter((msg: any) => (msg.sender?._id || msg.sender) !== user?._id).length}
+                          </span>
+                        )
                       )}
-                    </div>
-
-                    {chat?.deliveredMessages?.filter((msg: any) => (msg.sender?._id || msg.sender) !== user?._id)?.length > 0 && (
-                      <span className="h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center shrink-0">
-                        {chat.deliveredMessages.filter((msg: any) => (msg.sender?._id || msg.sender) !== user?._id).length}</span>
-                    )}</button>
-                ))
+                    </button>
+                  );
+                })
               ) : (
                 <div className="flex flex-col items-center justify-center py-10 text-sm text-muted-foreground">
                   No {chatType === "single" ? "Chats" : "Groups"} Found.

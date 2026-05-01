@@ -76,13 +76,26 @@ const postSlice = createSlice({
       };
       if (!comment.replies) comment.replies = [];
       comment.replies.push(newReply);
+    },
+
+
+    setDeletePostFromList: (state, action: PayloadAction<{ postId: string; userId: string }>) => {
+      const { postId, userId } = action.payload;
+
+      const postIndex = state.postList.findIndex(
+        (p) => p._id === postId && p.createdBy?._id === userId
+      );
+
+      if (postIndex !== -1) {
+        state.postList.splice(postIndex, 1);
+      }
     }
 
   }
 
 });
 
-export const { setPostList, setPostLikeAnUnLike, setPostComment, setPostLikeAnUnLikeComment, setPostReplyComment } = postSlice.actions;
+export const { setPostList, setPostLikeAnUnLike, setPostComment, setDeletePostFromList, setPostLikeAnUnLikeComment, setPostReplyComment } = postSlice.actions;
 
 export default postSlice.reducer;
 

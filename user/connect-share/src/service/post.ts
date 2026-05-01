@@ -51,6 +51,11 @@ export const sharePost = async(obj:any) =>{
 
 
 
+export const deletePostByUser = async(obj:any) =>{
+    const res = await api.put(`${base_url}/user/post/delete`, obj,
+    );
+    return res;
+}
 
 
 //=====================================admin k liye hai y===========================================

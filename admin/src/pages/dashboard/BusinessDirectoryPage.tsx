@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Calendar, MapPin, Users, Clock, Edit, Delete, Trash, Check, X } from "lucide-react";
+import { Plus, Calendar, MapPin, Users, Clock, Edit, Delete, Trash, Check, X, View } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import socket from "@/socket/socket";
 import { getAllUser, verifyBusinessUser } from "@/service/auth";
 import { setBusinessList } from "@/redux-toolkit/slice/userSlice";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
-
+import BusinessDetailModal from "@/components/cards/businessDetailCard";
 
 export default function BusinessDirectoryPage() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(8);
   const [search, setSearch] = useState("");
+  const [businessDetailOpen, setBusinessDetailOpen] = useState(false);
+  const [selectedBusiness, setSelectedBusiness] = useState(null);
   const dispatch = useAppDispatch();
   const [filterStatus, setFilterStatus] = useState("active");
   const users = useAppSelector((state) => state?.user?.businessList);
@@ -80,6 +82,7 @@ export default function BusinessDirectoryPage() {
 
   return (
     <>
+    <BusinessDetailModal isOpen={businessDetailOpen} onClose={() => setBusinessDetailOpen(false)} business={selectedBusiness} />
       <div className="space-y-4 ">
         <div className="flex justify-between items-center">
           <h3 className="font-display font-semibold text-lg">Business Verification Directory</h3>
@@ -153,6 +156,13 @@ export default function BusinessDirectoryPage() {
                       {/* Actions */}
                       <td className="p-3">
                         <div className="flex justify-end gap-2">
+                          <button
+                              onClick={() =>{ setSelectedBusiness(biz); setBusinessDetailOpen(true)}}
+                              className="p-1.5 rounded bg-red-100 hover:bg-red-200 transition-colors"
+                              title="Reject Business"
+                            >
+                              <View className="w-4 h-4 text-black-600" />
+                            </button>
                           {biz.isVerified !== 'verified' && (
                             <button
                               onClick={() => handleVerifyBusiness(biz.ownerId, biz.businessId, true)}

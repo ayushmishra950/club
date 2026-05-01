@@ -10,9 +10,10 @@ import { createNotificationInternal } from "./notification.controller.js";
 import { NotificationType } from "../../models/notification.model.js";
 import { nanoid } from "nanoid";
 
+
 export const registerUser = async (req: Request, res: Response) => {
   try {
-    const { fullName, fatherName, motherName, email, phone, dob, gender, maritalStatus, occupation, address, city, state, password, confirmPassword } = req.body;
+    const { fullName, email, mobile, dob, gender, maritalStatus, occupation, address, city, state, password, confirmPassword } = req.body;
 
     const io = getIO();
 
@@ -20,19 +21,21 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "Passwords do not match" });
     }
 
-    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
 
     if (existingUser) {
       return res.status(400).json({
-        success: false, message: "User already exists with this email or phone"
+        success: false, message: "User already exists with this email or mobile"
       });
     }
 
     const userId = `USR-${nanoid(8)}`;
 
     const user = await User.create({
-      fullName, fatherName, motherName, email, phone, dob, gender, maritalStatus, occupation, address, city, state, password, userId
+      fullName, email, mobile, dob, gender, maritalStatus, occupation, address, city, state, password, userId
     });
+
+    if (!user) { return res.status(500).json({ success: false, message: "Failed to create user" });}
 
     const safeUser = await User.findById(user._id).select("-password");
 
@@ -54,10 +57,10 @@ export const registerUser = async (req: Request, res: Response) => {
 };
 
 
+
 export const loginUser = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    console.log("Login attempt for email:", email);
 
 
     let user = await User.findOne({ email }).select("+password");
@@ -101,6 +104,7 @@ export const loginUser = async (req: Request, res: Response) => {
 };
 
 export const refreshAccessToken = async (req: Request, res: Response) => {
+
   try {
     const refreshToken = req.cookies.refreshToken;
 
@@ -111,9 +115,8 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as { id: string };
 
     const newAccessToken = jwt.sign({ id: decoded.id }, process.env.ACCESS_TOKEN_SECRET!, { expiresIn: "15m" });
-
     res.status(200).json({ success: true, accessToken: newAccessToken });
-
+ 
   } catch (error: any) {
 
     res.status(403).json({ success: false, message: "Invalid refresh token", error: error.message });
@@ -181,12 +184,8 @@ export const deleteUser = async (req: Request, res: Response) => {
 
 
 
-
-
-
 export const updateUser = async (req: Request, res: Response) => {
   try {
-    const { businesses, ...rest } = req.body;
     const userId = req.body.userId || req.body._id;
     const io = getIO();
 
@@ -201,32 +200,71 @@ export const updateUser = async (req: Request, res: Response) => {
 
     const files = (req as any).files as any[];
 
-    // Helper to find file by fieldname
-    const getFile = (fieldname: string) => files?.find(f => f.fieldname === fieldname);
+    const getFile = (fieldname: string) =>
+      files?.find((f) => f.fieldname === fieldname);
 
-    // ================= PROFILE IMAGES =================
+    // ================= SAFE JSON PARSE =================
+    const safeParseJSON = (data: any, fallback: any = []) => {
+      if (!data) return fallback;
+      if (typeof data === "string") {
+        try {
+          return JSON.parse(data);
+        } catch {
+          return fallback;
+        }
+      }
+      return data;
+    };
+
+    // ================= FILE UPLOAD =================
     const profileImageFile = getFile("profileImage");
     if (profileImageFile) {
-      const url = await uploadToCloudinary(profileImageFile.buffer, profileImageFile.mimetype, "profile");
+      const url = await uploadToCloudinary(
+        profileImageFile.buffer,
+        profileImageFile.mimetype,
+        "profile"
+      );
       user.profileImage = url;
     }
 
     const coverImageFile = getFile("coverImage");
     if (coverImageFile) {
-      const url = await uploadToCloudinary(coverImageFile.buffer, coverImageFile.mimetype, "cover");
+      const url = await uploadToCloudinary(
+        coverImageFile.buffer,
+        coverImageFile.mimetype,
+        "cover"
+      );
       user.coverImage = url;
     }
 
-    // ================= NORMAL USER FIELDS =================
-    const excludedFields = ["password", "friends", "businesses", "userId", "_id", "createdAt", "updatedAt", "__v"];
-    
+    // ================= EXTRACT BODY =================
+    const { businesses, children, ...rest } = req.body;
+
+    const excludedFields = [
+      "password",
+      "friends",
+      "businesses",
+      "children",
+      "userId",
+      "_id",
+      "createdAt",
+      "updatedAt",
+      "__v",
+    ];
+
+    // ================= NORMAL FIELDS =================
     Object.keys(rest).forEach((key) => {
       if (!excludedFields.includes(key) && rest[key] !== undefined) {
         let value = rest[key];
-        
-        // Handle skills and hobbies string to array conversion
-        if ((key === "skills" || key === "hobbies") && typeof value === "string") {
-          value = value.split(",").map((s: string) => s.trim()).filter(Boolean);
+
+        if (
+          (key === "skills" || key === "hobbies") &&
+          typeof value === "string"
+        ) {
+          value = value
+            .split(",")
+            .map((s: string) => s.trim())
+            .filter(Boolean);
         }
 
         (user as any)[key] = value;
@@ -237,49 +275,70 @@ export const updateUser = async (req: Request, res: Response) => {
       user.password = rest.password;
     }
 
-    // ================= BUSINESS ARRAY FIX =================
-    let parsedBusinesses: any[] = [];
+    // ================= CHILDREN =================
+    const parsedChildren = safeParseJSON(children, []);
+    user.children = Array.isArray(parsedChildren) ? parsedChildren : [];
 
-    try {
-      const incomingBusinesses = typeof businesses === "string" ? JSON.parse(businesses) : businesses || [];
-      const { nanoid } = await import("nanoid");
+    // ================= BUSINESS CLEANING =================
+    const incomingBusinessesRaw = safeParseJSON(businesses, []);
 
-      console.log("Incoming businesses count:", incomingBusinesses.length);
+    // 🔥 REMOVE EMPTY BUSINESSES
+    const incomingBusinesses = incomingBusinessesRaw.filter((biz: any) => {
+      return (
+        biz &&
+        (
+          biz.businessName?.trim() ||
+          biz.businessCategory?.trim() ||
+          biz.businessPhone?.trim() ||
+          biz.businessDescription?.trim() ||
+          biz.businessAddress?.trim()
+        )
+      );
+    });
 
-      parsedBusinesses = incomingBusinesses.map((biz: any) => {
-        const existingBiz = user.businesses.find(b => b.businessId === biz.businessId);
-        return {
-          ...biz,
-          businessId: biz.businessId || `BIZ-${nanoid(8)}`,
-          isVerified: existingBiz ? existingBiz.isVerified : "pending",
-          businessCoverImage: (typeof biz.businessCoverImage === "string") ? biz.businessCoverImage : (existingBiz ? existingBiz.businessCoverImage : "")
-        };
-      });
-    } catch (e) {
-      console.error("Error parsing businesses:", e);
-      parsedBusinesses = [];
-    }
+    const { nanoid } = await import("nanoid");
 
-    // upload business images per index
-    console.log("Total files received:", files?.length);
+    console.log("Valid businesses count:", incomingBusinesses.length);
+
+    // ================= MAP BUSINESSES =================
+    const parsedBusinesses = incomingBusinesses.map((biz: any) => {
+      const existingBiz = user.businesses.find(
+        (b) => b.businessId === biz.businessId
+      );
+
+      return {
+        ...biz,
+        businessId: biz.businessId || `BIZ-${nanoid(8)}`,
+        isVerified: existingBiz ? existingBiz.isVerified : "pending",
+        businessCoverImage:
+          typeof biz.businessCoverImage === "string"
+            ? biz.businessCoverImage
+            : existingBiz?.businessCoverImage || "",
+      };
+    });
+
+    // ================= IMAGE UPLOAD =================
     const updatedBusinesses = [...parsedBusinesses];
 
     for (let i = 0; i < updatedBusinesses.length; i++) {
       const fieldName = `businessCoverImage_${i}`;
       const bizFile = getFile(fieldName);
-      console.log(`Checking for file: ${fieldName} - Found: ${!!bizFile}`);
-      
+
       if (bizFile) {
-        const url = await uploadToCloudinary(bizFile.buffer, bizFile.mimetype, "business-cover");
-        console.log(`Uploaded ${fieldName} to Cloudinary: ${url}`);
-        updatedBusinesses[i] = {
-          ...updatedBusinesses[i],
-          businessCoverImage: url
-        };
+        const url = await uploadToCloudinary(
+          bizFile.buffer,
+          bizFile.mimetype,
+          "business-cover"
+        );
+
+        updatedBusinesses[i].businessCoverImage = url;
       }
     }
 
-    user.businesses = updatedBusinesses;
+    // ================= SAVE ONLY IF REAL DATA =================
+    user.businesses =
+      incomingBusinesses.length > 0 ? updatedBusinesses : [];
+
     await user.save();
 
     const updatedUser = await User.findById(userId).select("-password");
@@ -291,6 +350,7 @@ export const updateUser = async (req: Request, res: Response) => {
       message: "User profile updated successfully",
       user: updatedUser,
     });
+
   } catch (error: any) {
     console.error("Update User Error:", error);
     return res.status(500).json({
@@ -299,7 +359,6 @@ export const updateUser = async (req: Request, res: Response) => {
     });
   }
 };
-
 
 export const convertPremiumUser = async (req: Request, res: Response) => {
   try {

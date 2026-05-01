@@ -14,7 +14,7 @@ import { useAppDispatch } from "@/redux-toolkit/customHook/hook";
 const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh }) => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const { toast } = useToast();
-  const [formData, setFormData] = useState({ title: "", description: "", files: [], location: "" });
+  const [formData, setFormData] = useState({ title: "", description: "", files: [] });
   const [previewList, setPreviewList] = useState<{ url: string; type: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -30,7 +30,6 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
         title: initialData?.title || "",
         description: initialData?.description || "",
         files: initialData?.images || [],
-        location: initialData?.location || "",
       });
 
       // existing preview
@@ -45,7 +44,7 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
   }, [isOpen, initialData]);
 
   const resetForm = () => {
-    setFormData({ title: "", description: "", files: [], location: "" });
+    setFormData({ title: "", description: "", files: [] });
     setPreviewList([]);
   };
 
@@ -117,7 +116,6 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
       form.append("createdBy", user?._id);
       form.append("title", formData.title);
       form.append("description", formData.description);
-      form.append("location", formData.location);
 
       formData.files.forEach((file) => {
         form.append("media", file); // 🔥 better key
@@ -194,19 +192,6 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
             {errors?.description && <p className="text-xs mt-1 text-red-500">{errors?.description}</p>}
           </div>
           <div className="my-1 flex gap-4">
-
-            {/* 🔹 Location Input */}
-            <div className="flex-1">
-              <Label>Location</Label>
-              <Input
-                type="text"
-                placeholder="Enter location"
-                value={formData?.location || ""}
-                onChange={handleChange}
-                name="location"
-              />
-              {errors?.location && <p className="text-xs mt-1 text-red-500">{errors?.location}</p>}
-            </div>
           </div>
 
           {/* Media */}

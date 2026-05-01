@@ -10,6 +10,12 @@ import Chat from "../models/chat.model.js";
 import FriendRequest from "../models/friendRequest.model.js";
 import Notification, { NotificationType } from "../models/notification.model.js";
 import Group from "../models/group.model.js";
+import jwt from "jsonwebtoken";
+import { Socket } from "socket.io";
+
+interface AuthenticatedSocket extends Socket {
+  user?: any;
+}
 
 const getUnreadCount = async (userId: string) => {
   const chats = await Chat.find({ members: userId }).sort({ updatedAt: -1 });
@@ -26,6 +32,7 @@ const getUnreadCount = async (userId: string) => {
 
 let io: IOServer;
 
+
 export const initSocket = (server: HTTPServer) => {
   io = new IOServer(server, {
     cors: {
@@ -35,11 +42,32 @@ export const initSocket = (server: HTTPServer) => {
 
   let onlineUsers: { [userId: string]: string[] } = {};
 
-  io.on("connection", (socket) => {
+
+  io.use((socket: AuthenticatedSocket, next) => {
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+      return next(new Error("Authentication error"));
+    }
+
+    try {
+      const user = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!);
+      socket.user = user; // user info attach kar do
+      next();
+    } catch (err: any) {
+      if (err.name === "TokenExpiredError") {
+        return next(new Error("TokenExpired"));
+      }
+      return next(new Error("Invalid token"));
+    }
+  });
+
+  io.on("connection", (socket: AuthenticatedSocket) => {
     console.log("✅ User connected with socket id:", socket.id);
 
-    // ================= JOIN =================
-    socket.on("joinRoom", async (userId: string) => {
+    // ================= JOIN ================= 
+    socket.on("joinRoom", async () => {
+      const userId = socket.user?.id;
       if (!userId) return;
 
       socket.join(userId);
@@ -155,6 +183,10 @@ export const initSocket = (server: HTTPServer) => {
         if (admin) {
           await Notification.updateMany(
             { type: "suggestion", isRead: false },
+            { $set: { isRead: true } }
+          );
+          await Notification.updateMany(
+            { type: "new_user", isRead: false },
             { $set: { isRead: true } }
           );
         } else {

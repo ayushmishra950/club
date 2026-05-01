@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IChat extends Document {
   members: mongoose.Types.ObjectId[];
+  pendingMembers: mongoose.Types.ObjectId[];
   isGroup: boolean;
   lastMessage?: mongoose.Types.ObjectId | null;
   groupId?: mongoose.Types.ObjectId;
@@ -18,6 +19,12 @@ const ChatSchema = new Schema<IChat>(
         required: true,
       },
     ],
+    pendingMembers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     isGroup: {
       type: Boolean,
       default: false,
@@ -26,7 +33,7 @@ const ChatSchema = new Schema<IChat>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Message",
     },
-     groupId: {
+    groupId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Group",
     },

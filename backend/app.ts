@@ -5,6 +5,7 @@ import connectDb from "./config/db.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { initSocket } from "./utils/socketHelper.js";
+import rateLimit from "express-rate-limit";
 import http from "http";
 
 // admin routes 
@@ -35,9 +36,14 @@ import userAnnouncementRoutes from "./routes/user/announcement.route.js";
 import userSuggestionRoutes from "./routes/user/suggestion.route.js";
 
 const app = express();
-
-
-connectDb();
+const globalRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 1000 
+})
+  
+  
+connectDb(); 
+app.use(globalRateLimit);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: ["http://localhost:8080", "http://localhost:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"], credentials: true }))

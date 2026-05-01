@@ -6,7 +6,7 @@ import { mockChats } from '@/data/mockData';
 import { getAllGroups, toggleMember, deleteGroup } from "@/service/group";
 import { useToast } from '@/hooks/use-toast';
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
-import { setGroupList, setGroupJoinAnUnJoin, setNewGroup, setDeleteGroup, setUpdateGroupDetail } from '@/redux-toolkit/slice/businessGroupSlice';
+import { setGroupList, setGroupJoinAnUnJoin, setAddAnRemoveUserGroup, setNewGroup, setDeleteGroup, setUpdateGroupDetail } from '@/redux-toolkit/slice/businessGroupSlice';
 import { useNavigate } from 'react-router-dom';
 import socket from '@/socket/socket';
 import GroupDialog from "@/components/forms/GroupDialog";
@@ -40,18 +40,23 @@ const Groups = () => {
     socket.on("newGroup", (group) => {
       dispatch(setNewGroup(group));
     });
+
+    socket.on("groupInviteAccepted", (data) => {
+      dispatch(setUpdateGroupDetail(data?.group));
+    })
     socket.on("deleteGroup", (groupId) => {
       dispatch(setDeleteGroup(groupId));
     })
 
-    socket.on("addMembersToGroup", (group) => {
-      dispatch(setUpdateGroupDetail(group));
+    socket.on("addAnRemoveUserFromGroup", (data) => {
+      dispatch(setAddAnRemoveUserGroup(data));
     })
 
     return () => {
       socket.off("newGroup");
       socket.off("deleteGroup");
-      socket.off("addMembersToGroup");
+      socket.off("addAnRemoveUserFromGroup");
+      socket.off("groupInviteAccepted");
     }
   }, [])
 

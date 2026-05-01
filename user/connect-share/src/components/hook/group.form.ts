@@ -10,10 +10,6 @@ export const validateGroupForm = (formData) => {
     if (!formData?.description) {
         errors.description = "Description is required."
     }
-
-    if (!formData?.location) {
-        errors.location = "Location is required."
-    }
     if (formData?.files?.length === 0) {
         errors.images = "At least one image is required."
     }

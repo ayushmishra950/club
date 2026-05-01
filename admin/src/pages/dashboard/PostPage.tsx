@@ -7,7 +7,7 @@ import { Plus, Calendar, MapPin, Users, Clock, Edit, Trash, Heart, HeartCrack, P
 import DeleteCard from "@/components/cards/DeleteCard";
 import { useToast } from "@/hooks/use-toast";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
-import { setPostList } from "@/redux-toolkit/slice/postSlice";
+import { setPostList, setDeletePostFromList } from "@/redux-toolkit/slice/postSlice";
 import socket from "@/socket/socket";
 
 
@@ -70,8 +70,13 @@ export default function AnnouncementsPage() {
             handleGetPosts();
         });
 
+        socket.on("postDeleted", (data) => {
+           dispatch(setDeletePostFromList(data))
+        });
+
         return () => {
             socket.off("postRefresh");
+            socket.off("postDeleted");
         };
     }, []);
 

@@ -8,7 +8,6 @@ export interface IGroup extends Document {
   members: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
-  location: string;
   createdBy: mongoose.Types.ObjectId;
 }
 
@@ -25,10 +24,6 @@ const GroupSchema = new Schema<IGroup>(
       default: "",
       trim: true,
     },
-    location: {
-      type: String,
-    },
-
     images: [
       {
         type: String,

@@ -197,11 +197,6 @@ const GroupDetails = () => {
                                 </p>
 
                                 <p className="text-gray-600 mb-2">
-                                    <span className="font-semibold text-black">Location: </span>
-                                    {group.location}
-                                </p>
-
-                                <p className="text-gray-600 mb-2">
                                     <span className="font-semibold text-black">Type: </span>
                                     {group.type}
                                 </p>

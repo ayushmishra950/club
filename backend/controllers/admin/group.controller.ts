@@ -6,51 +6,75 @@ import Message from "../../models/message.model.js";
 import Chat from "../../models/chat.model.js";
 import { getIO } from "../../utils/socketHelper.js";
 import User from "../../models/user.model.js";
+import Admin from "../../models/admin.model.js";
 
 // ========================
 // Create Group
 // ========================
 
+
 export const createGroup = async (req: Request, res: Response) => {
   try {
-    const { title, description, members, location, createdBy } = req.body;
+    const { title, description, members, createdBy } = req.body;
+    console.log(req.body, "group data");
 
     const files = (req as any).files?.media || [];
     const images: string[] = [];
 
     for (const file of files) {
       if (!file.buffer) continue;
-      const url = await uploadToCloudinary(file.buffer, file.mimetype, "groups");
+      const url = await uploadToCloudinary(
+        file.buffer,
+        file.mimetype,
+        "groups"
+      );
       images.push(url);
     }
 
-    // 🔍 Check user exists or not
+    // 🔍 CHECK IN BOTH MODELS
     const userExists = await User.findById(createdBy);
+    const adminExists = await Admin.findById(createdBy);
 
-    if (!userExists) {
+    if (!userExists && !adminExists) {
       return res.status(404).json({
-        message: "Creator user not found",
+        message: "Creator not found (User/Admin)",
       });
     }
 
-    // ✅ Force creator into members array
-    const finalMembers = [createdBy];
+    let finalMembers: any[] = [];
+
+    if (adminExists) {
+      finalMembers = [];
+    } else if (userExists) {
+      finalMembers = [createdBy];
+    }
 
     const group = new Group({
       title,
       description,
       images,
       members: finalMembers,
-      location,
       createdBy,
     });
 
     await group.save();
 
-    const latestGroup = await group.populate([
-      { path: "createdBy", select: "fullName email profileImage" },
-      { path: "members", select: "fullName email profileImage" }
-    ]);
+    // ✅ CREATE CHAT ONLY IF USER CREATED GROUP
+    if (userExists) {
+      await Chat.create({ members: finalMembers, isGroup: true, groupId: group._id, });
+    }
+
+    let latestGroup = await Group.findById(group._id)
+      .populate({
+        path: "createdBy",
+        select: "fullName email profileImage",
+        model: adminExists ? "Admin" : "User",
+      })
+      .populate({
+        path: "members",
+        select: "fullName email profileImage",
+        model: "User", // members always user
+      });
 
     getIO().emit("newGroup", latestGroup);
 
@@ -58,6 +82,7 @@ export const createGroup = async (req: Request, res: Response) => {
       message: "Group created successfully",
       group: latestGroup,
     });
+
   } catch (err: any) {
     console.error(err);
     return res.status(500).json({
@@ -104,6 +129,41 @@ export const getGroups = async (req: Request, res: Response) => {
     return res.status(500).json({ message: err.message || "Server Error" });
   }
 };
+export const getAllGroupsByAdmin = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params?.id;
+
+    if (!userId) {
+      return res.status(400).json({ message: "Invalid User ID" });
+    }
+
+    const admin = await Admin.findById(userId);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    const groups = await Group.find({ createdBy: admin._id }).populate("members", "fullName email profileImage").sort({ createdAt: -1 });
+
+    const groupsWithMessages = await Promise.all(
+      groups.map(async (group) => {
+        const chat = await Chat.findOne({ groupId: group._id });
+
+        let unreadMessages: any = [];
+
+        if (chat) {
+          unreadMessages = await Message.find({ chatId: chat._id, status: { $ne: "seen" }, sender: { $ne: null } }).sort({ createdAt: -1 });
+        }
+
+        return { ...group.toObject(), chatId: chat ? chat._id : null, unreadMessages, updatedAt: chat ? chat.updatedAt : group.updatedAt, };
+      })
+    );
+
+    return res.status(200).json({ groups: groupsWithMessages });
+
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message });
+  }
+};
 // ========================
 // Get Single Group
 // ========================
@@ -130,7 +190,7 @@ export const getGroupById = async (req: Request, res: Response) => {
 // ========================
 export const updateGroup = async (req: Request, res: Response) => {
   try {
-    const { id, title, description, members, location } = req.body;
+    const { id, title, description, members } = req.body;
     const groupId = id as string;
     const io = getIO();
 
@@ -143,7 +203,6 @@ export const updateGroup = async (req: Request, res: Response) => {
     // Update basic fields
     group.title = title || group.title;
     group.description = description || group.description;
-    group.location = location || group.location;
     if (members) group.members = members;
 
     // Handle new media files
@@ -197,17 +256,86 @@ export const deleteGroup = async (req: Request, res: Response) => {
 // Add Member
 // ========================
 
+// export const addMember = async (req: Request, res: Response) => {
+//   try {
+//     const { groupId, members } = req.body;
+//     const io = getIO();
+
+//     if (!mongoose.Types.ObjectId.isValid(groupId)) {
+//       return res.status(400).json({ message: "Invalid Group ID" });
+//     }
+
+//     if (!members || !Array.isArray(members) || members.length === 0) {
+//       return res.status(400).json({ message: "Members not found" });
+//     }
+
+//     const group = await Group.findById(groupId);
+//     if (!group) {
+//       return res.status(404).json({ message: "Group not found" });
+//     }
+
+//     const existingMembers = group.members.map(m => m.toString());
+
+//     const newMembers = members.filter(
+//       (id: string) => !existingMembers.includes(id)
+//     );
+
+//     if (newMembers.length === 0) {
+//       return res.status(400).json({ message: "All users already in group" });
+//     }
+
+//     group.members.push(...newMembers);
+//     await group.save();
+
+//     await Chat.findOneAndUpdate(
+//       { groupId },
+//       {
+//         $set: { groupId: groupId, isGroup: true },
+//         $addToSet: { members: { $each: newMembers } }
+//       },
+//       { upsert: true, new: true }
+//     );
+
+//     const updateGroup = await group.populate([
+//       { path: "createdBy", select: "fullName email profileImage" },
+//       { path: "members", select: "fullName email profileImage" }
+//     ]);
+
+//     io.emit("addMembersToGroup", updateGroup);
+
+//     return res.status(200).json({
+//       message: "Members added successfully",
+//       added: newMembers,
+//       group: updateGroup
+//     });
+
+//   } catch (err: any) {
+//     console.error(err);
+//     return res.status(500).json({
+//       message: err.message || "Server Error"
+//     });
+//   }
+// };
+
+
+
+
+
+
+
+
+
+
+
 export const addMember = async (req: Request, res: Response) => {
   try {
     const { groupId, members } = req.body;
     const io = getIO();
 
-    // ✅ validate groupId
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
       return res.status(400).json({ message: "Invalid Group ID" });
     }
 
-    // ✅ validate members array
     if (!members || !Array.isArray(members) || members.length === 0) {
       return res.status(400).json({ message: "Members not found" });
     }
@@ -217,10 +345,8 @@ export const addMember = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    // existing members
     const existingMembers = group.members.map(m => m.toString());
 
-    // filter only new members
     const newMembers = members.filter(
       (id: string) => !existingMembers.includes(id)
     );
@@ -229,32 +355,29 @@ export const addMember = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "All users already in group" });
     }
 
-    // ✅ add in group
-    group.members.push(...newMembers);
-    await group.save();
-
-    // ✅ sync with chat (IMPORTANT)
-    await Chat.findOneAndUpdate(
+    const chat = await Chat.findOneAndUpdate(
       { groupId },
       {
-        $set: { groupId: groupId, isGroup: true },
-        $addToSet: { members: { $each: newMembers } }
+        $set: { groupId, isGroup: true },
+        $addToSet: {
+          pendingMembers: { $each: newMembers }
+        }
       },
       { upsert: true, new: true }
     );
 
-    const updateGroup = await group.populate([
-      { path: "createdBy", select: "fullName email profileImage" },
-      { path: "members", select: "fullName email profileImage" }
-    ]);
-
-    // ✅ socket emit
-    io.emit("addMembersToGroup", updateGroup);
+    newMembers.forEach((userId: string) => {
+      io.to(userId).emit("groupInvite", {
+        groupId,
+        chatId: chat?._id,
+        userId,
+        message: "You have been invited to a group",
+      });
+    });
 
     return res.status(200).json({
-      message: "Members added successfully",
-      added: newMembers,
-      group: updateGroup
+      message: "Invites sent successfully",
+      invited: newMembers,
     });
 
   } catch (err: any) {
@@ -264,6 +387,9 @@ export const addMember = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+
 
 // ========================
 // Remove Member

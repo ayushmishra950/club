@@ -45,7 +45,6 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
         try {
             const payload = { groupId, members: selectedUsers };
             const res = await addMemberToGroup(payload);
-            console.log(res);
             if (res.status === 200) {
                 toast({
                     title: "Success",
@@ -53,8 +52,6 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
                 });
                 onOpenChange(false);
                 setSelectedUsers([]);
-                dispatch(setUpdateGroup(res.data?.group))
-                // dispatch(getGroup);
             }
 
         } catch (err: any) {

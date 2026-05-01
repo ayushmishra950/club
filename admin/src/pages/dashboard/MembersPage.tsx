@@ -370,7 +370,7 @@ export default function MembersPage() {
 
                       {/* PHONE */}
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                        {m.phone}
+                        {m.mobile}
                       </TableCell>
 
                       {/* STATUS */}
@@ -511,7 +511,7 @@ export default function MembersPage() {
                   <p className="text-sm text-muted-foreground mb-3">{m?.role}</p>
                   <div className="space-y-1 text-xs text-muted-foreground">
                     <div className="flex items-center justify-center gap-1"><Mail className="h-3 w-3" /> {m?.email}</div>
-                    <div className="flex items-center justify-center gap-1"><Phone className="h-3 w-3" /> {m?.phone}</div>
+                    <div className="flex items-center justify-center gap-1"><Phone className="h-3 w-3" /> {m?.mobile}</div>
                   </div>
                   <span
                     className={`px-2 py-0.5 rounded text-xs font-medium ${m?.blocked ? "bg-red-100 text-red-600" : !m?.isVerified ? "bg-yellow-100 text-yellow-600" : "bg-green-100 text-green-600"}`}>{m?.blocked ? "Blocked" : !m?.isVerified ? "Unverified" : "Active"}

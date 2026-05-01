@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, MoreVertical, Send, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getAllGroups, deleteGroup } from "@/service/group";
+import { getAllGroupsByAdmin, deleteGroup } from "@/service/group";
 import { getAllMessage, addMessage } from "@/service/chat";
 import GroupDialog from "@/components/forms/GroupDialog";
 import socket from "@/socket/socket";
@@ -39,9 +39,10 @@ export default function GroupsPage() {
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
 
   const groupList = useAppSelector((state) => state?.group?.groupList);
+  const filteredGroupList = groupList;
   const messageList = useAppSelector((state) => state?.group?.messageList);
   const liveUnreadCount = messageList?.filter((msg) => msg?.chatId === chatId && msg?.status !== "seen")?.length;
-  console.log(groupList, "grp list")
+
   const handleSelectGroup = (id: string) => { socket.emit("adminMessageSeen", id) }
 
   const scrollToBottom = () => {
@@ -71,7 +72,9 @@ export default function GroupsPage() {
     });
 
     socket.on("newGroup", (group) => {
-      dispatch(setNewGroup(group));
+      if (group?.createdBy?.toString() === user?._id?.toString() || group?.createdBy === null) {
+        dispatch(setNewGroup(group));
+      }
     });
 
     socket.on("deleteGroup", (groupId) => {
@@ -84,6 +87,9 @@ export default function GroupsPage() {
     socket.on("updateGroupDetail", (data) => {
       dispatch(setUpdateGroupDetail(data));
     });
+    socket.on("groupInviteAccepted", (data) => {
+      dispatch(setUpdateGroupDetail(data?.group));
+    })
 
     socket.on("addMembersToGroup", (data) => {
       dispatch(setUpdateGroupDetail(data));
@@ -97,6 +103,7 @@ export default function GroupsPage() {
       socket.off("deleteGroup");
       socket.off("updateGroupDetail");
       socket.off("addMembersToGroup");
+      socket.off("groupInviteAccepted");
     }
   }, [selectedGroup])
 
@@ -110,7 +117,7 @@ export default function GroupsPage() {
 
   // ---------------- FETCH GROUPS ----------------
   const handleGetGroups = async () => {
-    const res = await getAllGroups();
+    const res = await getAllGroupsByAdmin(user?._id);
     if (res.status === 200) dispatch(setGroupList(res?.data?.groups));
   };
 
@@ -144,6 +151,8 @@ export default function GroupsPage() {
       }
     } catch (err) {
       toast({ title: "Error", description: err?.response?.data?.message || err?.message, variant: "destructive" });
+    } finally {
+      setDeleteLoading(false);
     }
   };
   // ---------------- FILE ----------------
@@ -187,13 +196,12 @@ export default function GroupsPage() {
 
   // ---------------- VIDEO CHECK ----------------
   const isVideo = (url) => url?.includes(".mp4") || url?.includes(".webm") || url?.includes(".ogg") || url?.includes("video");
-
   return (
     <>
-      <GroupInfoCard 
-        isOpen={groupInfoOpen} 
-        onOpenChange={setGroupInfoOpen} 
-        groupId={selectedGroup?._id} 
+      <GroupInfoCard
+        isOpen={groupInfoOpen}
+        onOpenChange={setGroupInfoOpen}
+        groupId={selectedGroup?._id}
         setSelectedGroup={setSelectedGroup}
       />
       <DeleteCard
@@ -221,72 +229,73 @@ export default function GroupsPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              {groupList.map((group) => {
+              {
+                filteredGroupList?.map((group) => {
 
-                const finalCount = group?.unreadMessages?.length;
-                return (
-                  <div
-                    key={group._id}
-                    onClick={() => {
-                      setSelectedGroup(group);
-                      handleSelectGroup(group?._id);
-                      if (selectedGroup?._id !== group?._id) {
-                        dispatch(setCleanMessage());
-                      }
-                    }}
-                    className="flex items-center justify-between px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={group.images?.[0]}
-                        className="w-10 h-10 rounded-full"
-                      />
-                      <div>
-                        <p className="text-sm font-medium">{group.title}</p>
-                        <p className="text-xs text-gray-500">
-                          {group.members?.length} members
-                        </p>
+                  const finalCount = group?.unreadMessages?.length;
+                  return (
+                    <div
+                      key={group._id}
+                      onClick={() => {
+                        setSelectedGroup(group);
+                        handleSelectGroup(group?._id);
+                        if (selectedGroup?._id !== group?._id) {
+                          dispatch(setCleanMessage());
+                        }
+                      }}
+                      className="flex items-center justify-between px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={group.images?.[0]}
+                          className="w-10 h-10 rounded-full"
+                        />
+                        <div>
+                          <p className="text-sm font-medium">{group.title}</p>
+                          <p className="text-xs text-gray-500">
+                            {group.members?.length} members
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 3 DOT */}
+                      <div className="relative">
+                        {finalCount > 0 && (
+                          <span className="absolute -top-1 right-6 min-w-[16px] h-[16px] px-1 text-[10px] flex items-center justify-center rounded-full bg-red-500 text-white leading-none">
+                            {finalCount > 99 ? "99+" : finalCount}
+                          </span>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === group._id ? null : group._id);
+                          }}
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+
+                        {openMenuId === group._id && (
+                          <div className="absolute right-0 top-6 bg-white border shadow-lg rounded-md w-32 z-50">
+                            <button className="w-full px-3 py-2 text-sm hover:bg-gray-100" onClick={(e) => { e.stopPropagation(); setSelectedGroupId(group?._id); setShareOpenCard(true); setOpenMenuId(null) }} >
+                              Add Members
+                            </button>
+                            <button className="w-full px-3 py-2 text-sm hover:bg-gray-100" onClick={(e) => { e.stopPropagation(); setInitialData(group); setGroupDialogOpen(true); setOpenMenuId(null) }}>
+                              Edit
+                            </button>
+
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeleteGroupData(group); setDeleteDialogOpen(true); setOpenMenuId(null) }}
+                              className="w-full px-3 py-2 text-sm text-red-500 hover:bg-red-100"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
-
-                    {/* 3 DOT */}
-                    <div className="relative">
-                      {finalCount > 0 && (
-                        <span className="absolute -top-1 right-6 min-w-[16px] h-[16px] px-1 text-[10px] flex items-center justify-center rounded-full bg-red-500 text-white leading-none">
-                          {finalCount > 99 ? "99+" : finalCount}
-                        </span>
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenMenuId(openMenuId === group._id ? null : group._id);
-                        }}
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-
-                      {openMenuId === group._id && (
-                        <div className="absolute right-0 top-6 bg-white border shadow-lg rounded-md w-32 z-50">
-                          <button className="w-full px-3 py-2 text-sm hover:bg-gray-100" onClick={(e) => { e.stopPropagation(); setSelectedGroupId(group?._id); setShareOpenCard(true); setOpenMenuId(null) }} >
-                            Add Members
-                          </button>
-                          <button className="w-full px-3 py-2 text-sm hover:bg-gray-100" onClick={(e) => { e.stopPropagation(); setInitialData(group); setGroupDialogOpen(true); setOpenMenuId(null) }}>
-                            Edit
-                          </button>
-
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setDeleteGroupData(group); setDeleteDialogOpen(true); setOpenMenuId(null) }}
-                            className="w-full px-3 py-2 text-sm text-red-500 hover:bg-red-100"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              }
-              )}
+                  )
+                }
+                )}
             </div>
           </div>
         )}

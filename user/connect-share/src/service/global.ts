@@ -148,7 +148,6 @@ export const isImage = (url) => {
 };
 
 
-
 // y birthday ki date ko exact pata karne k liye hai y aane wala hai ya ja chuka hai 
 export const getBirthdayInfo = (dob?: string | null) => {
   if (!dob) return null;
@@ -196,11 +195,11 @@ export const getBirthdayInfo = (dob?: string | null) => {
 
 export const personalFields = [
   { key: "fullName", label: "Full Name" },
-  { key: "phone", label: "Phone" },
-  { key: "dob", label: "Date of Birth" },
-  { key: "gender", label: "Gender" },
+  { key: "email", label: "Email" },
+  { key: "mobile", label: "Mobile" },
+  { key: "occupation", label: "Occupation" },
   { key: "address", label: "Address" },
-  { key: "city", label: "City" },
   { key: "state", label: "State" },
-  { key: "occupation", label: "Occupation" }
+  { key: "country", label: "Country" },
+  { key: "dob", label: "Date of Birth" },
 ];

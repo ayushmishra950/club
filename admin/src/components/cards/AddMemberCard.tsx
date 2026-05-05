@@ -67,7 +67,6 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
     const handleGetUsers = async () => {
         try {
             const res = await getAllUser({ page, perPage, search, filterStatus });
-            console.log(res);
             if (res.status === 200) {
                 dispatch(setUserList(res?.data?.users));
                 setTotalPages(Math.ceil(res?.data?.total / perPage));

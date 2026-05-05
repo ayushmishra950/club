@@ -47,9 +47,12 @@ export const addGallery = async (req: Request, res: Response) => {
       await events.save();
     }
 
+     await gallery.populate("event");
+
+
     return res.status(201).json({
       message: "Gallery created successfully",
-      data: gallery,
+       gallery,
     });
 
   } catch (err: unknown) {
@@ -83,7 +86,7 @@ export const getAllGallery = async (req: Request, res: Response) => {
       .populate("event")
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 }); 
 
     return res.status(200).json({
       message: "Gallery fetched successfully",
@@ -109,6 +112,7 @@ export const getAllGallery = async (req: Request, res: Response) => {
 export const updateGallery = async (req: Request, res: Response) => {
   try {
     const { id, event, image } = req.body;
+   
     const files = (req as MulterRequest).files;
 
     if (!id) {
@@ -121,7 +125,7 @@ export const updateGallery = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Gallery not found." });
     }
 
-    let eventId = existingGallery.event;
+    let eventId = event;
 
    
       const events = await Event.findById(event);
@@ -132,7 +136,7 @@ export const updateGallery = async (req: Request, res: Response) => {
   
 
     let imageUrl: string = existingGallery.image;
-    let type = "";
+    let type = "image";
 
     if (files) {
       const fileArray = Array.isArray(files)
@@ -163,19 +167,12 @@ export const updateGallery = async (req: Request, res: Response) => {
       imageUrl = image;
     }
 
-    const updatedGallery = await Gallery.findByIdAndUpdate(
-      id,
-      {
-        event: eventId,
-        image: imageUrl,
-        type:type
-      },
-      { new: true }
-    );
+    const updatedGallery = await Gallery.findByIdAndUpdate( id, { event: eventId, image: imageUrl, type:type}, { new: true } );
+     await updatedGallery?.populate("event");
 
     return res.status(200).json({
       message: "Gallery updated successfully",
-      data: updatedGallery,
+      gallery: updatedGallery,
     });
 
   } catch (err: unknown) {

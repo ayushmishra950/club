@@ -25,11 +25,9 @@ const DonateDialog = ({ isOpen, onOpenChange, initialData, setUserListRefresh })
     }, [initialData]);
 
     const handleSubmit = async () => {
-        console.log(formData)
         try {
             setIsLoading(true);
             const res = await addDonation(formData);
-            console.log(res);
             if (res.status === 201) {
                 toast({ title: "Add Donation", description: res.data.message })
                 setUserListRefresh(true);

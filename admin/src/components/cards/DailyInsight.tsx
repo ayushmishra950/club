@@ -96,7 +96,6 @@ const DailyInsight = ({ category, searchText }) => {
       handleGetPost();
     }
   }, [postListRefresh, postList?.length]);
-  console.log(postList)
 
   return (
     <div className="mt-6 text-black max-w-3xl mx-auto">

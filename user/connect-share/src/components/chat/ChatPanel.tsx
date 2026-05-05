@@ -192,7 +192,6 @@ export function ChatPanel({ open, onClose }: Props) {
     }
     try {
       const res = await getMessages(activeChat?.chatId);
-      console.log(res)
       if (res.status === 200) {
         // setMessageList(res?.data?.messages);
         dispatch(setMessageList(res?.data?.messages));
@@ -251,7 +250,6 @@ export function ChatPanel({ open, onClose }: Props) {
   };
 
   if (!open) return null;
-  console.log(filteredChats)
   return (
     <>
       <DeleteCard

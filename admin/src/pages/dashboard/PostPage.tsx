@@ -47,7 +47,6 @@ export default function AnnouncementsPage() {
     const handleGetPosts = async () => {
         try {
             const res = await getAllPost();
-            console.log(res)
             if (res.status === 200) {
                 dispatch(setPostList(res?.data?.posts));
                 setPostListRefresh(false);
@@ -66,7 +65,6 @@ export default function AnnouncementsPage() {
 
     useEffect(() => {
         socket.on("postRefresh", () => {
-            console.log("Admin Socket: postRefresh received");
             handleGetPosts();
         });
 

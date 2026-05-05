@@ -6,14 +6,15 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import {addGallery,updateGallery } from "@/service/gallery";
+import { addGallery, updateGallery } from "@/service/gallery";
 import { getEvent } from "@/service/event";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
 import { setEventList } from "@/redux-toolkit/slice/eventSlice";
+import {setNewGallery} from "@/redux-toolkit/slice/gallerySlice";
 
 const GalleryDialog = ({ isOpen, onOpenChange, initialData, setGalleryListRefresh }) => {
     const user = JSON.parse(localStorage.getItem("user"));
-    const {toast} = useToast();
+    const { toast } = useToast();
     const [formData, setFormData] = useState({ event: "all", image: null });
     const [imagePreview, setImagePreview] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -21,15 +22,16 @@ const GalleryDialog = ({ isOpen, onOpenChange, initialData, setGalleryListRefres
     const imageRef = useRef(null);
     const [eventListRefresh, setEventListRefresh] = useState<boolean>(false);
     const dispatch = useAppDispatch();
-      const eventList = useAppSelector((state)=> state?.event?.eventList);
+    const eventList = useAppSelector((state) => state?.event?.eventList);
 
     useEffect(() => {
         if (initialData && isOpen) {
-            setFormData({ event: initialData?.event, image: initialData?.image });
+            setFormData({ event: initialData?.event?._id || initialData?.event, image: initialData?.image });
             setImagePreview(initialData?.image);
         }
     }, [isOpen, initialData]);
 
+     
     const resetForm = () => { setImagePreview(null); setFormData({ event: "all", image: null }) };
 
     const handleChange = (e) => {
@@ -40,57 +42,55 @@ const GalleryDialog = ({ isOpen, onOpenChange, initialData, setGalleryListRefres
         }
     }
 
-    const handleSubmit = async(e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        let obj = {...formData, id : initialData?._id || null}
+        let obj = { ...formData, id: initialData?._id || null }
         const convertFormData = new FormData();
-       Object.keys(obj).forEach((k) => {
-    const v = obj[k];
-    if (v) convertFormData.append(k, v);
-  });
-        try{
-          setIsLoading(true);
-          const res = await (isEdit? updateGallery(convertFormData) : addGallery(convertFormData)) ;
-          console.log(res)
-          if(res.status===201 || res.status===200){
-             toast({title:isEdit?"Update Gallery.":"Create Gallery.", description:res?.data?.message});
-             setGalleryListRefresh(true);
-             onOpenChange(false);
-             resetForm();
-          }
+        Object.keys(obj).forEach((k) => {
+            const v = obj[k];
+            if (v) convertFormData.append(k, v);
+        });
+        try {
+            setIsLoading(true);
+            const res = await (isEdit ? updateGallery(convertFormData) : addGallery(convertFormData));
+            if (res.status === 201 || res.status === 200) {
+                toast({ title: isEdit ? "Update Gallery." : "Create Gallery.", description: res?.data?.message });
+                dispatch(setNewGallery(res?.data?.gallery));
+                onOpenChange(false);
+                resetForm();
+            }
 
-        }catch(err){
+        } catch (err) {
             console.log(err);
         }
-        finally{
+        finally {
             setIsLoading(false);
         }
 
     }
 
 
-    
-      const handleGetEvent = async()=>{
-        try{
-           const res = await getEvent();
-           console.log(res)
-           if(res.status===200){
-            dispatch(setEventList(res?.data?.event))
-            setEventListRefresh(false);
-           }
+
+    const handleGetEvent = async () => {
+        try {
+            const res = await getEvent();
+            if (res.status === 200) {
+                dispatch(setEventList(res?.data?.event))
+                setEventListRefresh(false);
+            }
         }
-        catch(err){
-          console.log(err?.message);
-          
+        catch (err) {
+            console.log(err?.message);
+
         }
-      };
-    
-      useEffect(()=>{
-        if(eventListRefresh || eventList?.length===0){
-     handleGetEvent();
+    };
+
+    useEffect(() => {
+        if (eventListRefresh || eventList?.length === 0) {
+            handleGetEvent();
         }
-       
-      },[eventListRefresh, eventList?.length])
+
+    }, [eventListRefresh, eventList?.length])
 
 
     return (
@@ -110,7 +110,7 @@ const GalleryDialog = ({ isOpen, onOpenChange, initialData, setGalleryListRefres
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All</SelectItem>
-                                   {eventList?.map((v)=> <SelectItem value={v?._id} >{v?.title}</SelectItem>)}
+                                    {eventList?.map((v) => <SelectItem value={v?._id} >{v?.title}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -128,7 +128,7 @@ const GalleryDialog = ({ isOpen, onOpenChange, initialData, setGalleryListRefres
                         <div className="flex justify-end mt-2">
                             <Button disabled={isLoading || !formData?.event || !formData?.image}>
                                 {isLoading && <Loader2 className="animate-spin w-2 h-2 " />}
-                                {isEdit? isLoading ? "Updating...": "Update" : isLoading ? "Creating..." : "Create"}
+                                {isEdit ? isLoading ? "Updating..." : "Update" : isLoading ? "Creating..." : "Create"}
                             </Button>
                         </div>
                     </form>

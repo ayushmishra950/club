@@ -93,7 +93,6 @@ const GroupDetails = () => {
     const handleGetGroups = async () => {
         try {
             const res = await getAllGroups();
-            console.log(res);
             if (res.status === 200) {
                 dispatch(setGroupList(res?.data?.groups));
                 setGroupListRefresh(false);

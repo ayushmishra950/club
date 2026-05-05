@@ -42,7 +42,6 @@ const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh })
     useEffect(() => {
 
         if (initialData && isOpen) {
-            console.log(initialData)
             setPreview(initialData?.coverImage);
             setFormData({ 
                 title: initialData?.title, 

@@ -109,7 +109,6 @@ const FriendRequests = () => {
     if (!user?._id) return;
     try {
       const res = await pendingRequest(user?._id);
-      console.log(res)
       if (res.status === 200) {
         setSendRequestList(res?.data?.sent?.length ? res.data.sent : []);
         setReceivedRequestList(res?.data?.received?.length ? res.data.received : []);
@@ -125,7 +124,6 @@ const FriendRequests = () => {
     if (!user?._id) return;
     try {
       const res = await getSuggestedUsers(user?._id);
-      console.log(res);
       if (res.status === 200) {
         setSuggestedUsers(res?.data);
         setUserListRefresh(false);
@@ -150,7 +148,6 @@ const FriendRequests = () => {
     if (!user?._id) return;
     try {
       const res = await getFriendUsers(user?._id);
-      console.log(res);
       if (res.status === 200) {
         setFriendList(res?.data?.friends);
       }

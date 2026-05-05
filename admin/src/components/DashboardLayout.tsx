@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Calendar, Megaphone, Link2, CheckSquare,
-  DollarSign, CreditCard, ClipboardList, FileText, BarChart3, Settings, Menu,
-  X, Bell, LogOut, ChevronLeft, Lightbulb,
+  LayoutDashboard, Users, Calendar, Megaphone, 
+ FileText,Settings, Menu,
+  X, Bell, LogOut, ChevronLeft, Lightbulb,Images, Star, Newspaper,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
@@ -13,6 +13,8 @@ import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook"
 import { setNotificationList, setNewNotifications } from "@/redux-toolkit/slice/notificationSlice";
 import DeleteCard from "./cards/DeleteCard";
 import socket from "@/socket/socket";
+import appLogo from "@/assets/logo.jpg";
+
 
 
 const menuItems = [
@@ -24,9 +26,9 @@ const menuItems = [
   { label: "Business Directory", path: "/dashboard/businessDirectory", icon: FileText },
   { label: "Announcements", path: "/dashboard/announcements", icon: Megaphone },
   { label: "Suggestions", path: "/dashboard/suggestions", icon: Lightbulb },
-  // { label: "Referrals", path: "/dashboard/referrals", icon: Link2 },
-  // { label: "Tasks", path: "/dashboard/tasks", icon: CheckSquare },
-  // { label: "Finance", path: "/dashboard/finance", icon: DollarSign },
+  { label: "Gallery", path: "/dashboard/gallery", icon: Images },
+  { label: "Reviews", path: "/dashboard/reviews", icon: Star },
+  { label: "News & Updates", path: "/dashboard/news", icon: Newspaper  },
   // { label: "Payments", path: "/dashboard/payments", icon: CreditCard },
   // { label: "Attendance", path: "/dashboard/attendance", icon: ClipboardList },
   // { label: "Polls", path: "/dashboard/polls", icon: BarChart3 },
@@ -57,7 +59,6 @@ export function DashboardLayout() {
     });
 
     socket.on("notificationSeen", (data) => {
-      console.log(data);
       dispatch(setNotificationList(data));
     })
 
@@ -112,9 +113,9 @@ export function DashboardLayout() {
         <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
           {!collapsed && (
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg gradient-gold flex items-center justify-center">
-                <span className="text-secondary-foreground font-display font-bold text-xs">CC</span>
-              </div>
+             <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center overflow-hidden">
+    <img src={appLogo} alt="logo" className="w-full h-full object-cover" />
+  </div>  
               <span className="font-display font-bold text-sidebar-foreground">ClubConnect</span>
             </Link>
           )}

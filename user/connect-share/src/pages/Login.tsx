@@ -43,7 +43,7 @@ export default function Login() {
     try {
       setIsLoading(true);
       const res = await loginUser(formData);
-      console.log(res);
+      
       if (res.status === 200) {
         localStorage.setItem("accessToken", res?.data?.accessToken);
         localStorage.setItem("user", JSON.stringify(res?.data?.data));

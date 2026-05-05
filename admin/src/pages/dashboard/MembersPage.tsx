@@ -12,6 +12,7 @@ import { verifyUser, deletedUser, activeAndInactiveUser, uploadExcel } from "@/s
 import RoleDialog from "@/components/forms/RoleDialog";
 import DeleteCard from "@/components/cards/DeleteCard";
 import MemberDetailCard from "@/components/cards/MemberDetailCard";
+import MemberEditDialog from "@/components/forms/MemberEditDialog";
 import { setUserList, setActiveAndInactiveUser, setAddNewUser, setUpdateUser } from "@/redux-toolkit/slice/userSlice";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
 import socket from "@/socket/socket";
@@ -36,7 +37,9 @@ export default function MembersPage() {
   const [excelFile, setExcelFile] = useState<File | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [editMember, setEditMember] = useState<any>(null);
   const [selectedMemebersId, setSelectedMembersId] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState("active");
   const dispatch = useAppDispatch();
@@ -65,8 +68,6 @@ export default function MembersPage() {
 
     try {
       const res = await uploadExcel(formData);
-
-      console.log(res);
 
       if (res.status === 201) {
         const { inserted, duplicates, insertedCount, duplicateCount } = res.data;
@@ -117,7 +118,6 @@ export default function MembersPage() {
   const handleGetUsers = async () => {
     try {
       const res = await getAllUser({ page, perPage, search, filterStatus });
-      console.log(res);
       if (res.status === 200) {
         dispatch(setUserList(res?.data?.users));
         setTotalPages(Math.ceil(res?.data?.total / perPage));
@@ -186,6 +186,12 @@ export default function MembersPage() {
   return (
     <>
       <MemberDetailCard member={selectedMember} detailDialogOpen={detailDialogOpen} setDetailDialogOpen={setDetailDialogOpen} />
+      <MemberEditDialog 
+        isOpen={editDialogOpen} 
+        onOpenChange={setEditDialogOpen} 
+        member={editMember} 
+        onSuccess={() => setMemberListRefresh(true)} 
+      />
       <PaymentDetailCard paymentDialog={paymentDialog} setPaymentDialog={setPaymentDialog} selectedPayment={selectedPayment} />
       <DeleteCard
         isOpen={deleteDialogOpen}
@@ -437,6 +443,9 @@ export default function MembersPage() {
                             <DropdownMenuContent align="end" className="w-36 sm:w-40">
                               <DropdownMenuItem onClick={() => { setSelectedMember(m); setDetailDialogOpen(true); }} className="cursor-pointer">
                                 View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { setEditMember(m); setEditDialogOpen(true); }} className="cursor-pointer">
+                                Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => { setInitialData(m); setRoleDialog(true); }} className="cursor-pointer">
                                 Role Assign

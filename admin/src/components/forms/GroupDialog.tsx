@@ -103,7 +103,6 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
     e.preventDefault();
     setIsSubmitted(true);
     const validationErrors = validateGroupForm(formData);
-    console.log(validationErrors);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
 

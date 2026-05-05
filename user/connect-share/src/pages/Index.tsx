@@ -22,7 +22,7 @@ const Index = () => {
   const dispatch = useAppDispatch();
   const postList = useAppSelector((state) => state?.post?.postList);
   const searchQuery = useAppSelector((state) => state?.search?.searchQuery);
-  console.log(postList)
+
   const pinnedAdminPosts = postList.filter(
     (post) => post?.createdBy?.role === "admin" && post?.isPinned
   ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -71,7 +71,6 @@ const Index = () => {
 
   useEffect(() => {
     socket.on("postRefresh", () => {
-      console.log("Socket: postRefresh received");
       handleGetPosts();
     });
 

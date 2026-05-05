@@ -1,7 +1,6 @@
 import Admin from "../../models/admin.model.js";
 import User from "../../models/user.model.js";
 import type { Request, Response } from "express";
-import { nanoid } from "nanoid";
 import xlsx from "xlsx";
 import { getIO } from "../../utils/socketHelper.js";
 import bcrypt from "bcryptjs";
@@ -226,249 +225,6 @@ export const acceptPaymentRequest = async (req: Request, res: Response) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-//   const normalize = (val?: string) => val?.trim().toLowerCase();
-
-// const parseChildren = (children: any) => {
-//   try {
-//     if (!children) return [];
-//     const parsed =
-//       typeof children === "string" ? JSON.parse(children) : children;
-//     return Array.isArray(parsed) ? parsed : [];
-//   } catch {
-//     return [];
-//   }
-// };
-
-// export const uploadExcel = async (req: Request, res: Response) => {
-//   try {
-//     const file = (req.files as any)?.excelFile?.[0];
-
-//     if (!file) {
-//       return res.status(400).json({ message: "No file uploaded" });
-//     }
-
-//     const workbook = xlsx.read(file.buffer, { type: "buffer" });
-//     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-//     const rows: any[] = xlsx.utils.sheet_to_json(sheet);
-
-//     const successUsers: any[] = [];
-//     const duplicateUsers: any[] = [];
-
-//     const { nanoid } = await import("nanoid");
-
-//     // ===== Collect emails & phones =====
-//     const allEmails = rows
-//       .flatMap(r => [r.email, r.wifeEmail])
-//       .filter(Boolean)
-//       .map(normalize);
-
-//     const allPhones = rows
-//       .flatMap(r => [r.mobile, r.wifeMobile])
-//       .filter(Boolean)
-//       .map(p => p.toString());
-
-//       console.log("All Emails from Excel:", allEmails);
-//       console.log("All Phones from Excel:", allPhones);
-
-//     const existingUsers = await User.find({
-//       $or: [
-//         { "personalDetails.email": { $in: allEmails } },
-//         { "personalDetails.mobile": { $in: allPhones } }
-//       ]
-//     });
-
-//     const existingEmailSet = new Set(
-//       existingUsers.map(u => normalize(u.personalDetails?.email)).filter(Boolean)
-//     );
-
-//     const existingPhoneSet = new Set(
-//       existingUsers.map(u => u.personalDetails?.mobile?.toString()).filter(Boolean)
-//     );
-
-//     const usedEmails = new Set<string>();
-//     const usedPhones = new Set<string>();
-
-//     // ================= PROCESS =================
-//     for (const row of rows) {
-//       const userEmail = normalize(row.email);
-//       const wifeEmail = normalize(row.wifeEmail);
-
-//       const userPhone = row.mobile?.toString();
-//       const wifePhone = row.wifeMobile?.toString();
-
-//       const relationId = nanoid(10);
-
-//       // ❌ Same row validation
-//       if (
-//         userEmail &&
-//         wifeEmail &&
-//         userEmail === wifeEmail
-//       ) {
-//         duplicateUsers.push({
-//           email: userEmail,
-//           reason: "User & Wife email same"
-//         });
-//         continue;
-//       }
-
-//       if (
-//         userPhone &&
-//         wifePhone &&
-//         userPhone === wifePhone
-//       ) {
-//         duplicateUsers.push({
-//           phone: userPhone,
-//           reason: "User & Wife mobile same"
-//         });
-//         continue;
-//       }
-
-//       // ===== MAIN USER =====
-//       if (!userEmail) {
-//         duplicateUsers.push({ reason: "User email missing" });
-//         continue;
-//       }
-
-//       const isUserDuplicate =
-//         existingEmailSet.has(userEmail) ||
-//         usedEmails.has(userEmail) ||
-//         (userPhone &&
-//           (existingPhoneSet.has(userPhone) || usedPhones.has(userPhone)));
-
-//       if (!isUserDuplicate) {
-//         usedEmails.add(userEmail);
-//         if (userPhone) usedPhones.add(userPhone);
-
-//         successUsers.push({
-//           userId: `USR-${nanoid(8)}`,
-//           password: `${row.fullName?.trim()?.toLowerCase() || "user"}@123`,
-//           relationId,
-
-//           personalDetails: {
-//             fullName: row.fullName,
-//             email: userEmail,
-//             ...(userPhone && { mobile: userPhone }),
-
-//             ...(row.wifeName && { wifeName: row.wifeName }),
-//             ...(wifeEmail && { wifeEmail }),
-
-//             ...(row.address && { address: row.address }),
-//             ...(row.state && { state: row.state }),
-//             ...(row.country && { country: row.country }),
-
-//             children: parseChildren(row.children)
-//           }
-//         });
-
-//       } else {
-//         duplicateUsers.push({
-//           email: userEmail,
-//           phone: userPhone,
-//           reason: "User duplicate"
-//         });
-//       }
-
-//       // ===== WIFE USER =====
-//       if (wifeEmail && row.wifeName) {
-//         const isWifeDuplicate =
-//           existingEmailSet.has(wifeEmail) ||
-//           usedEmails.has(wifeEmail) ||
-//           (wifePhone &&
-//             (existingPhoneSet.has(wifePhone) || usedPhones.has(wifePhone)));
-
-//         if (!isWifeDuplicate) {
-//           usedEmails.add(wifeEmail);
-//           if (wifePhone) usedPhones.add(wifePhone);
-
-//           successUsers.push({
-//             userId: `USR-${nanoid(8)}`,
-//             password: `${row.wifeName?.trim()?.toLowerCase() || "user"}@123`,
-//             relationId,
-
-//             personalDetails: {
-//               fullName: row.wifeName,
-//               email: wifeEmail,
-//               ...(wifePhone && { mobile: wifePhone }),
-
-//               wifeName: row.fullName,
-//               wifeEmail: userEmail,
-
-//               ...(row.address && { address: row.address }),
-//               ...(row.state && { state: row.state }),
-//               ...(row.country && { country: row.country }),
-
-//               children: []
-//             }
-//           });
-
-//         } else {
-//           duplicateUsers.push({
-//             email: wifeEmail,
-//             phone: wifePhone,
-//             reason: "Wife duplicate"
-//           });
-//         }
-//       }
-//     }
-
-//     // ===== INSERT =====
-//     if (!successUsers.length) {
-//       return res.json({
-//         message: "No users inserted",
-//         insertedCount: 0,
-//         duplicateCount: duplicateUsers.length,
-//         duplicates: duplicateUsers
-//       });
-//     }
-
-//     const inserted = await User.insertMany(successUsers, {
-//       ordered: false
-//     });
-
-//     return res.status(201).json({
-//       message: "Upload successful",
-//       insertedCount: inserted.length,
-//       duplicateCount: duplicateUsers.length,
-//       duplicates: duplicateUsers,
-//       inserted: inserted
-//     });
-
-//   } catch (err: any) {
-//     console.error(err);
-//     return res.status(500).json({
-//       message: err.message || "Upload failed"
-//     });
-//   }
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const generatePasswordFromName = (fullName: string) => {
   if (!fullName) return "";
 
@@ -501,6 +257,131 @@ const parseExcelChildren = (row: any) => {
 
   return children;
 };
+export const updateUserByAdmin = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+    const updateData = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required." });
+    }
+
+    // Remove fields that should not be updated directly
+    const { password, _id, __v, createdAt, updatedAt, ...allowedUpdates } = updateData;
+
+    // Validate and process children array if present
+    if (allowedUpdates.children) {
+      if (!Array.isArray(allowedUpdates.children)) {
+        return res.status(400).json({ message: "Children must be an array." });
+      }
+      // Ensure each child has name and age
+      allowedUpdates.children = allowedUpdates.children.map((child: any) => ({
+        name: child.name || "",
+        age: child.age || 0
+      }));
+    }
+
+    // Validate and process businesses array if present
+    if (allowedUpdates.businesses) {
+      if (!Array.isArray(allowedUpdates.businesses)) {
+        return res.status(400).json({ message: "Businesses must be an array." });
+      }
+    }
+
+    // Get the original user to check if they are someone's spouse
+    const originalUser = await User.findById(userId);
+    if (!originalUser) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Update the main user
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: allowedUpdates },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Check if this user is someone's spouse and update accordingly
+    // If the user's email has changed or if they have a spouse, update the spouse's record
+    if (allowedUpdates.email || (originalUser.spouseEmail && originalUser.spouseName)) {
+      // Find if this user is listed as someone's spouse (spouseName or spouseEmail matches)
+      const spouseQuery = {
+        $or: [
+          { spouseEmail: originalUser.email },
+          { spouseName: originalUser.fullName }
+        ]
+      };
+
+      // Also check if the email is changing
+      if (allowedUpdates.email && allowedUpdates.email !== originalUser.email) {
+        // Update the spouse record where this user is listed as spouseName
+        await User.updateMany(
+          { spouseEmail: originalUser.email },
+          { 
+            $set: { 
+              spouseEmail: allowedUpdates.email,
+              spouseName: allowedUpdates.fullName || originalUser.fullName
+            } 
+          }
+        );
+      }
+
+      // If this user has a spouse (spouseName/spouseEmail), update the spouse's record with new details
+      if (originalUser.spouseEmail) {
+        const spouseUser = await User.findOne({ email: originalUser.spouseEmail });
+        if (spouseUser) {
+          // Update the spouse's spouseName and spouseEmail to reflect this user's details
+          await User.findByIdAndUpdate(
+            spouseUser._id,
+            {
+              $set: {
+                spouseName: allowedUpdates.fullName || originalUser.fullName,
+                spouseEmail: allowedUpdates.email || originalUser.email,
+                spouseMobile: allowedUpdates.mobile || originalUser.mobile,
+                spouseDob: allowedUpdates.dob || originalUser.dob,
+                spouseOccupation: allowedUpdates.occupation || originalUser.occupation,
+              }
+            }
+          );
+        }
+      }
+    }
+
+    // If this user is being updated and they have a spouse listed, 
+    // also update the spouse's spouse* fields to match
+    if (allowedUpdates.spouseName && allowedUpdates.spouseEmail) {
+      const spouseUser = await User.findOne({ email: allowedUpdates.spouseEmail });
+      if (spouseUser && spouseUser._id.toString() !== userId) {
+        // Update the spouse's record to reflect this user as their spouse
+        await User.findByIdAndUpdate(
+          spouseUser._id,
+          {
+            $set: {
+              spouseName: allowedUpdates.fullName || user.fullName,
+              spouseEmail: allowedUpdates.email || user.email,
+              spouseMobile: allowedUpdates.mobile || user.mobile,
+            }
+          }
+        );
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully.",
+      user
+    });
+
+  } catch (err: any) {
+    console.error("Update error:", err);
+    res.status(500).json({ message: err?.message || "Server Error" });
+  }
+};
+
 export const uploadExcel = async (req: Request, res: Response) => {
   try {
     const file = (req.files as any)?.excelFile?.[0];
@@ -519,12 +400,12 @@ export const uploadExcel = async (req: Request, res: Response) => {
 
     // ===== Collect emails & phones =====
     const allEmails = rows
-      .flatMap(r => [r.email, r.wifeEmail])
+      .flatMap(r => [r.email, r.spouseEmail])
       .filter(Boolean)
       .map(normalize);
 
     const allPhones = rows
-      .flatMap(r => [r.mobile, r.wifeMobile])
+      .flatMap(r => [r.mobile, r.spouseMobile])
       .filter(Boolean)
       .map(p => p?.toString());
 
@@ -550,10 +431,10 @@ export const uploadExcel = async (req: Request, res: Response) => {
     // ================= PROCESS =================
     for (const row of rows) {
       const userEmail = normalize(row.email);
-      const wifeEmail = normalize(row.wifeEmail);
+      const spouseEmail = normalize(row.spouseEmail);
 
       const userPhone = row.mobile?.toString();
-      const wifePhone = row.wifeMobile?.toString();
+      const spousePhone = row.spouseMobile?.toString();
 
       const relationId = nanoid(10);
 
@@ -563,12 +444,12 @@ export const uploadExcel = async (req: Request, res: Response) => {
       }
 
       // ❌ same row validation
-      if (userEmail && wifeEmail && userEmail === wifeEmail) {
+      if (userEmail && spouseEmail && userEmail === spouseEmail) {
         duplicateUsers.push({ email: userEmail, reason: "Same email in row" });
         continue;
       }
 
-      if (userPhone && wifePhone && userPhone === wifePhone) {
+      if (userPhone && spousePhone && userPhone === spousePhone) {
         duplicateUsers.push({ phone: userPhone, reason: "Same phone in row" });
         continue;
       }
@@ -593,11 +474,11 @@ export const uploadExcel = async (req: Request, res: Response) => {
           mobile: userPhone || undefined,
           dob: row.dob ? new Date(row.dob) : undefined,
           occupation: row.occupation || undefined,
-          wifeName: row.wifeName || undefined,
-          wifeEmail: wifeEmail || undefined,
-          wifeOccupation: row.wifeOccupation || undefined,
-          wifeDob: row.wifeDob ? new Date(row.wifeDob) : undefined,
-          wifeMobile: wifePhone || undefined,
+          spouseName: row.spouseName || undefined,
+          spouseEmail: spouseEmail || undefined,
+          spouseOccupation: row.spouseOccupation || undefined,
+          spouseDob: row.spouseDob ? new Date(row.spouseDob) : undefined,
+          spouseMobile: spousePhone || undefined,
           address: row.address,
           state: row.state,
           country: row.country,
@@ -608,32 +489,32 @@ export const uploadExcel = async (req: Request, res: Response) => {
         duplicateUsers.push({ email: userEmail, reason: "User duplicate" });
       }
 
-      // ================= WIFE USER =================
-      if (wifeEmail && row.wifeName) {
-        const isWifeDuplicate =
-          existingEmailSet.has(wifeEmail) ||
-          usedEmails.has(wifeEmail) ||
-          (wifePhone && (existingPhoneSet.has(wifePhone) || usedPhones.has(wifePhone)));
+      // ================= SPOUSE USER =================
+      if (spouseEmail && row.spouseName) {
+        const isSpouseDuplicate =
+          existingEmailSet.has(spouseEmail) ||
+          usedEmails.has(spouseEmail) ||
+          (spousePhone && (existingPhoneSet.has(spousePhone) || usedPhones.has(spousePhone)));
 
-        if (!isWifeDuplicate) {
-          usedEmails.add(wifeEmail);
-          if (wifePhone) usedPhones.add(wifePhone);
+        if (!isSpouseDuplicate) {
+          usedEmails.add(spouseEmail);
+          if (spousePhone) usedPhones.add(spousePhone);
 
           successUsers.push({
-            userId: row?.wifeUserId?.toString() || `USR-${nanoid(8)}`,
-            password: generatePasswordFromName(row.wifeName),
+            userId: row?.spouseUserId?.toString() || `USR-${nanoid(8)}`,
+            password: generatePasswordFromName(row.spouseName),
             relationId,
 
-            fullName: row.wifeName,
-            email: wifeEmail,
-            mobile: wifePhone || undefined,
-            dob: row.wifeDob ? new Date(row.wifeDob) : undefined,
-            occupation: row.wifeOccupation || undefined,
-            wifeName: row.fullName,
-            wifeEmail: userEmail,
-            wifeOccupation: row.wifeOccupation || undefined,
-            wifeDob: row.wifeDob ? new Date(row.wifeDob) : undefined,
-            wifeMobile: wifePhone || undefined,
+            fullName: row.spouseName,
+            email: spouseEmail,
+            mobile: spousePhone || undefined,
+            dob: row.spouseDob ? new Date(row.spouseDob) : undefined,
+            occupation: row.spouseOccupation || undefined,
+            spouseName: row.fullName,
+            spouseEmail: userEmail,
+            spouseOccupation: row.spouseOccupation || undefined,
+            spouseDob: row.spouseDob ? new Date(row.spouseDob) : undefined,
+            spouseMobile: spousePhone || undefined,
             address: row.address,
             state: row.state,
             country: row.country,
@@ -641,7 +522,7 @@ export const uploadExcel = async (req: Request, res: Response) => {
             children: parseExcelChildren(row)
           });
         } else {
-          duplicateUsers.push({ email: wifeEmail, reason: "Wife duplicate" });
+          duplicateUsers.push({ email: spouseEmail, reason: "Spouse duplicate" });
         }
       }
     }

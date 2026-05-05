@@ -13,7 +13,6 @@ import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
 export const handleSendGroupMessage = async (req: Request, res: Response) => {
   try {
     const { groupId, message, chatId } = req.body;
-    console.log(req.body);
     const files = (req as any).files;
     const io = getIO();
 

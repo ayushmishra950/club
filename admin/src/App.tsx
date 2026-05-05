@@ -28,6 +28,9 @@ import GroupsPage from "@/pages/dashboard/GroupsPage";
 import BusinessDirectoryPage from "@/pages/dashboard/BusinessDirectoryPage";
 import SettingsPage from "@/pages/dashboard/SettingsPage";
 import SuggestionPage from "@/pages/dashboard/SuggestionPage";
+import GalleryPage from "./pages/dashboard/GalleryPage";
+import ReviewPage from "./pages/dashboard/ReviewPage";
+import NewsPage from "./pages/dashboard/NewsPage";
 import NotFound from "@/pages/NotFound";
 import socket from "./socket/socket";
 import { useEffect } from "react";
@@ -79,6 +82,9 @@ const App = () => {
             <Route path="posts" element={<PostPage />} />
             <Route path="groups" element={<GroupsPage />} />
             <Route path="businessDirectory" element={<BusinessDirectoryPage />} />
+            <Route path="gallery" element={<GalleryPage />} />
+            <Route path="reviews" element={<ReviewPage />} />
+            <Route path="news" element={<NewsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 

@@ -42,7 +42,6 @@ socket.on("connect_error", async (err) => {
   try {
     if (err.message?.includes("TokenExpired") && !isRefreshing) {
       isRefreshing = true;
-      console.log("Token expired → attempting refresh");
 
       const res = await api.post("/user/auth/refresh", {}, {
         withCredentials: true 

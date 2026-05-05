@@ -29,7 +29,6 @@ const RoleDialog = ({ isOpen, onOpenChange, initialData, setMemberListRefresh })
         try{
             setIsLoading(true);
           const res =await roleAssign(formData);
-          console.log(res);
           if(res.status===200){
             toast({title:"Role Updated Successfully.", description:res.data.message})
             setMemberListRefresh(true);

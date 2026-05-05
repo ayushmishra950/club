@@ -70,12 +70,10 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     const isMatch = await user.comparePassword(password);
-    console.log("isMatch", isMatch);
 
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
-    console.log("isMatch", isMatch);
 
     if (user && user.role === "user") {
       await verifyUser(user?._id?.toString())
@@ -298,7 +296,6 @@ export const updateUser = async (req: Request, res: Response) => {
 
     const { nanoid } = await import("nanoid");
 
-    console.log("Valid businesses count:", incomingBusinesses.length);
 
     // ================= MAP BUSINESSES =================
     const parsedBusinesses = incomingBusinesses.map((biz: any) => {

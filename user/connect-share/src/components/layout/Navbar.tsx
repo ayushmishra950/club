@@ -8,6 +8,7 @@ import { setSearchQuery } from '@/redux-toolkit/slice/searchSlice';
 import { clearUnreadCount } from '@/redux-toolkit/slice/suggestionSlice';
 import { SuggestionModal } from '@/components/suggestions/SuggestionModal';
 import EventTicker from './EventTicker';
+import appLogo from "@/assets/logo.jpg";
 
 interface NavbarProps {
   onChatToggle: () => void;
@@ -21,7 +22,6 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
   const [suggestionModalOpen, setSuggestionModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { incomingCount } = useConnections();
   const [chatUnRead, setChatUnRead] = useState(0);
   const [friendUnRead, setFriendUnRead] = useState(0);
   
@@ -115,12 +115,18 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
       <div className="mx-auto max-w-7xl px-4">
         <div className="flex h-14 items-center justify-between gap-2">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-sm font-bold text-primary-foreground">CC</span>
-            </div>
-            <span className="font-heading font-bold text-lg text-foreground hidden sm:block">Club Connect</span>
-          </Link>
+         <Link to="/" className="flex items-center gap-2 shrink-0">
+  <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center overflow-hidden">
+    <img
+      src={appLogo}
+      alt="Club Connect Logo"
+      className="h-full w-full object-cover"
+    />
+  </div>
+  <span className="font-heading font-bold text-lg text-foreground hidden sm:block">
+    J.S.G. GLORY
+  </span>
+</Link>
 
           {/* Search */}
           <div className="hidden md:ms-2 md:flex flex-1 max-w-md">

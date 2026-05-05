@@ -1,11 +1,12 @@
-import { Plus } from 'lucide-react';
-import { mockStories, currentUser } from '@/data/mockData';
 import { getAllUser } from "@/service/auth";
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
+import { setUserList } from "@/redux-toolkit/slice/userSlice";
 
 export function StoriesCarousel() {
-    const [users, setUsers] = useState([]);
+    const dispatch = useAppDispatch();
+    const users = useAppSelector((state)=> state?.user?.userList);
     const user = JSON.parse(localStorage.getItem("user"));
     const navigate = useNavigate();
 
@@ -13,7 +14,7 @@ export function StoriesCarousel() {
     try {
       const res = await getAllUser();
       if (res.status === 200) {
-        setUsers(res?.data?.data);
+        dispatch(setUserList(res?.data?.data));
       }
     } catch (err) {
       console.log(err);
@@ -21,8 +22,10 @@ export function StoriesCarousel() {
   };
 
   useEffect(() => {
-    handleGetAllUser();
-  }, []);
+    if(users?.length === 0) {
+    handleGetAllUser(); 
+    }
+  }, [users?.length]);
 
   return (
     <div className="bg-card rounded-xl shadow-card p-4 mb-4">

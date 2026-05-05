@@ -12,13 +12,11 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(8);
-    const [totalPages, setTotalPages] = useState(0);
     const [memberListRefresh, setMemberListRefresh] = useState(false);
     const [search, setSearch] = useState("");
     const [filterStatus, setFilterStatus] = useState("active");
     const memberList = useAppSelector((state) => state?.user?.userList);
     const groupList = useAppSelector((state) => state?.group?.groupList);
-    console.log(memberList);
     const currentGroup = groupList?.find(g => g._id === groupId);
     const existingMemberIds = currentGroup?.members?.map(m => m._id) || [];
 
@@ -45,7 +43,6 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
         try {
             const payload = { groupId, members: selectedUsers };
             const res = await addMemberToGroup(payload);
-            console.log(res);
             if (res.status === 200) {
                 toast({
                     title: "Success",
@@ -69,7 +66,6 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
     const handleGetUsers = async () => {
         try {
             const res = await getAllUser();
-            console.log(res);
             if (res.status === 200) {
                 dispatch(setUserList(res?.data?.data));
                 setMemberListRefresh(false);

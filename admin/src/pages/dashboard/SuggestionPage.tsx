@@ -32,7 +32,6 @@ export default function SuggestionPage() {
 
   useEffect(() => {
     socket.on("addSuggestion", (data) => {
-      console.log(data);
       dispatch(setNewSuggestion(data));
     });
 

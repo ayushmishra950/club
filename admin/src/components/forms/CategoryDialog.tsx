@@ -50,7 +50,6 @@ const CategoryDialog = ({ isOpen, onOpenChange, initialData, setCategoryListRefr
         try {
             setIsLoading(true);
             const res = await (initialData? updateCategory(obj) : addCategory(obj));
-            console.log(res);
             if (res.status === 201 || res?.status===200) {
                 toast({ title: initialData?"Update Category" :"Add Category", description: res.data.message })
                 setCategoryListRefresh(true);

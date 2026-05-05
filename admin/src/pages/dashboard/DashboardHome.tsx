@@ -46,7 +46,6 @@ export default function DashboardHome() {
   const handleGetYearlyAnalytics = async () => {
     try {
       const res = await getYearlyAnalytics();
-      console.log(res);
       if (res.status === 200) {
         setDashboardStatsRefresh(false);
         dispatch(setGraphStats(res?.data?.data));

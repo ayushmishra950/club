@@ -103,3 +103,8 @@ export const acceptPaymentRequest = async (obj: any) => {
     const res = await api.post(`${base_url}/admin/user/accept-payment`, obj);
     return res;
 };
+
+export const updateUserByAdmin = async (id: string, obj: any) => {
+    const res = await api.put(`${base_url}/admin/user/update/${id}`, obj);
+    return res;
+};

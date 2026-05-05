@@ -444,12 +444,12 @@ export default function Register() {
         occupation: "",
         password: "",
         confirmPassword: "",
-        // Wife related fields (Optional)
-        wifeName: "",
-        wifeEmail: "",
-        wifeMobile: "",
-        wifeOccupation: "",
-        wifeDob: "",
+        // Spouse related fields (Optional)
+        spouseName: "",
+        spouseEmail: "",
+        spouseMobile: "",
+        spouseOccupation: "",
+        spouseDob: "",
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -651,25 +651,25 @@ export default function Register() {
                                 <p className="text-xs text-red-500 min-h-[16px]">{errors.occupation || ""}</p>
                             </div>
 
-                            {/* Wife Details - Optional */}
+                            {/* Spouse Details - Optional */}
                             <div className="pt-4 border-t mt-2">
-                                <p className="text-sm font-medium mb-3 text-muted-foreground">Wife Details (Optional)</p>
+                                <p className="text-sm font-medium mb-3 text-muted-foreground">Spouse Details (Optional)</p>
 
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium">Wife Name <span className="text-xs text-muted-foreground">(Optional)</span></label>
-                                    <input type="text" name="wifeName" placeholder="Wife Name" value={formData.wifeName} onChange={handleChange}
+                                    <label className="text-sm font-medium">Spouse Name <span className="text-xs text-muted-foreground">(Optional)</span></label>
+                                    <input type="text" name="spouseName" placeholder="Spouse Name" value={formData.spouseName} onChange={handleChange}
                                         className="w-full rounded-md border py-2.5 px-3 text-sm border-input" />
                                 </div>
 
                                 <div className="space-y-1 mt-3">
-                                    <label className="text-sm font-medium">Wife Email <span className="text-xs text-muted-foreground">(Optional)</span></label>
-                                    <input type="email" name="wifeEmail" placeholder="Wife Email" value={formData.wifeEmail} onChange={handleChange}
+                                    <label className="text-sm font-medium">Spouse Email <span className="text-xs text-muted-foreground">(Optional)</span></label>
+                                    <input type="email" name="spouseEmail" placeholder="Spouse Email" value={formData.spouseEmail} onChange={handleChange}
                                         className="w-full rounded-md border py-2.5 px-3 text-sm border-input" />
                                 </div>
 
                                 <div className="space-y-1 mt-3">
-                                    <label className="text-sm font-medium">Wife Mobile <span className="text-xs text-muted-foreground">(Optional)</span></label>
-                                    <input type="tel" name="wifeMobile" placeholder="Wife Mobile" value={formData.wifeMobile} onChange={handleChange}
+                                    <label className="text-sm font-medium">Spouse Mobile <span className="text-xs text-muted-foreground">(Optional)</span></label>
+                                    <input type="tel" name="spouseMobile" placeholder="Spouse Mobile" value={formData.spouseMobile} onChange={handleChange}
                                         className="w-full rounded-md border py-2.5 px-3 text-sm border-input" />
                                 </div>
                             </div>

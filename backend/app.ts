@@ -23,6 +23,8 @@ import adminAnnouncementRoutes from "./routes/admin/announcement.route.js";
 import adminChatRoutes from "./routes/admin/chat.route.js";
 import adminSuggestionRoutes from "./routes/admin/suggestion.route.js";
 import adminNotificationRoutes from "./routes/admin/notification.route.js";
+import adminNewsRoutes from "./routes/admin/news.route.js";
+import adminReviewsRoutes from "./routes/admin/review.route.js"
 
 
 // user routes
@@ -63,6 +65,8 @@ app.use("/api/admin/announcement", adminAnnouncementRoutes);
 app.use("/api/admin/chat", adminChatRoutes);
 app.use("/api/admin/suggestion", adminSuggestionRoutes);
 app.use("/api/admin/notification", adminNotificationRoutes);
+app.use("/api/admin/news", adminNewsRoutes);
+app.use("/api/admin/reviews", adminReviewsRoutes);
 
 // user route
 app.use("/api/user/auth", userAuthRoutes);

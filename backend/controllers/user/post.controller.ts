@@ -124,7 +124,6 @@ export const addComment = async (req: Request, res: Response) => {
 export const likeUnlikeComment = async (req: Request, res: Response) => {
   try {
     const { postId, commentId, userId } = req.body;
-    console.log(req.body)
 
     const post = await Post.findById(postId);
     if (!post)

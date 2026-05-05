@@ -16,7 +16,6 @@ import Admin from "../../models/admin.model.js";
 export const createGroup = async (req: Request, res: Response) => {
   try {
     const { title, description, members, createdBy } = req.body;
-    console.log(req.body, "group data");
 
     const files = (req as any).files?.media || [];
     const images: string[] = [];

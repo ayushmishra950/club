@@ -47,7 +47,6 @@ export function PostCard({ post }) {
     try {
       setDeleteLoading(true);
       const res = await deletePostByUser(obj);
-      console.log(res)
       if (res?.status === 200) {
         toast({ title: "Post Delete.", description: res?.data?.message });
         // dispatch(setPostComment({ postId: postId, text: newComment, fullName: user?.fullName, userId: user?._id, createdAt: res?.data?.comment?.createdAt }))
@@ -69,7 +68,6 @@ export function PostCard({ post }) {
     let obj = { userId: user?._id, postId: postId };
     try {
       const res = await likeAnUnLikePost(obj);
-      console.log(res);
       if (res.status === 200) {
         toast({ title: "Post Like.", description: res?.data?.message });
         dispatch(setPostLikeAnUnLike(obj));
@@ -95,7 +93,6 @@ export function PostCard({ post }) {
     let obj = { postId: postId, text: newComment, userId: user?._id }
     try {
       const res = await addCommentPost(obj);
-      console.log(res)
       if (res?.status === 200) {
         toast({ title: "Comment Add.", description: res?.data?.message });
         dispatch(setPostComment({ postId: postId, text: newComment, fullName: user?.fullName, userId: user?._id, createdAt: res?.data?.comment?.createdAt }))
@@ -112,7 +109,6 @@ export function PostCard({ post }) {
     let obj = { postId: postId, commentId: commentId, userId: user?._id }
     try {
       const res = await likeAnUnLikeComment(obj);
-      console.log(res)
       if (res?.status === 200) {
         toast({ title: "Comment Like.", description: res?.data?.message });
         dispatch(setPostLikeAnUnLikeComment({ postId: postId, commentId: commentId, userId: user?._id }))
@@ -126,10 +122,8 @@ export function PostCard({ post }) {
 
   const handleAddCommentReply = async (postId: string, commentId: string, text: string) => {
     let obj = { postId: postId, commentId: commentId, text: text, userId: user?._id, fullName: user?.fullName };
-    console.log(obj);
     try {
       const res = await replyToComment(obj);
-      console.log(res);
       if (res?.status === 200) {
         toast({ title: "Comment Reply Add.", description: res?.data?.message });
         dispatch(setPostReplyComment(obj))

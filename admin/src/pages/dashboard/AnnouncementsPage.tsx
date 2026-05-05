@@ -30,7 +30,6 @@ export default function AnnouncementsPage() {
 
   const handleAddAnnouncement = async (e) => {
     e.preventDefault();
-    console.log(formData);
     let obj = { ...formData, createdBy: user?._id }
     try {
       const res = await addAnnouncement(obj);
@@ -63,7 +62,6 @@ export default function AnnouncementsPage() {
     if (!deleteAnnouncements?._id) return;
     try {
       const res = await deleteAnnouncement(deleteAnnouncements?._id);
-      console.log(res)
       if (res.status === 200) {
         toast({ title: "Announcment Delete Successfully.", description: res?.data?.message });
         setAnnouncementListRefresh(true);

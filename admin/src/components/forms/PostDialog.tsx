@@ -46,7 +46,6 @@ const PostDialog = ({
 
   useEffect(() => {
     if (initialData && isOpen) {
-      console.log(initialData)
       setPreview(initialData?.images);
       setFormData({
         title: initialData?.title,

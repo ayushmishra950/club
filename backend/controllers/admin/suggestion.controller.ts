@@ -109,7 +109,6 @@ export const deleteSuggestion = async (req: Request, res: Response) => {
 export const updateSuggestionStatus = async (req: Request, res: Response) => {
   try {
     const { id, status } = req.body;
-    console.log(id, status);
 
     const io = getIO();
 

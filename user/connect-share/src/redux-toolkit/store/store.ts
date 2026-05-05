@@ -10,6 +10,9 @@ import chatReducer from "../slice/chatSlice";
 import searchReducer from "../slice/searchSlice";
 import announcementReducer from "../slice/announcementSlice";
 import suggestionReducer from "../slice/suggestionSlice";
+import newsReducer from "../slice/newsSlice";
+import reviewReducer from "../slice/reviewSlice";
+
 
 
 export const store = configureStore({
@@ -24,7 +27,9 @@ export const store = configureStore({
         chat: chatReducer,
         search: searchReducer,
         announcement: announcementReducer,
-        suggestion: suggestionReducer
+        suggestion: suggestionReducer,
+        news: newsReducer,
+        reviews: reviewReducer
     }
 });
 

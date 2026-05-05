@@ -28,7 +28,7 @@ export const updateGallery = async(obj:any) =>{
     return res;
 };
 
-export const deleteGallery = async(id:string) =>{
+export const removeGallery = async(id:string) =>{
     const res = await api.delete(`${base_url}/admin/gallery/delete/${id}`);
     return res;
 };

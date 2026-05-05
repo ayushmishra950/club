@@ -43,7 +43,6 @@ const AnnouncementPage = () => {
   const handleGetAnnouncements = async () => {
     try {
       const res = await getAllAnnouncement();
-      console.log(res);
       if (res.status === 200) {
         dispatch(setAnnouncementList(res?.data?.announcements));
       }

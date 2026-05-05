@@ -228,10 +228,8 @@ export const acceptFriendRequest = async (req: Request, res: Response) => {
 export const cancelFriendRequest = async (req: Request, res: Response) => {
   try {
     const { requestId } = req.params;
-    console.log("requestId", requestId);
 
     const request = await FriendRequest.findById(requestId);
-    console.log("request", request);
     if (!request) return res.status(404).json({ message: "Friend request not found." });
 
     // Remove each other from friends list

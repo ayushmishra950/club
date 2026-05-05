@@ -112,7 +112,6 @@ export const getSinglePost = async (req: Request, res: Response) => {
 export const updatePost = async (req: any, res: any) => {
   try {
     const { title, description, type, postId, userId, isPinned } = req.body;
-    console.log(req.body)
 
     const post = await Post.findById(postId);
     if (!post) {

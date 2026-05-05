@@ -64,7 +64,6 @@ const GroupMessageDialog = ({ isOpen, onOpenChange, group}) => {
     if(!group?._id)return toast({title:"groupId is required.", variant:"destructive"})
     try {
       setIsLoading(true);
-   console.log(group?._id, formData)
       const form = new FormData();
       form.append("userId", user?._id);
       form.append("groupId", group?._id);

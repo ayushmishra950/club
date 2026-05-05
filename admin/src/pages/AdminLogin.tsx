@@ -49,7 +49,6 @@ export default function AdminLogin() {
       };
 
       const res = await loginAdmin(payload);
-       console.log(res);
       if (res.status === 200) {
         localStorage.setItem("accessToken", res?.data?.accessToken);
         localStorage.setItem("user", JSON.stringify(res?.data?.admin))

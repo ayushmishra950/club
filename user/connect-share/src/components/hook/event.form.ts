@@ -1,6 +1,5 @@
 
 export const ValidateEventStep = (formData:any) => {
-    console.log(formData)
  
     let newErrors :any ={};
     if(!formData?.title?.trim()){

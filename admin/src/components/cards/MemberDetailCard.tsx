@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 
 const MemberDetailCard = ({ member, detailDialogOpen, setDetailDialogOpen }: any) => {
   if (!member) return null;
-
+  console.log(member);
   // ================= SAFE NORMALIZATION =================
   const user = {
     fullName: member?.fullName || member?.personalDetails?.fullName,
@@ -15,11 +15,11 @@ const MemberDetailCard = ({ member, detailDialogOpen, setDetailDialogOpen }: any
     state: member?.state || member?.personalDetails?.state,
     country: member?.country || member?.personalDetails?.country,
     dob: member?.dob,
-    wifeName: member?.wifeName,
-    wifeEmail: member?.wifeEmail,
-    wifeMobile: member?.wifeMobile,
-    wifeOccupation: member?.wifeOccupation,
-    wifeDob: member?.wifeDob,
+    spouseName: member?.spouseName,
+    spouseEmail: member?.spouseEmail,
+    spouseMobile: member?.spouseMobile,
+    spouseOccupation: member?.spouseOccupation,
+    spouseDob: member?.spouseDob,
     children: member?.children || []
   };
 
@@ -219,30 +219,30 @@ const MemberDetailCard = ({ member, detailDialogOpen, setDetailDialogOpen }: any
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <p className="text-xs uppercase text-muted-foreground">
-                    Wife Name
+                    Spouse Name
                   </p>
-                  <p className="font-medium">{user.wifeName || "N/A"}</p>
+                  <p className="font-medium">{user.spouseName || "N/A"}</p>
                 </div>
 
                 <div>
                   <p className="text-xs uppercase text-muted-foreground">
-                    Wife Email
+                    Spouse Email
                   </p>
-                  <p className="font-medium">{user.wifeEmail || "N/A"}</p>
+                  <p className="font-medium">{user.spouseEmail || "N/A"}</p>
                 </div>
 
                 <div>
                   <p className="text-xs uppercase text-muted-foreground">
-                    Wife Phone
+                    Spouse Phone
                   </p>
-                  <p className="font-medium">{user.wifeMobile || "N/A"}</p>
+                  <p className="font-medium">{user.spouseMobile || "N/A"}</p>
                 </div>
 
                 <div>
                   <p className="text-xs uppercase text-muted-foreground">
-                    Wife Occupation
+                    Spouse Occupation
                   </p>
-                  <p className="font-medium">{user.wifeOccupation || "N/A"}</p>
+                  <p className="font-medium">{user.spouseOccupation || "N/A"}</p>
                 </div>
               </div>
 

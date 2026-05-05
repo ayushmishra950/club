@@ -10,6 +10,8 @@ import suggestionReducer from "../slice/suggestionSlice";
 import notificationReducer from "../slice/notificationSlice";
 import groupReducer from "../slice/groupSlice";
 import dashboardReducer from "../slice/dashboardSlice";
+import newsReducer from "../slice/newsSlice";
+import reviewReducer from "../slice/reviewSlice";
 
 export const store = configureStore({
     reducer: {
@@ -24,6 +26,8 @@ export const store = configureStore({
         notification: notificationReducer,
         group: groupReducer,
         dashboard: dashboardReducer,
+        news: newsReducer,
+        reviews: reviewReducer
     }
 });
 

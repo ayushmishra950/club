@@ -28,7 +28,6 @@ const groupSlice = createSlice({
     },
     setNewGroup: (state, action: PayloadAction<any>) => {
       const newGroup = action.payload;
-      console.log(action.payload, "new grp");
 
       const index = state.groupList.findIndex(
         (group: any) => group._id === newGroup._id

@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Camera, MapPin, Briefcase, Calendar, Gift, Edit2, ChevronRight, UserMinus, Users, Shield, Globe, Lock, UserPlus, LogOut, Crown } from 'lucide-react';
+import {  MapPin, Briefcase, Calendar, Gift, Edit2, ChevronRight, UserMinus, Users, UserPlus, LogOut, Crown } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { PostCard } from '@/components/feed/PostCard';
-import { currentUser, mockPosts, mockChats, users } from '@/data/mockData';
-import { useConnections } from '@/hooks/useConnections';
-import { FriendButton } from '@/components/connections/FriendButton';
+import { mockChats} from '@/data/mockData';
 import { getSingleUser } from "@/service/auth";
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -95,7 +93,6 @@ const Profile = () => {
     if (!userId) return;
     try {
       const res = await getSingleUser(userId);
-      console.log(res);
       if (res.status === 200) {
         dispatch(setUserData(res?.data?.data));
         const acceptedFriends = res?.data?.friends?.filter(

@@ -12,7 +12,6 @@ const EventTicker: React.FC = () => {
     const fetchLatestEvent = async () => {
         try {
             const res = await getLatestEvent();
-            console.log("Latest event fetched:", res);
             if (res.status === 200 && res.data.success) {
                 setEvents(res.data.events || []);
             }

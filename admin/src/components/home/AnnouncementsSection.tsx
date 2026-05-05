@@ -1,6 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { announcements } from "@/lib/dummy-data";
+import { getAllAnnouncement } from "@/service/announcement";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
+import { setAnnouncementList } from "@/redux-toolkit/slice/announcementSlice";
+import { useEffect } from "react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -8,6 +12,28 @@ const fadeUp = {
 };
 
 export function AnnouncementsSection() {
+    const dispatch = useAppDispatch();
+    const announcementList = useAppSelector((state) => state?.announcement?.announcementList);
+  
+
+   const handleGetAllAnnouncements = async () => {
+      try {
+        const res = await getAllAnnouncement();
+        if (res.status === 200) {
+          dispatch(setAnnouncementList(res?.data?.announcements));
+        }
+      }
+      catch (err) {
+        console.log(err);
+      }
+    };
+
+     useEffect(() => {
+        if (announcementList?.length === 0) {
+          handleGetAllAnnouncements();
+        }
+      }, [announcementList?.length])
+
   return (
     <section className="py-20 bg-background">
       <div className="container mx-auto px-4">

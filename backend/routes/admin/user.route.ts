@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllUsers, acceptPaymentRequest, uploadExcel, activeAndInactiveUser, handleVerifyBusinessUser, handleVerifyUser, roleAssignUser, handleBlockAndUnBlockUser, deleteUser } from "../../controllers/admin/user.controller.js";
+import { getAllUsers, acceptPaymentRequest, uploadExcel, activeAndInactiveUser, handleVerifyBusinessUser, handleVerifyUser, roleAssignUser, handleBlockAndUnBlockUser, deleteUser, updateUserByAdmin } from "../../controllers/admin/user.controller.js";
 import upload from "../../middlewares/upload.js";
 
 
@@ -14,6 +14,7 @@ router.post("/business/verify", handleVerifyBusinessUser);
 router.patch("/active/inactive/:id", activeAndInactiveUser);
 router.post("/upload-excel", upload.fields([{ name: "excelFile", maxCount: 1 }]), uploadExcel);
 router.post("/accept-payment", acceptPaymentRequest);
+router.put("/update/:id", updateUserByAdmin);
 
 
 export default router;

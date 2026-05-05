@@ -15,9 +15,7 @@ const postSlice = createSlice({
 
     setPostLikeAnUnLike: (state, action) => {
       const { postId, userId } = action.payload;
-      console.log(action.payload);
       const item = state?.postList?.find((p) => p?._id === postId);
-      console.log(item)
       if (item) {
         item.likes = item?.likes?.filter((l) => l !== userId);
       }

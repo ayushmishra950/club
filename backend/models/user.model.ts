@@ -34,11 +34,11 @@ export interface IUser extends Document {
   dob?: Date;
   occupation?: string;
 
-  wifeName?: string;
-  wifeEmail?: string;
-  wifeMobile?: string;
-  wifeDob?: Date;
-  wifeOccupation?: string;
+  spouseName?: string;
+  spouseEmail?: string;
+  spouseMobile?: string;
+  spouseDob?: Date;
+  spouseOccupation?: string;
 
   anniversaryDate?: Date;
   gender?:string;
@@ -121,11 +121,11 @@ const UserSchema = new Schema<IUser>(
     maritalStatus: String,
     city: String,
 
-    wifeName: { type: String, trim: true },
-    wifeEmail: { type: String, trim: true },
-    wifeMobile: { type: String, trim: true },
-    wifeDob: Date,
-    wifeOccupation: String,
+    spouseName: { type: String, trim: true },
+    spouseEmail: { type: String, trim: true },
+    spouseMobile: { type: String, trim: true },
+    spouseDob: Date,
+    spouseOccupation: String,
 
     anniversaryDate: Date,
 

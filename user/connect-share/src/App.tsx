@@ -27,7 +27,7 @@ import Contact from "./pages/Contact.tsx";
 
 import socket from "./socket/socket.ts";
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
+import { useAppDispatch } from "@/redux-toolkit/customHook/hook";
 import { setUpdateSuggestion, incrementUnreadCount } from "@/redux-toolkit/slice/suggestionSlice";
 
 const queryClient = new QueryClient();
@@ -118,10 +118,10 @@ const App = () => {
 
               <Route path="/" element={getToken() ? <Navigate to="/home" replace /> : <PublicLayout />}>
                 <Route index element={<Home />} />
-                <Route path="about" element={<About />} />
-                <Route path="events" element={<PublicEvents />} />
-                <Route path="announcements" element={<PublicAnnouncements />} />
-                <Route path="contact" element={<Contact />} />
+                <Route path="public/about" element={<About />} />
+                <Route path="public/events" element={<PublicEvents />} />
+                <Route path="public/announcements" element={<PublicAnnouncements />} />
+                <Route path="public/contact" element={<Contact />} />
               </Route>
 
               {/* default route */}

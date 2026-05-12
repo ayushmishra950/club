@@ -29,7 +29,7 @@ export interface IUser extends Document {
   userId: string;
 
   fullName: string;
-  email: string;
+  email?: string;
   mobile?: string;
   dob?: Date;
   occupation?: string;
@@ -113,8 +113,8 @@ const UserSchema = new Schema<IUser>(
     userId: { type: String, unique: true, trim: true, required: true },
 
     fullName: { type: String, required: true, trim: true },
-    email: { type: String, required: true, lowercase: true, trim: true },
-    mobile: { type: String, trim: true },
+    email: { type: String, lowercase: true, trim: true},
+    mobile: { type: String, trim: true  },
     dob: Date,
     occupation: String,
     gender: String,
@@ -182,8 +182,12 @@ const UserSchema = new Schema<IUser>(
 );
 
 /* ---------------- INDEX ---------------- */
-UserSchema.index({ email: 1 }, { unique: true });
+UserSchema.index({ email: 1 }, { unique: true, sparse:true, partialFilterExpression: { email: { $type: "string" } } });
+UserSchema.index({ mobile: 1 }, { unique: true, sparse:true, partialFilterExpression: { mobile: { $exists: true } } });
+UserSchema.index({ spouseEmail: 1 }, { unique: true, sparse:true, partialFilterExpression: { spouseEmail: { $type: "string" } } });
+UserSchema.index({ spouseMobile: 1 }, { unique: true, sparse:true, partialFilterExpression: { spouseMobile: { $exists: true } } });
 UserSchema.index({ userId: 1 }, { unique: true });
+
 
 /* ---------------- PASSWORD HASH ---------------- */
 UserSchema.pre("save", async function () {
@@ -192,6 +196,12 @@ UserSchema.pre("save", async function () {
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
+
+UserSchema.pre("validate", function () {
+  if (!this.email && !this.mobile) {
+    throw Error("Either email or mobile is required.")
+  }
+}); 
 
 /* ---------------- PASSWORD CHECK ---------------- */
 UserSchema.methods.comparePassword = async function (password: string) {

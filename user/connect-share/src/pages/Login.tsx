@@ -91,17 +91,17 @@ export default function Login() {
 
               {/* Email */}
               <div className="space-y-1">
-                <label className="text-sm font-medium">Email</label>
+                <label className="text-sm font-medium">Email or Phone</label>
                 <Input
-                  name="email"
-                  type="email"
-                  value={formData?.email}
-                  placeholder="you@example.com"
+                  name="identifier"
+                  type="text"
+                  value={formData?.identifier}
+                  placeholder="Enter email or phone"
                   onChange={handleChange}
-                  className={errors?.email ? "border-red-500" : ""}
+                  className={errors?.identifier ? "border-red-500" : ""}
                 />
                 <p className="text-xs text-red-500 min-h-[16px]">
-                  {errors?.email || ""}
+                  {errors?.identifier || ""}
                 </p>
               </div>
 

@@ -249,12 +249,12 @@ export default function MembersPage() {
           <div className="flex gap-2 ">
             <div className="hidden md:flex gap-2">
               {selectedMemebersId?.length > 0 && <Button onClick={() => handleVerifyUser()} className="gradient-gold text-secondary-foreground font-semibold">Users Verify</Button>}
-              <Button variant="ghost" size="icon" onClick={() => setView("table")} disabled={selectedMemebersId?.length > 0} className={view === "table" ? "bg-muted" : ""}>
+              {/* <Button variant="ghost" size="icon" onClick={() => setView("table")} disabled={selectedMemebersId?.length > 0} className={view === "table" ? "bg-muted" : ""}>
                 <List className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="icon" onClick={() => setView("card")} disabled={selectedMemebersId?.length > 0} className={view === "card" ? "bg-muted" : ""}>
                 <Grid3X3 className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </div>
             <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
               <DialogTrigger asChild>
@@ -314,7 +314,6 @@ export default function MembersPage() {
                   <TableHead className="hidden sm:table-cell">UserId</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead className="hidden sm:table-cell">Role</TableHead>
-                  <TableHead className="hidden md:table-cell">Email</TableHead>
                   <TableHead className="hidden lg:table-cell">Phone</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -367,11 +366,6 @@ export default function MembersPage() {
                         {m.role === "user"
                           ? "Member"
                           : m?.role?.charAt(0).toUpperCase() + m?.role?.slice(1)}
-                      </TableCell>
-
-                      {/* EMAIL */}
-                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                        {m.email}
                       </TableCell>
 
                       {/* PHONE */}
@@ -519,7 +513,6 @@ export default function MembersPage() {
                   <h3 className="font-display font-semibold">{m?.fullName}</h3>
                   <p className="text-sm text-muted-foreground mb-3">{m?.role}</p>
                   <div className="space-y-1 text-xs text-muted-foreground">
-                    <div className="flex items-center justify-center gap-1"><Mail className="h-3 w-3" /> {m?.email}</div>
                     <div className="flex items-center justify-center gap-1"><Phone className="h-3 w-3" /> {m?.mobile}</div>
                   </div>
                   <span

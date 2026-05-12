@@ -74,19 +74,29 @@ export const validateRegisterStep = (formData: any, step: number) => {
     return newErrors;
 };
 
+
 export const validateLoginStep = (formData: any) => {
+  
   let newErrors: any = {};
+    
+  const identifier = formData?.identifier?.trim();
 
-  if (!formData?.email?.trim()) {
-    newErrors.email = "Email is required."
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const phoneRegex = /^\d{10}$/;
+
+  if (!identifier) { newErrors.identifier = "Email or Phone is required.";} 
+  else {
+    const isEmail = emailRegex.test(identifier);
+    const isPhone = phoneRegex.test(identifier);
+
+    if (!isEmail && !isPhone) { newErrors.identifier = "Enter a valid email or phone number."; }
   }
-  else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Invalid email format";
-    }
 
+  // Password Validation
   if (!formData?.password?.trim()) {
-    newErrors.password = "Password is required."
+    newErrors.password = "Password is required.";
   }
 
   return newErrors;
-}
+};

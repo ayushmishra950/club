@@ -60,10 +60,10 @@ export const registerUser = async (req: Request, res: Response) => {
 
 export const loginUser = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, password } = req.body;
 
 
-    let user = await User.findOne({ email }).select("+password");
+    let user = await User.findOne({ $or:[{email:identifier}, {mobile:identifier}] }).select("+password");
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });

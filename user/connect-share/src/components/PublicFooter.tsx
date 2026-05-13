@@ -32,9 +32,9 @@ export function PublicFooter() {
           <div>
             <h4 className="font-display font-semibold mb-4">Contact</h4>
             <div className="space-y-3 text-sm text-primary-foreground/70">
-              <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-secondary" /> 123 Club Street, New Delhi</div>
-              <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-secondary" /> +91 98765 43210</div>
-              <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-secondary" /> info@clubconnect.org</div>
+              <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-secondary" /> Riverarch Greenfields Resort Jaipur</div>
+              <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-secondary" /> +91 9828015688     +91 9351880001</div>
+              <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-secondary" /> hemantbarjatya@gmail.com</div>
             </div>
           </div>
 

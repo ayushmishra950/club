@@ -34,7 +34,7 @@ export function AboutSection() {
             </div>
           </motion.div>
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={2} className="rounded-2xl overflow-hidden shadow-elevated">
-            <img src={heroBg} alt="About our club" className="w-full h-80 object-cover" loading="lazy" width={800} height={320} />
+            <img src={"https://imgs.search.brave.com/XSJeGJGGZt3RT2T8qnI3huVr6QVlPwvHVoz2lxNNkqs/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMTQw/OTUyMDQyOC9waG90/by9ncm91cC1vZi13/b21lbi1kaXNjdXNz/aW5nLWluLWEtbWVl/dGluZy1yb29tLWlu/LXRoZS1jby13b3Jr/aW5nLW9mZmljZS5q/cGc_cz02MTJ4NjEy/Jnc9MCZrPTIwJmM9/TzFLSk9oNWpCSHJS/X0VSU1otcjNEUzh1/RGhOZjJBaHh4ZDZf/a1YxNDZhUT0"} alt="About our club" className="w-full h-80 object-cover" loading="lazy" width={800} height={320} />
           </motion.div>
         </div>
       </div>

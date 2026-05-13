@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, ArrowRight } from "lucide-react";
@@ -14,9 +14,10 @@ const fadeUp = {
 };
 
 export function EventsPreviewSection() {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const eventList = useAppSelector((state) => state?.event?.eventList);
-    const filteredEvents = eventList?.filter(event => event?.type === "public");
+  const filteredEvents = eventList?.filter(event => event?.type === "public");
 
 
   const handleGetEvent = async () => {
@@ -36,6 +37,7 @@ export function EventsPreviewSection() {
       handleGetEvent();
     }
   }, [eventList?.length]);
+  console.log(filteredEvents);
 
   return (
     <section className="py-20 bg-muted/30">
@@ -44,22 +46,51 @@ export function EventsPreviewSection() {
           <h2 className="text-3xl font-display font-bold mb-2">Upcoming Events</h2>
           <p className="text-muted-foreground">Don't miss out on our exciting upcoming events</p>
         </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {filteredEvents?.slice(0, 3).map((event, i) => (
-            <motion.div key={event?._id} custom={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-              <Card className="shadow-card hover:shadow-elevated transition-shadow h-full">
+        <div className="grid md:grid-cols-3 gap-6 cursor-pointer"> 
+          {filteredEvents?.slice(0, 3).map((event, i) => ( 
+            <motion.div
+              key={event?._id}
+              custom={i}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <Card className="shadow-card hover:shadow-elevated transition-shadow h-full overflow-hidden" onClick={() => {navigate(`/public/events/${event?._id}`)}}>
+
+                {/* Image Section */}
+                {event?.coverImage && (
+                  <div className="w-full h-40 overflow-hidden">
+                    <img
+                      src={event.coverImage}
+                      alt={event.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
                 <CardContent className="p-6">
                   <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-primary/10 text-primary mb-3">
                     {event.category}
                   </span>
-                  <h3 className="font-display font-semibold text-lg mb-2">{event.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{event.description}</p>
+
+                  <h3 className="font-display font-semibold text-lg mb-2">
+                    {event.title}
+                  </h3>
+
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {event.description}
+                  </p>
+
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      {new Date(event.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                      {new Date(event.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                    </span>
 
-                    <span> {new Date(event.date).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                    <span>
+                      {new Date(event.date).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -67,7 +98,7 @@ export function EventsPreviewSection() {
           ))}
         </div>
         <div className="text-center mt-8">
-          <Link to="/events">
+          <Link to="/public/events">
             <Button variant="outline">View All Events <ArrowRight className="ml-2 h-4 w-4" /></Button>
           </Link>
         </div>

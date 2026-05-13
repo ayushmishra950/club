@@ -1,10 +1,10 @@
 export const members = [
-  { id: "1", name: "Rajesh Sharma", role: "President", email: "rajesh@club.org", phone: "+91 98765 43210", joined: "2020-01-15", avatar: "", status: "active" },
-  { id: "2", name: "Priya Patel", role: "Secretary", email: "priya@club.org", phone: "+91 87654 32109", joined: "2020-03-20", avatar: "", status: "active" },
-  { id: "3", name: "Amit Kumar", role: "Treasurer", email: "amit@club.org", phone: "+91 76543 21098", joined: "2021-06-10", avatar: "", status: "active" },
+  { id: "1", name: "Hemant Sweta Barjatya", role: "President", email: "rajesh@club.org", phone: "+91 98765 43210", joined: "2020-01-15", avatar: "https://jsg-glory-pool-party.onrender.com/coord6.jpeg", status: "active" },
+  { id: "2", name: "Piyush Monali Jain", role: "Secretary", email: "priya@club.org", phone: "+91 87654 32109", joined: "2020-03-20", avatar: "https://jsg-glory-pool-party.onrender.com/WhatsApp%20Image%202026-05-10%20at%2014.50.09.jpeg", status: "active" },
+  { id: "3", name: "Saurab Ruby Jain", role: "Treasurer", email: "amit@club.org", phone: "+91 76543 21098", joined: "2021-06-10", avatar: "https://jsg-glory-pool-party.onrender.com/treasurer.jpeg", status: "active" },
   { id: "4", name: "Sneha Gupta", role: "Member", email: "sneha@club.org", phone: "+91 65432 10987", joined: "2021-09-05", avatar: "", status: "active" },
   { id: "5", name: "Vikram Singh", role: "Member", email: "vikram@club.org", phone: "+91 54321 09876", joined: "2022-01-12", avatar: "", status: "inactive" },
-  { id: "6", name: "Anita Desai", role: "Vice President", email: "anita@club.org", phone: "+91 43210 98765", joined: "2020-02-28", avatar: "", status: "active" },
+  { id: "6", name: "Anita Desai", role: "Member", email: "anita@club.org", phone: "+91 43210 98765", joined: "2020-02-28", avatar: "", status: "active" },
   { id: "7", name: "Karan Mehta", role: "Member", email: "karan@club.org", phone: "+91 32109 87654", joined: "2023-04-18", avatar: "", status: "active" },
   { id: "8", name: "Deepa Nair", role: "Member", email: "deepa@club.org", phone: "+91 21098 76543", joined: "2023-07-22", avatar: "", status: "active" },
 ];

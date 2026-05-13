@@ -29,6 +29,7 @@ import socket from "./socket/socket.ts";
 import { useEffect } from "react";
 import { useAppDispatch } from "@/redux-toolkit/customHook/hook";
 import { setUpdateSuggestion, incrementUnreadCount } from "@/redux-toolkit/slice/suggestionSlice";
+import EventDetail from "@/components/home/EventDetail.tsx";
 
 const queryClient = new QueryClient();
 
@@ -120,6 +121,7 @@ const App = () => {
                 <Route index element={<Home />} />
                 <Route path="public/about" element={<About />} />
                 <Route path="public/events" element={<PublicEvents />} />
+                <Route path="public/events/:id" element={<EventDetail />} />
                 <Route path="public/announcements" element={<PublicAnnouncements />} />
                 <Route path="public/contact" element={<Contact />} />
               </Route>

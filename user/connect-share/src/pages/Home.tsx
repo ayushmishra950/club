@@ -16,13 +16,13 @@ export default function Home() {
     <div>
       <HeroSection />
       <StatsSection />
+      <LeadershipSection />
+      <EventsPreviewSection />
+      <GallerySection />
       <AboutSection />
       <WhyJoinSection />
       <ImpactSection />
-      <EventsPreviewSection />
       <TestimonialsSection />
-      <LeadershipSection />
-      <GallerySection />
       <AnnouncementsSection />
       <NewsSection />
       <CTASection />

@@ -43,11 +43,11 @@ export function EventsPreviewSection() {
     <section className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-display font-bold mb-2">Upcoming Events</h2>
-          <p className="text-muted-foreground">Don't miss out on our exciting upcoming events</p>
+          <h2 className="text-3xl font-display font-bold mb-2">Yearly Event Timeline</h2>
+          <p className="text-muted-foreground">Luxury experiences across 2026-2027</p>
         </div>
         <div className="grid md:grid-cols-3 gap-6 cursor-pointer"> 
-          {filteredEvents?.slice(0, 3).map((event, i) => ( 
+          {filteredEvents?.slice(0, 6).map((event, i) => ( 
             <motion.div
               key={event?._id}
               custom={i}
@@ -82,16 +82,16 @@ export function EventsPreviewSection() {
                     {event.description}
                   </p>
 
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(event.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                    </span>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+  <span className="flex items-center gap-1">
+    <Calendar className="h-3 w-3" />
 
-                    <span>
-                      {new Date(event.date).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
+    {new Date(event.date).toLocaleDateString("en-IN", {
+      month: "long",
+      year: "numeric",
+    })}
+  </span>
+</div>
                 </CardContent>
               </Card>
             </motion.div>

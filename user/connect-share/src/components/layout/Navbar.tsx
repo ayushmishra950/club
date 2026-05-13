@@ -44,7 +44,7 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
   const dispatch = useAppDispatch();
 
   const navItems = [
-    { to: '/home', icon: Home, label: 'Feed' },
+    { to: '/home', icon: Home, label: 'Home' },
     { to: '/groups', icon: Users, label: 'Groups' },
     { to: '/events', icon: Calendar, label: 'Events' },
     { to: '/directory', icon: Briefcase, label: 'Directory' },

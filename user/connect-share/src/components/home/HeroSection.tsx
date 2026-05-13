@@ -67,6 +67,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+ import heroBg from "@/assets/whtsapp.jpeg";
+
 
 export function HeroSection() {
   return (
@@ -75,14 +77,13 @@ export function HeroSection() {
   {/* Background Image */}
   <div className="absolute inset-0">
     <img
-      src="https://imgs.search.brave.com/h8o-p-yjFERrkWEW8sdHoxSI8xassU1484RJ4OrAZxI/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly90NC5m/dGNkbi5uZXQvanBn/LzA2LzQ5Lzg3LzY5/LzM2MF9GXzY0OTg3/Njk1MV96azEyeHZh/dWxYUmxjWlBjcVZW/TmxEaXpKV2tIeFRR/OS5qcGc"
+      src={heroBg}
       alt="Community"
       className="w-full h-full object-cover scale-105 brightness-110"
     />
 
     {/* SINGLE LIGHT GRADIENT OVERLAY (FIXED) */}
-    <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/50" />
-  </div>
+<div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/55 to-black/70" />  </div>
 
   {/* Content */}
   <div className="relative container mx-auto px-4 py-20">

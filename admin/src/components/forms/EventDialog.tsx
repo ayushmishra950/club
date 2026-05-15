@@ -11,7 +11,9 @@ import { addEvent, updateEvent } from "@/service/event";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
 import { formatDateTimeLocal } from "@/service/global";
 import socket from "@/socket/socket";
-import {Select, SelectContent, SelectTrigger, SelectValue, SelectItem} from "../ui/select";
+import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "../ui/select";
+import ConfirmCard from "@/components/cards/ConfirmCard";
+
 
 interface Event {
     _id?: string;
@@ -34,6 +36,7 @@ const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh })
     const [errorCheck, setErrorCheck] = useState(false);
     const [errors, setErrors] = useState<any>();
     const [preview, setPreview] = useState(null);
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const dateRef = useRef(null);
     const imageRef = useRef(null);
     const isEdit = Boolean(initialData);
@@ -43,30 +46,30 @@ const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh })
 
         if (initialData && isOpen) {
             setPreview(initialData?.coverImage);
-            setFormData({ 
-                title: initialData?.title, 
-                type: "public", 
-                coverImage: initialData?.coverImage, 
-                description: initialData?.description, 
-                category: initialData?.category, 
-                date: formatDateTimeLocal(initialData?.date), 
+            setFormData({
+                title: initialData?.title,
+                type: "public",
+                coverImage: initialData?.coverImage,
+                description: initialData?.description,
+                category: initialData?.category,
+                date: formatDateTimeLocal(initialData?.date),
                 location: initialData?.location,
                 isPinned: initialData?.isPinned || false
             });
         }
         else if (isOpen) {
-    setFormData({
-        title: "",
-        description: "",
-        date: "",
-        location: "",
-        category: "",
-        coverImage: "",
-        type: "public",
-        isPinned: false
-    });
-    setPreview(null);
-}
+            setFormData({
+                title: "",
+                description: "",
+                date: "",
+                location: "",
+                category: "",
+                coverImage: "",
+                type: "public",
+                isPinned: false
+            });
+            setPreview(null);
+        }
     }, [initialData, isOpen]);
 
 
@@ -111,6 +114,7 @@ const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh })
                 socket.emit("event");
                 setEventListRefresh(true);
                 onOpenChange(false);
+
                 setPreview(null)
             }
 
@@ -119,10 +123,20 @@ const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh })
             toast({ title: "Event Error.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
         } finally {
             setIsLoading(false);
+            setConfirmDialogOpen(false);
         }
     }
     return (
         <>
+            <ConfirmCard
+                isOpen={confirmDialogOpen}
+                onOpenChange={setConfirmDialogOpen}
+                isLoading={isLoading}
+                buttonName="Update Event"
+                title="Update Event"
+                description="Are you sure you want to update this event? The changes will be saved permanently."
+                onConfirm={(e) => { handleSubmit(e) }}
+            />
             <Dialog open={isOpen} onOpenChange={(open) => { resetForm(); onOpenChange(open) }} >
                 <DialogContent>
                     <DialogHeader>
@@ -130,7 +144,7 @@ const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh })
                         <DialogDescription>Event</DialogDescription>
                     </DialogHeader>
 
-                    <form id="scrollArrow" className="p-1 max-h-[500px] overflow-y-auto no-scrollbar" onSubmit={handleSubmit}>
+                    <form id="scrollArrow" className="p-1 max-h-[500px] overflow-y-auto no-scrollbar" onSubmit={(e) => { e.preventDefault(); if (initialData && initialData?._id) { setConfirmDialogOpen(true) } else { handleSubmit(e) } }}>
                         <div>
                             <Label>Title</Label>
                             <Input type="text" name="title" value={formData?.title} onChange={handleChange} placeholder="Enter Title..." className={errors?.title ? `border border-red-500` : `border border-input`} />
@@ -148,15 +162,15 @@ const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh })
                         </div>
                         <div className="my-1">
                             <Label>Type</Label>
-                           <Select value={formData?.type} onValueChange={(value: "public" | "private")=>{setFormData({...formData, type: value})}}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="public">Public</SelectItem>
-                                <SelectItem value="private">Private</SelectItem>
-                            </SelectContent>
-                           </Select>
+                            <Select value={formData?.type} onValueChange={(value: "public" | "private") => { setFormData({ ...formData, type: value }) }}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="public">Public</SelectItem>
+                                    <SelectItem value="private">Private</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="flex gap-3">
                             <div className="flex-1">
@@ -194,7 +208,7 @@ const EventDialog = ({ isOpen, onOpenChange, initialData, setEventListRefresh })
                                 </div>}
                             </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 my-4">
                             <input
                                 type="checkbox"

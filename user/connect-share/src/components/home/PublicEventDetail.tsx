@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useAppSelector } from "@/redux-toolkit/customHook/hook";
 import { Calendar, MapPin } from "lucide-react";
 
-export default function EventDetail() {
+export default function PublicEventDetail() {
   const { id } = useParams();
   const eventList = useAppSelector((state) => state?.event?.eventList);
 
@@ -160,7 +160,7 @@ export default function EventDetail() {
               key={i?._id}
               className="h-64 bg-black/10 rounded-xl flex items-center justify-center"
             >
-            <img src={i?.image} className="w-full h-full" />
+              <img src={i?.image} className="w-full h-full" />
             </div>
           ))}
         </div>
@@ -168,133 +168,133 @@ export default function EventDetail() {
 
 
 
-  {/* ================= MEMBERSHIP RULES ================= */}
-<div className="py-20 bg-white text-center">
+      {/* ================= MEMBERSHIP RULES ================= */}
+      <div className="py-20 bg-white text-center">
 
-  <h2 className="text-3xl font-bold">
-    MEMBERSHIP RULES
-  </h2>
+        <h2 className="text-3xl font-bold">
+          MEMBERSHIP RULES
+        </h2>
 
-  <p className="text-muted-foreground mt-2">
-    Simple structure for a premium yearly experience
-  </p>
+        <p className="text-muted-foreground mt-2">
+          Simple structure for a premium yearly experience
+        </p>
 
-  {/* CARDS */}
-  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 max-w-6xl mx-auto px-4">
+        {/* CARDS */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 max-w-6xl mx-auto px-4">
 
-    {/* Card 1 */}
-    <div className="p-6 border rounded-xl bg-white shadow-sm hover:shadow-md transition text-left">
+          {/* Card 1 */}
+          <div className="p-6 border rounded-xl bg-white shadow-sm hover:shadow-md transition text-left">
 
-      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
-        👥
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+              👥
+            </div>
+
+            <h3 className="font-semibold text-lg">
+              Couple Membership Fee
+            </h3>
+
+            <p className="text-primary font-bold mt-1">
+              ₹18,000
+            </p>
+
+            <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+              Includes husband and wife annual participation in the JSG GLORY event calendar.
+            </p>
+          </div>
+
+          {/* Card 2 */}
+          <div className="p-6 border rounded-xl bg-white shadow-sm hover:shadow-md transition text-left">
+
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+              🪪
+            </div>
+
+            <h3 className="font-semibold text-lg">
+              New Member Registration Fee
+            </h3>
+
+            <p className="text-primary font-bold mt-1">
+              ₹1,000
+            </p>
+
+            <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+              One-time onboarding charge for each new member joining the annual group cycle.
+            </p>
+          </div>
+
+          {/* Card 3 */}
+          <div className="p-6 border rounded-xl bg-white shadow-sm hover:shadow-md transition text-left">
+
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+              👶
+            </div>
+
+            <h3 className="font-semibold text-lg">
+              Kids Fee
+            </h3>
+
+            <p className="text-primary font-bold mt-1">
+              ₹1,500 / kid
+            </p>
+
+            <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+              Kids are welcome in family events and kids-focused programs across the yearly timeline.
+            </p>
+          </div>
+
+          {/* Card 4 */}
+          <div className="p-6 border rounded-xl bg-white shadow-sm hover:shadow-md transition text-left">
+
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+              🎁
+            </div>
+
+            <h3 className="font-semibold text-lg">
+              Attractive Gifts
+            </h3>
+
+            <p className="text-primary font-bold mt-1">
+              Worth ₹1,500
+            </p>
+
+            <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+              If you deposit the fee on or before May 17th.
+            </p>
+          </div>
+
+        </div>
+
+        {/* ================= QR SECTION ================= */}
+        <div className="mt-20 max-w-md mx-auto px-4">
+
+          <h3 className="text-2xl font-bold mb-2">
+            SCAN & PAY
+          </h3>
+
+          <p className="text-sm text-muted-foreground mb-6">
+            Scan the QR code with any UPI app
+          </p>
+
+          {/* QR IMAGE */}
+          <div className="p-6 border rounded-2xl bg-white shadow-sm flex justify-center">
+            <img
+              src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=merchantaumb1000167761@aubank"
+              alt="UPI QR Code"
+              className="w-48 h-48"
+            />
+          </div>
+
+          {/* UPI ID */}
+          <p className="mt-6 text-sm text-muted-foreground">
+            UPI ID:{" "}
+            <span className="font-medium text-black">
+              merchantaumb1000167761@aubank
+            </span>
+          </p>
+
+        </div>
+
       </div>
-
-      <h3 className="font-semibold text-lg">
-        Couple Membership Fee
-      </h3>
-
-      <p className="text-primary font-bold mt-1">
-        ₹18,000
-      </p>
-
-      <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-        Includes husband and wife annual participation in the JSG GLORY event calendar.
-      </p>
-    </div>
-
-    {/* Card 2 */}
-    <div className="p-6 border rounded-xl bg-white shadow-sm hover:shadow-md transition text-left">
-
-      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
-        🪪
-      </div>
-
-      <h3 className="font-semibold text-lg">
-        New Member Registration Fee
-      </h3>
-
-      <p className="text-primary font-bold mt-1">
-        ₹1,000
-      </p>
-
-      <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-        One-time onboarding charge for each new member joining the annual group cycle.
-      </p>
-    </div>
-
-    {/* Card 3 */}
-    <div className="p-6 border rounded-xl bg-white shadow-sm hover:shadow-md transition text-left">
-
-      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
-        👶
-      </div>
-
-      <h3 className="font-semibold text-lg">
-        Kids Fee
-      </h3>
-
-      <p className="text-primary font-bold mt-1">
-        ₹1,500 / kid
-      </p>
-
-      <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-        Kids are welcome in family events and kids-focused programs across the yearly timeline.
-      </p>
-    </div>
-
-    {/* Card 4 */}
-    <div className="p-6 border rounded-xl bg-white shadow-sm hover:shadow-md transition text-left">
-
-      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
-        🎁
-      </div>
-
-      <h3 className="font-semibold text-lg">
-        Attractive Gifts
-      </h3>
-
-      <p className="text-primary font-bold mt-1">
-        Worth ₹1,500
-      </p>
-
-      <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-        If you deposit the fee on or before May 17th.
-      </p>
-    </div>
-
-  </div>
-
-  {/* ================= QR SECTION ================= */}
-  <div className="mt-20 max-w-md mx-auto px-4">
-
-    <h3 className="text-2xl font-bold mb-2">
-      SCAN & PAY
-    </h3>
-
-    <p className="text-sm text-muted-foreground mb-6">
-      Scan the QR code with any UPI app
-    </p>
-
-    {/* QR IMAGE */}
-    <div className="p-6 border rounded-2xl bg-white shadow-sm flex justify-center">
-      <img
-        src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=merchantaumb1000167761@aubank"
-        alt="UPI QR Code"
-        className="w-48 h-48"
-      />
-    </div>
-
-    {/* UPI ID */}
-    <p className="mt-6 text-sm text-muted-foreground">
-      UPI ID:{" "}
-      <span className="font-medium text-black">
-        merchantaumb1000167761@aubank
-      </span>
-    </p>
-
-  </div>
-
-</div>
     </div>
   );
 }

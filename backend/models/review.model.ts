@@ -1,25 +1,37 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IReview extends Document {
-  fullName: string;
-  description: string;
+  userId: mongoose.Schema.Types.ObjectId;
+  message: string;
+  status: string;
+  adminReply: string;
   createdAt: Date;
 }
 
 const ReviewSchema: Schema<IReview> = new Schema(
   {
-    fullName: {
-      type: String,
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      trim: true,
     },
-    description: {
+    message: {
       type: String,
       required: true,
     },
     createdAt: {
       type: Date,
       default: Date.now,
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    adminReply: {
+      type: String,
+      default: "",
     },
   },
   {

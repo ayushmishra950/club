@@ -8,6 +8,8 @@ import { Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createGroup, updateGroup } from "@/service/group";
 import { validateGroupForm } from "../hook/group.form";
+import ConfirmCard from "@/components/cards/ConfirmCard";
+
 
 const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh }) => {
   const { toast } = useToast();
@@ -15,11 +17,11 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
   const [formData, setFormData] = useState({ title: "", description: "", files: [] });
   const [previewList, setPreviewList] = useState<{ url: string; type: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [openDialogOpen, setOpenDialogOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState<any>({});
   const isEdit = Boolean(initialData);
   const fileRef = useRef<HTMLInputElement>(null);
-
 
   // 🔁 Edit Mode
   useEffect(() => {
@@ -27,7 +29,7 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
       setFormData({
         title: initialData?.title || "",
         description: initialData?.description || "",
-        files: [],
+        files: initialData?.images || [],
       });
 
       // existing preview
@@ -131,6 +133,7 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
         });
 
         setGroupListRefresh(true);
+        setOpenDialogOpen(false);
         onOpenChange(false);
         resetForm();
       }
@@ -147,117 +150,128 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
   };
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        resetForm();
-        onOpenChange(open);
-      }}
-    >
-      <DialogContent>
-        <DialogHeader className="text-left">
-          <DialogTitle>
-            {isEdit ? "Update Group" : "Create Group"}
-          </DialogTitle>
-          <DialogDescription>
-            Add your group details
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <ConfirmCard
+        isOpen={openDialogOpen}
+        onOpenChange={setOpenDialogOpen}
+        onConfirm={(e) => handleSubmit(e)}
+        title="Group Dialog"
+        description={` Are You Sure you want to ${isEdit ? "update" : "add"} this group?`}
+        isLoading={isLoading}
+        buttonName={`${isEdit ? "Update" : "Add"} Group`}
+      />
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          resetForm();
+          onOpenChange(open);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader className="text-left">
+            <DialogTitle>
+              {isEdit ? "Update Group" : "Create Group"}
+            </DialogTitle>
+            <DialogDescription>
+              Add your group details
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="text-left">
-          {/* Title */}
-          <div className="my-1">
-            <Label>Title</Label>
-            <Input
-              value={formData.title}
-              onChange={handleChange}
-              name="title"
-              placeholder="Enter title"
-            />
-            {errors?.title && <p className="text-xs mt-1 text-red-500">{errors?.title}</p>}
-          </div>
-
-          {/* Description */}
-          <div className="my-2">
-            <Label>Description</Label>
-            <Textarea
-              value={formData.description}
-              onChange={handleChange}
-              name="description"
-              placeholder="Enter description"
-            />
-            {errors?.description && <p className="text-xs mt-1 text-red-500">{errors?.description}</p>}
-          </div>
-          {/* Media */}
-          <div className="my-4 flex items-start gap-4">
-            {/* File Input - Chhota width */}
-            <div className="w-1/3">
-              <Label>Images / Videos</Label>
+          <form onSubmit={(e) => { e.preventDefault(); setOpenDialogOpen(true) }} className="text-left">
+            {/* Title */}
+            <div className="my-1">
+              <Label>Title</Label>
               <Input
-                type="file"
-                multiple
-                accept="image/*,video/*"
-                ref={fileRef}
-                onChange={handleFileChange}
-                className="w-full"
+                value={formData.title}
+                onChange={handleChange}
+                name="title"
+                placeholder="Enter title"
               />
-              {errors?.images && (
-                <p className="text-xs mt-1 text-red-500">{errors?.images}</p>
-              )}
+              {errors?.title && <p className="text-xs mt-1 text-red-500">{errors?.title}</p>}
             </div>
 
-            {/* Preview - Horizontal row */}
-            {previewList.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto flex-1 mt-6">
-                {previewList.slice(0, 4).map((file, i) => (
-                  <div
-                    key={i}
-                    className="relative w-16 h-16 flex-shrink-0 bg-black rounded overflow-hidden"
-                  >
-                    {file.type.startsWith("video") ? (
-                      <video
-                        src={file.url}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <img
-                        src={file.url}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-
-                    {/* Remove button */}
-                    <div
-                      onClick={() => removeFile(i)}
-                      className="absolute top-1 right-1 bg-red-500 rounded-full cursor-pointer p-0.5"
-                    >
-                      <X className="w-3 h-3 text-white" />
-                    </div>
-                  </div>
-                ))}
+            {/* Description */}
+            <div className="my-2">
+              <Label>Description</Label>
+              <Textarea
+                value={formData.description}
+                onChange={handleChange}
+                name="description"
+                placeholder="Enter description"
+              />
+              {errors?.description && <p className="text-xs mt-1 text-red-500">{errors?.description}</p>}
+            </div>
+            {/* Media */}
+            <div className="my-4 flex items-start gap-4">
+              {/* File Input - Chhota width */}
+              <div className="w-1/3">
+                <Label>Images / Videos</Label>
+                <Input
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  ref={fileRef}
+                  onChange={handleFileChange}
+                  className="w-full"
+                />
+                {errors?.images && (
+                  <p className="text-xs mt-1 text-red-500">{errors?.images}</p>
+                )}
               </div>
-            )}
-          </div>
-          {/* Submit */}
-          <div className="flex justify-end mt-3">
-            <Button
-              disabled={isLoading}
-            >
-              {isLoading && (
-                <Loader2 className="animate-spin w-4 h-4 mr-1" />
+
+              {/* Preview - Horizontal row */}
+              {previewList.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto flex-1 mt-6">
+                  {previewList.slice(0, 4).map((file, i) => (
+                    <div
+                      key={i}
+                      className="relative w-16 h-16 flex-shrink-0 bg-black rounded overflow-hidden"
+                    >
+                      {file.type.startsWith("video") ? (
+                        <video
+                          src={file.url}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src={file.url}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+
+                      {/* Remove button */}
+                      <div
+                        onClick={() => removeFile(i)}
+                        className="absolute top-1 right-1 bg-red-500 rounded-full cursor-pointer p-0.5"
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
-              {isEdit
-                ? isLoading
-                  ? "Updating..."
-                  : "Update"
-                : isLoading
-                  ? "Creating..."
-                  : "Create"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            </div>
+            {/* Submit */}
+            <div className="flex justify-end mt-3">
+              <Button
+                disabled={isLoading}
+              >
+                {isLoading && (
+                  <Loader2 className="animate-spin w-4 h-4 mr-1" />
+                )}
+                {isEdit
+                  ? isLoading
+                    ? "Updating..."
+                    : "Update"
+                  : isLoading
+                    ? "Creating..."
+                    : "Create"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

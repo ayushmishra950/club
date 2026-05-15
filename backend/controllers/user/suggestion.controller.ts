@@ -9,19 +9,14 @@ import { createNotificationInternal } from "../user/notification.controller.js";
 
 export const addSuggestion = async (req: Request, res: Response) => {
   try {
-    const { userId, description } = req.body;
+    const { userId, suggestion } = req.body;
     const io = getIO();
 
-    if (!description) {
-      return res.status(400).json({ message: "Description is required" });
+    if (!suggestion) {
+      return res.status(400).json({ message: "Suggestion is required" });
     }
 
-    const newSuggestion = await Suggestion.create({
-      description,
-      createdBy: userId,
-      status: "pending",
-    });
-
+    const newSuggestion = await Suggestion.create({ suggestion, createdBy: userId, status: "pending" });
     await newSuggestion.populate("createdBy", "fullName email profileImage");
 
     io.emit("addSuggestion", newSuggestion);
@@ -105,6 +100,47 @@ export const deleteSuggestion = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       message: "Suggestion deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+      error,
+    });
+  }
+};
+
+// ✅ REPLY
+export const replyToSuggestion = async (req: Request, res: Response) => {
+  try {
+    const { id, userId, adminReply } = req.body;
+
+    if (!id || !adminReply || !userId) {
+      return res.status(400).json({
+        message: "Suggestion ID, userId and reply are required.",
+      });
+    }
+
+    const io = getIO();
+
+    const suggestion = await Suggestion.findByIdAndUpdate(
+      id,
+      {
+        $push: {
+          adminReplies: { userId, message: adminReply, createdAt: new Date() },
+        },
+      },
+      { new: true }
+    ).populate("createdBy", "fullName email profileImage");
+
+    if (!suggestion) {
+      return res.status(404).json({ message: "Suggestion not found." });
+    }
+
+    io.emit("suggestionReply", suggestion);
+
+    return res.status(200).json({
+      message: "Reply sent successfully.",
+      data: suggestion,
     });
   } catch (error) {
     return res.status(500).json({

@@ -7,12 +7,15 @@ import { getAllUser, verifyBusinessUser } from "@/service/auth";
 import { setBusinessList } from "@/redux-toolkit/slice/userSlice";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
 import BusinessDetailModal from "@/components/cards/businessDetailCard";
+import { Button } from "@/components/ui/button";
+import AddBusinessDialog from "@/components/forms/AddBusinessDialog";
 
 export default function BusinessDirectoryPage() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(8);
   const [search, setSearch] = useState("");
+  const [addBusinessDialogOpen, setAddBusinessDialogOpen] = useState(false);
   const [businessDetailOpen, setBusinessDetailOpen] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const dispatch = useAppDispatch();
@@ -36,7 +39,7 @@ export default function BusinessDirectoryPage() {
     try {
       const res = await getAllUser({ page, perPage, search, filterStatus });
       if (res.status === 200) {
-        // Flatten all businesses from users who have accountType === 'business'
+
         const allBusinesses = res?.data?.users?.reduce((acc: any[], user: any) => {
           if (user.accountType === "business" && user.businesses) {
             const userBusinesses = user.businesses.map((biz: any) => ({
@@ -82,10 +85,18 @@ export default function BusinessDirectoryPage() {
 
   return (
     <>
-    <BusinessDetailModal isOpen={businessDetailOpen} onClose={() => setBusinessDetailOpen(false)} business={selectedBusiness} />
+      <AddBusinessDialog open={addBusinessDialogOpen} onOpenChange={() => setAddBusinessDialogOpen(false)} />
+      <BusinessDetailModal isOpen={businessDetailOpen} onClose={() => setBusinessDetailOpen(false)} business={selectedBusiness} />
       <div className="space-y-4 ">
         <div className="flex justify-between items-center">
-          <h3 className="font-display font-semibold text-lg">Business Verification Directory</h3>
+          <h3 className="font-display font-semibold text-lg">
+            Business Verification Directory
+          </h3>
+
+          <Button onClick={() => { setAddBusinessDialogOpen(true) }} className="h-9 px-4 text-sm">
+            <Plus className="w-4 h-4" />
+            Add Business
+          </Button>
         </div>
         {Array.isArray(users) && users.length > 0 ? (
           <>
@@ -106,7 +117,7 @@ export default function BusinessDirectoryPage() {
 
                 <tbody>
                   {users.map((biz: any) => (
-                    <tr key={biz?.businessId} className="border-t hover:bg-gray-50">
+                    <tr key={biz?._id} className="border-t hover:bg-gray-50">
                       {/* Image */}
                       <td className="p-3">
                         {biz?.businessCoverImage ? (
@@ -121,7 +132,7 @@ export default function BusinessDirectoryPage() {
 
                       {/* Business ID */}
                       <td className="p-3 text-xs font-mono text-gray-500">
-                        {biz?.businessId}
+                        {biz?.businessId || `biz-${Math.random().toString(36).substring(2, 10)}`}
                       </td>
 
                       {/* Business Name */}
@@ -144,11 +155,10 @@ export default function BusinessDirectoryPage() {
 
                       {/* Status */}
                       <td className="p-3 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          biz.isVerified === 'verified' ? 'bg-green-100 text-green-700' :
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${biz.isVerified === 'verified' ? 'bg-green-100 text-green-700' :
                           biz.isVerified === 'rejected' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>
+                            'bg-yellow-100 text-yellow-700'
+                          }`}>
                           {biz.isVerified || 'pending'}
                         </span>
                       </td>
@@ -157,15 +167,15 @@ export default function BusinessDirectoryPage() {
                       <td className="p-3">
                         <div className="flex justify-end gap-2">
                           <button
-                              onClick={() =>{ setSelectedBusiness(biz); setBusinessDetailOpen(true)}}
-                              className="p-1.5 rounded bg-red-100 hover:bg-red-200 transition-colors"
-                              title="Reject Business"
-                            >
-                              <View className="w-4 h-4 text-black-600" />
-                            </button>
+                            onClick={() => { setSelectedBusiness(biz); setBusinessDetailOpen(true) }}
+                            className="p-1.5 rounded bg-red-100 hover:bg-red-200 transition-colors"
+                            title="Reject Business"
+                          >
+                            <View className="w-4 h-4 text-black-600" />
+                          </button>
                           {biz.isVerified !== 'verified' && (
                             <button
-                              onClick={() => handleVerifyBusiness(biz.ownerId, biz.businessId, true)}
+                              onClick={() => handleVerifyBusiness(biz.ownerId, biz._id, true)}
                               className="p-1.5 rounded bg-green-100 hover:bg-green-200 transition-colors"
                               title="Approve Business"
                             >
@@ -175,7 +185,7 @@ export default function BusinessDirectoryPage() {
 
                           {biz.isVerified !== 'rejected' && (
                             <button
-                              onClick={() => handleVerifyBusiness(biz.ownerId, biz.businessId, false)}
+                              onClick={() => handleVerifyBusiness(biz.ownerId, biz._id, false)}
                               className="p-1.5 rounded bg-red-100 hover:bg-red-200 transition-colors"
                               title="Reject Business"
                             >
@@ -215,11 +225,10 @@ export default function BusinessDirectoryPage() {
                       <h3 className="font-semibold text-gray-900 truncate">
                         {biz?.businessName}
                       </h3>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                        biz.isVerified === 'verified' ? 'bg-green-100 text-green-700' :
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${biz.isVerified === 'verified' ? 'bg-green-100 text-green-700' :
                         biz.isVerified === 'rejected' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>
                         {biz.isVerified || 'pending'}
                       </span>
                     </div>
@@ -241,7 +250,7 @@ export default function BusinessDirectoryPage() {
                     <div className="flex gap-2 mt-4">
                       {biz.isVerified !== 'verified' && (
                         <button
-                          onClick={() => handleVerifyBusiness(biz.ownerId, biz.businessId, true)}
+                          onClick={() => handleVerifyBusiness(biz.ownerId, biz._id, true)}
                           className="flex-1 py-1.5 rounded-lg bg-green-50 text-green-700 text-xs font-medium hover:bg-green-100 flex items-center justify-center gap-1"
                         >
                           <Check size={14} /> Approve
@@ -250,7 +259,7 @@ export default function BusinessDirectoryPage() {
 
                       {biz.isVerified !== 'rejected' && (
                         <button
-                          onClick={() => handleVerifyBusiness(biz.ownerId, biz.businessId, false)}
+                          onClick={() => handleVerifyBusiness(biz.ownerId, biz._id, false)}
                           className="flex-1 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-medium hover:bg-red-100 flex items-center justify-center gap-1"
                         >
                           <X size={14} /> Reject

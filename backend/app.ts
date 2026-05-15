@@ -36,15 +36,16 @@ import userChatRoutes from "./routes/user/chat.route.js";
 import userNotificationRoutes from "./routes/user/notification.route.js";
 import userAnnouncementRoutes from "./routes/user/announcement.route.js";
 import userSuggestionRoutes from "./routes/user/suggestion.route.js";
+import userReviewRoutes from "./routes/user/review.route.js";
 
 const app = express();
 const globalRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 1000 
+    max: 1000
 })
-  
-  
-connectDb(); 
+
+
+connectDb();
 app.use(globalRateLimit);
 app.use(express.json());
 app.use(cookieParser());
@@ -77,6 +78,7 @@ app.use("/api/user/chat", userChatRoutes);
 app.use("/api/user/notification", userNotificationRoutes);
 app.use("/api/user/announcement", userAnnouncementRoutes);
 app.use("/api/user/suggestion", userSuggestionRoutes);
+app.use("/api/user/review", userReviewRoutes);
 
 
 

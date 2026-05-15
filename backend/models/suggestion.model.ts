@@ -1,12 +1,13 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface ISuggestionReply {
+  userId: string;
   message: string;
   createdAt: Date;
 }
 
 export interface ISuggestion extends Document {
-  description: string;
+  suggestion: string;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -17,7 +18,7 @@ export interface ISuggestion extends Document {
 
 const suggestionSchema: Schema<ISuggestion> = new Schema(
   {
-    description: {
+    suggestion: {
       type: String,
       required: true,
       trim: true,
@@ -43,6 +44,10 @@ const suggestionSchema: Schema<ISuggestion> = new Schema(
     adminReplies: {
       type: [
         {
+          userId: {
+            type: String,
+            required: true,
+          },
           message: {
             type: String,
             required: true,

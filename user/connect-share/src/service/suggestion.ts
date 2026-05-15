@@ -19,3 +19,8 @@ export const getAllSuggestion = async (id: string) => {
     const res = await api.get(`${base_url}/user/suggestion/get/${id}`);
     return res;
 }
+
+export const replyToSuggestion = async (obj: any) => {
+    const res = await api.post(`${base_url}/user/suggestion/reply`, obj);
+    return res;
+}

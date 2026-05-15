@@ -108,3 +108,9 @@ export const updateUserByAdmin = async (id: string, obj: any) => {
     const res = await api.put(`${base_url}/admin/user/update/${id}`, obj);
     return res;
 };
+
+
+export const addBusinessUser = async (obj: any) => {
+    const res = await api.post(`${base_url}/admin/user/business/add`, obj);
+    return res;
+};

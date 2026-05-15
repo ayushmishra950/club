@@ -106,7 +106,7 @@ const Index = () => {
           <aside className="hidden lg:block w-80 shrink-0">
             <div className="sticky top-20">
               <SuggestedUsers />
-              <MessageSection />
+              {/* <MessageSection /> */}
             </div>
           </aside>
         </div>

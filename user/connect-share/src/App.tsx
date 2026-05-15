@@ -29,7 +29,10 @@ import socket from "./socket/socket.ts";
 import { useEffect } from "react";
 import { useAppDispatch } from "@/redux-toolkit/customHook/hook";
 import { setUpdateSuggestion, incrementUnreadCount } from "@/redux-toolkit/slice/suggestionSlice";
-import EventDetail from "@/components/home/EventDetail.tsx";
+import PublicEventDetail from "@/components/home/PublicEventDetail.tsx";
+import EventDetail from "@/pages/EventDetail.tsx";
+import SuggestionPage from "@/pages/SuggestionPage.tsx";
+import ReviewPage from "@/pages/ReviewPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -121,7 +124,7 @@ const App = () => {
                 <Route index element={<Home />} />
                 <Route path="public/about" element={<About />} />
                 <Route path="public/events" element={<PublicEvents />} />
-                <Route path="public/events/:id" element={<EventDetail />} />
+                <Route path="public/events/:id" element={<PublicEventDetail />} />
                 <Route path="public/announcements" element={<PublicAnnouncements />} />
                 <Route path="public/contact" element={<Contact />} />
               </Route>
@@ -149,6 +152,18 @@ const App = () => {
 
               <Route path="/events" element={<ProtectedRoute>
                 <Events />
+              </ProtectedRoute>} />
+              <Route path="/event/detail/:id" element={<ProtectedRoute>
+                <EventDetail />
+              </ProtectedRoute>} />
+
+
+              <Route path="/suggestions" element={<ProtectedRoute>
+                <SuggestionPage />
+              </ProtectedRoute>} />
+
+              <Route path="/reviews" element={<ProtectedRoute>
+                <ReviewPage />
               </ProtectedRoute>} />
 
               <Route path="/groups" element={<ProtectedRoute>

@@ -5,19 +5,18 @@ import { getIO } from "../../utils/socketHelper.js";
 
 export const addSuggestion = async (req: Request, res: Response) => {
   try {
-    const { userId, description } = req.body;
+    const { userId, suggestion } = req.body;
     const io = getIO();
 
-    if (!description) {
-      return res.status(400).json({ message: "Description is required" });
+    if (!suggestion) {
+      return res.status(400).json({ message: "Suggestion is required" });
     }
 
-    const newSuggestion = await Suggestion.create({
-      description,
-      createdBy: userId,
-    });
+    const newSuggestion = await Suggestion.create({ suggestion, createdBy: userId });
 
-    io.emit("addSuggestion", newSuggestion)
+    const updatedSuggestion = await Suggestion.findById(newSuggestion?._id).populate("createdBy", "fullName email profileImage");
+
+    io.emit("addSuggestion", updatedSuggestion)
 
     return res.status(201).json({
       message: "Suggestion created successfully",
@@ -120,7 +119,7 @@ export const updateSuggestionStatus = async (req: Request, res: Response) => {
         message: "Suggestion not found",
       });
     }
-    io.to(suggestion?.createdBy?._id?.toString()).emit("updateSuggestionStatus", suggestion);
+    io.emit("updateSuggestionStatus", suggestion);
 
     return res.status(200).json({
       message: "Suggestion status updated successfully",
@@ -134,13 +133,14 @@ export const updateSuggestionStatus = async (req: Request, res: Response) => {
   }
 };
 
-
 export const replyToSuggestion = async (req: Request, res: Response) => {
   try {
-    const { id, adminReply } = req.body;
+    const { id, userId, adminReply } = req.body;
 
-    if (!id || !adminReply) {
-      return res.status(400).json({ message: "Suggestion ID and reply are required." });
+    if (!id || !adminReply || !userId) {
+      return res.status(400).json({
+        message: "Suggestion ID, userId and reply are required.",
+      });
     }
 
     const io = getIO();
@@ -148,8 +148,9 @@ export const replyToSuggestion = async (req: Request, res: Response) => {
     const suggestion = await Suggestion.findByIdAndUpdate(
       id,
       {
-        $push: { adminReplies: { message: adminReply } },
-        adminReply,
+        $push: {
+          adminReplies: { userId, message: adminReply, createdAt: new Date(), },
+        },
       },
       { new: true }
     ).populate("createdBy", "fullName email profileImage");
@@ -158,14 +159,17 @@ export const replyToSuggestion = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Suggestion not found." });
     }
 
-    // Emit only suggestionReply when replying (don't emit updateSuggestionStatus to avoid duplicate count)
-    io.to(suggestion?.createdBy?._id?.toString()).emit("suggestionReply", suggestion);
+
+    io.emit("suggestionReply", suggestion);
 
     return res.status(200).json({
       message: "Reply sent successfully.",
       data: suggestion,
     });
   } catch (error) {
-    return res.status(500).json({ message: "Server error", error });
+    return res.status(500).json({
+      message: "Server error",
+      error,
+    });
   }
 };

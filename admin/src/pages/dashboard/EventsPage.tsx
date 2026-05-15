@@ -10,7 +10,6 @@ import socket from "@/socket/socket";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
 import { setEventList, setInterestedAndNotCandidate, setNewEvent } from "@/redux-toolkit/slice/eventSlice";
 
-
 export default function EventsPage() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -90,8 +89,8 @@ export default function EventsPage() {
         onOpenChange={setDeleteDialogOpen}
         isLoading={deleteLoading}
         buttonName="Delete"
-        title={`Delete Event: ${deleteEvents?.title}`} // Dynamic title
-        description={`Are you sure you want to delete the event "${deleteEvents?.title}"? This action cannot be undone.`} // Dynamic description
+        title={`Delete Event: ${deleteEvents?.title}`}
+        description={`Are you sure you want to delete the event "${deleteEvents?.title}"? This action cannot be undone.`}
         onConfirm={handleDeleteEvent}
       />
       <EventDialog isOpen={eventDialogOpen} onOpenChange={setEventDialogOpen} initialData={initialData} setEventListRefresh={setEventListRefresh} />

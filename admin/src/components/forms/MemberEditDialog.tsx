@@ -124,14 +124,15 @@ export default function MemberEditDialog({ isOpen, onOpenChange, member, onSucce
     e.preventDefault();
     setIsLoading(true);
 
+    const filteredChildren = formData.children.filter((c) => c.name.trim() !== "");
+    const filteredBusinesses = formData.businesses.filter((b) => b.businessName?.trim() !== "");
+
     try {
-      // Prepare data for submission
       const submitData = {
         ...formData,
-        // Filter out empty children
-        children: formData.children.filter(c => c.name.trim() !== ""),
-        // Filter out empty businesses
-        businesses: formData.businesses.filter(b => b.businessName?.trim() !== ""),
+        children: filteredChildren,
+        businesses: filteredBusinesses,
+        accountType: filteredBusinesses.length > 0 ? "business" : "user",
       };
 
       const res = await updateUserByAdmin(member._id, submitData);

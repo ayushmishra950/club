@@ -17,6 +17,8 @@ import { setUserList, setActiveAndInactiveUser, setAddNewUser, setUpdateUser } f
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
 import socket from "@/socket/socket";
 import PaymentDetailCard from "@/components/cards/PaymentDetailCard";
+import ConfirmCard from "@/components/cards/ConfirmCard";
+import AllMemberVerifyConfirmCard from "@/components/cards/AllMemberVerifyConfirmCard";
 
 export default function MembersPage() {
   const { toast } = useToast();
@@ -42,6 +44,10 @@ export default function MembersPage() {
   const [editMember, setEditMember] = useState<any>(null);
   const [selectedMemebersId, setSelectedMembersId] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState("active");
+  const [openConfirmDialogOpen, setOpenConfirmDialogOpen] = useState(false);
+  const [openConfirmLoading, setOpenConfirmLoading] = useState(false);
+  const [openAllMemberConfirmDialogOpen, setOpenAllMemberConfirmDialogOpen] = useState(false);
+  const [openAllMemberConfirmLoading, setOpenAllMemberConfirmLoading] = useState(false);
   const dispatch = useAppDispatch();
 
   const memberList = useAppSelector((state) => state?.user?.userList);
@@ -72,44 +78,22 @@ export default function MembersPage() {
       if (res.status === 201) {
         const { inserted, duplicates, insertedCount, duplicateCount } = res.data;
 
-        // ✅ 1. ALWAYS dispatch only inserted users
         if (inserted?.length > 0) {
           dispatch(setAddNewUser(inserted));
         }
 
-        // ✅ 2. Build message logic
         if (duplicateCount === 0) {
-          // 🎉 PURE SUCCESS CASE
-          toast({
-            title: "Upload Successful",
-            description: `${insertedCount} members added successfully`,
-          });
+          toast({ title: "Upload Successful", description: `${insertedCount} members added successfully` });
         } else {
-          // ⚠️ DUPLICATE CASE
-          const duplicateMsg = duplicates
-            .map(
-              (d) => `${d.fullName} - ${d.reason}`
-            )
-            .join(" | ");
-
-          toast({
-            title: "Upload Completed with Duplicates",
-            description: duplicateMsg,
-            variant: "destructive",
-          });
+          const duplicateMsg = duplicates.map((d) => `${d.fullName} - ${d.reason}`).join(" | ");
+          toast({ title: "Upload Completed with Duplicates", description: duplicateMsg, variant: "destructive" });
         }
-
         setUploadDialogOpen(false);
         setExcelFile(null);
       }
     } catch (err) {
       console.log(err);
-      toast({
-        title: "Add Member Failed.",
-        description:
-          err?.response?.data?.message || err?.message,
-        variant: "destructive",
-      });
+      toast({ title: "Add Member Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +105,6 @@ export default function MembersPage() {
       if (res.status === 200) {
         dispatch(setUserList(res?.data?.users));
         setTotalPages(Math.ceil(res?.data?.total / perPage));
-
         setMemberListRefresh(false);
       }
     }
@@ -136,15 +119,19 @@ export default function MembersPage() {
   const handleVerifyUser = async (id?: string) => {
     let membersIds = selectedMemebersId?.length > 0 ? selectedMemebersId : [id];
     try {
+      setOpenConfirmLoading(true);
       const res = await verifyUser(membersIds);
       if (res?.status === 200) {
         toast({ title: "User Verified Successfully.", description: res?.data?.message });
         setMemberListRefresh(true);
         setSelectedMembersId([]);
+        setOpenConfirmDialogOpen(false);
       }
     } catch (err) {
       console.log(err);
       toast({ title: "User Verified Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
+    } finally {
+      setOpenConfirmLoading(false);
     }
   };
 
@@ -180,17 +167,37 @@ export default function MembersPage() {
     } finally {
       setDeleteLoading(false);
     }
-
   }
 
   return (
     <>
+      <AllMemberVerifyConfirmCard
+        isOpen={openAllMemberConfirmDialogOpen}
+        onOpenChange={setOpenAllMemberConfirmDialogOpen}
+        title={`Verify User${selectedMemebersId?.length > 1 ? "s" : ""}`}
+        description={`Are you sure you want to verify ${selectedMemebersId?.length} ${selectedMemebersId?.length > 1 ? "members" : "member"}? This action cannot be undone.`}
+        onConfirm={() => handleVerifyUser()}
+        isLoading={openAllMemberConfirmLoading}
+        buttonName="Verify"
+        users={selectedMemebersId}
+        onRemoveUser={setSelectedMembersId}
+      />
+
+      <ConfirmCard
+        isOpen={openConfirmDialogOpen}
+        onOpenChange={setOpenConfirmDialogOpen}
+        title="Verify User"
+        description={`Are you sure you want to verify the user "${selectedMember?.fullName}"? This action cannot be undone.`}
+        onConfirm={() => handleVerifyUser(selectedMember?._id)}
+        isLoading={openConfirmLoading}
+        buttonName="Verify"
+      />
       <MemberDetailCard member={selectedMember} detailDialogOpen={detailDialogOpen} setDetailDialogOpen={setDetailDialogOpen} />
-      <MemberEditDialog 
-        isOpen={editDialogOpen} 
-        onOpenChange={setEditDialogOpen} 
-        member={editMember} 
-        onSuccess={() => setMemberListRefresh(true)} 
+      <MemberEditDialog
+        isOpen={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        member={editMember}
+        onSuccess={() => setMemberListRefresh(true)}
       />
       <PaymentDetailCard paymentDialog={paymentDialog} setPaymentDialog={setPaymentDialog} selectedPayment={selectedPayment} />
       <DeleteCard
@@ -198,8 +205,8 @@ export default function MembersPage() {
         onOpenChange={setDeleteDialogOpen}
         isLoading={deleteLoading}
         buttonName="Delete"
-        title={`Delete Member: ${deleteUser?.fullName}`} // Dynamic title
-        description={`Are you sure you want to delete the member "${deleteUser?.fullName}"? This action cannot be undone.`} // Dynamic description
+        title={`Delete Member: ${deleteUser?.fullName}`}
+        description={`Are you sure you want to delete the member "${deleteUser?.fullName}"? This action cannot be undone.`}
         onConfirm={handleDeleteUser}
       />
 
@@ -248,7 +255,7 @@ export default function MembersPage() {
           </div>
           <div className="flex gap-2 ">
             <div className="hidden md:flex gap-2">
-              {selectedMemebersId?.length > 0 && <Button onClick={() => handleVerifyUser()} className="gradient-gold text-secondary-foreground font-semibold">Users Verify</Button>}
+              {selectedMemebersId?.length > 0 && <Button onClick={() => { setOpenAllMemberConfirmDialogOpen(true) }} className="gradient-gold text-secondary-foreground font-semibold">Verify Users</Button>}
               {/* <Button variant="ghost" size="icon" onClick={() => setView("table")} disabled={selectedMemebersId?.length > 0} className={view === "table" ? "bg-muted" : ""}>
                 <List className="h-4 w-4" />
               </Button>
@@ -400,7 +407,10 @@ export default function MembersPage() {
                               size="sm"
                               variant="secondary"
                               className="h-7 px-2 text-[10px] sm:text-sm"
-                              onClick={() => handleVerifyUser(m._id)}
+                              onClick={() => {
+                                setSelectedMember(m);
+                                setOpenConfirmDialogOpen(true);
+                              }}
                             >
                               Verify
                             </Button>

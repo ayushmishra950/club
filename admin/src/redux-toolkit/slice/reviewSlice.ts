@@ -26,17 +26,24 @@ const reviewSlice = createSlice({
       }
     },
 
-   setRemoveReview: (state, action) => {
-  const id = action.payload;
+    setRemoveReview: (state, action) => {
+      const id = action.payload;
 
-  state.reviewsList = state.reviewsList.filter(
-    (item) => item._id !== id
-  );
-}
+      state.reviewsList = state.reviewsList.filter(
+        (item) => item._id !== id
+      );
+    },
+
+    setReviewStatus: (state, action) => {
+      const { reviewId, status, adminReply } = action.payload;
+
+      state.reviewsList = state.reviewsList.map((item) => item._id === reviewId ? { ...item, status, adminReply: adminReply } : item
+      );
+    }
   }
 });
 
-export const { setReviewList,setNewReview, setRemoveReview } = reviewSlice.actions;
+export const { setReviewList, setNewReview, setRemoveReview, setReviewStatus } = reviewSlice.actions;
 
 export default reviewSlice.reducer;
 

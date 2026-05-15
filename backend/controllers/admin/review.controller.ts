@@ -2,42 +2,11 @@ import { Request, Response } from "express";
 import ReviewModel from "../../models/review.model.js";
 import { getIO } from "../../utils/socketHelper.js";
 
-// ✅ CREATE REVIEW
-export const addReview = async (req: Request, res: Response) => {
-  try {
-    const { fullName, description } = req.body;
-    const io = getIO();
-
-    if (!fullName || !description) {
-      return res.status(400).json({
-        success: false,
-        message: "Full name and description are required",
-      });
-    }
-
-    const review = await ReviewModel.create({
-      fullName,
-      description,
-    });
-
-    io.emit("addReview", review);
-    return res.status(201).json({
-      success: true,
-      message: "Review created successfully",
-      data: review,
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
 
 // ✅ GET ALL REVIEWS
 export const getReviews = async (_req: Request, res: Response) => {
   try {
-    const reviews = await ReviewModel.find().sort({ createdAt: -1 });
+    const reviews = await ReviewModel.find().sort({ createdAt: -1 }).populate("userId", "fullName profileImage");
 
     return res.status(200).json({
       success: true,
@@ -80,7 +49,7 @@ export const getReviewById = async (req: Request, res: Response) => {
 // ✅ UPDATE REVIEW
 export const updateReview = async (req: Request, res: Response) => {
   try {
-    const {id, ...obj} = req.body;
+    const { id, ...obj } = req.body;
     const io = getIO();
 
     const updatedReview = await ReviewModel.findByIdAndUpdate(
@@ -96,7 +65,7 @@ export const updateReview = async (req: Request, res: Response) => {
       });
     };
 
-      io.emit("addReview", updatedReview);
+    io.emit("addReview", updatedReview);
 
     return res.status(200).json({
       success: true,
@@ -138,3 +107,26 @@ export const deleteReview = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+
+export const reviewStatusUpdate = async (req: Request, res: Response) => {
+  try {
+    const io = getIO();
+    const { reviewId, status, adminReply } = req.body;
+    if (!reviewId || !status || !adminReply) {
+      return res.status(400).json({ message: "reviewId, status, message are required." });
+    }
+    const updateReview = await ReviewModel.findByIdAndUpdate(reviewId, { status, adminReply }, { new: true });
+    if (!updateReview) {
+      return res.status(404).json({ success: false, message: "Review not found" });
+    }
+
+    io.emit("updateReview", updateReview);
+    return res.status(200).json({ success: true, message: "Review status updated successfully", data: updateReview });
+
+  }
+  catch (err: any) {
+    res.status(500).json({ message: err.message || "Something went wrong" });
+  }
+}

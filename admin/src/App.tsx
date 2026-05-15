@@ -79,7 +79,8 @@ const App = () => {
             <Route path="payments" element={<PaymentsPage />} />
             <Route path="attendance" element={<AttendancePage />} />
             <Route path="polls" element={<PollsPage />} />
-            <Route path="posts" element={<PostPage />} />
+            <Route path="admin-posts" element={<PostPage type="admin" />} />
+            <Route path="user-posts" element={<PostPage type="user" />} />
             <Route path="groups" element={<GroupsPage />} />
             <Route path="businessDirectory" element={<BusinessDirectoryPage />} />
             <Route path="gallery" element={<GalleryPage />} />

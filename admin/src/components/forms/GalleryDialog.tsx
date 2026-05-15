@@ -10,28 +10,31 @@ import { addGallery, updateGallery } from "@/service/gallery";
 import { getEvent } from "@/service/event";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
 import { setEventList } from "@/redux-toolkit/slice/eventSlice";
-import {setNewGallery} from "@/redux-toolkit/slice/gallerySlice";
+import { setNewGallery } from "@/redux-toolkit/slice/gallerySlice";
+import ConfirmCard from "@/components/cards/ConfirmCard";
 
 const GalleryDialog = ({ isOpen, onOpenChange, initialData, setGalleryListRefresh }) => {
     const user = JSON.parse(localStorage.getItem("user"));
     const { toast } = useToast();
     const [formData, setFormData] = useState({ event: "all", image: null });
     const [imagePreview, setImagePreview] = useState(null);
+    const [openDialogOpen, setOpenDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const isEdit = Boolean(initialData);
     const imageRef = useRef(null);
     const [eventListRefresh, setEventListRefresh] = useState<boolean>(false);
     const dispatch = useAppDispatch();
     const eventList = useAppSelector((state) => state?.event?.eventList);
-
+    console.log(initialData)
     useEffect(() => {
+
         if (initialData && isOpen) {
             setFormData({ event: initialData?.event?._id || initialData?.event, image: initialData?.image });
             setImagePreview(initialData?.image);
         }
     }, [isOpen, initialData]);
 
-     
+
     const resetForm = () => { setImagePreview(null); setFormData({ event: "all", image: null }) };
 
     const handleChange = (e) => {
@@ -57,6 +60,7 @@ const GalleryDialog = ({ isOpen, onOpenChange, initialData, setGalleryListRefres
                 toast({ title: isEdit ? "Update Gallery." : "Create Gallery.", description: res?.data?.message });
                 dispatch(setNewGallery(res?.data?.gallery));
                 onOpenChange(false);
+                setOpenDialogOpen(false);
                 resetForm();
             }
 
@@ -66,10 +70,7 @@ const GalleryDialog = ({ isOpen, onOpenChange, initialData, setGalleryListRefres
         finally {
             setIsLoading(false);
         }
-
-    }
-
-
+    };
 
     const handleGetEvent = async () => {
         try {
@@ -95,13 +96,22 @@ const GalleryDialog = ({ isOpen, onOpenChange, initialData, setGalleryListRefres
 
     return (
         <>
+            <ConfirmCard
+                isOpen={openDialogOpen}
+                onOpenChange={setOpenDialogOpen}
+                onConfirm={handleSubmit}
+                title="Gallery Dialog"
+                description={` Are You Sure you want to "update" this gallery?`}
+                isLoading={isLoading}
+                buttonName={`Update Gallery`}
+            />
             <Dialog open={isOpen} onOpenChange={(open) => { resetForm(); onOpenChange(open) }} >
                 <DialogContent>
                     <DialogHeader className="text-left" >
                         <DialogTitle>Event Gallery</DialogTitle>
                         <DialogDescription>Event Gallery</DialogDescription>
                     </DialogHeader>
-                    <form className="text-left" onSubmit={handleSubmit} >
+                    <form className="text-left" onSubmit={(e) => { e?.preventDefault(); if (isEdit) { setOpenDialogOpen(true) } else { handleSubmit(e) } }} >
                         <div className="my-1">
                             <Label>Select Event</Label>
                             <Select value={formData?.event} onValueChange={(value) => { setFormData({ ...formData, event: value }) }} >

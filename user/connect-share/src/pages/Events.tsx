@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Calendar, MapPin, Users, Lock } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { ChatPanel } from '@/components/chat/ChatPanel';
@@ -9,15 +9,21 @@ import { setInterestedOrNotInterestedCandidate, setEventList, setNewEvent } from
 import { useToast } from '@/hooks/use-toast';
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
 import socket from "@/socket/socket";
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Events = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
   const [events, setEvents] = useState(mockEvents);
   const [eventListRefresh, setEventListRefresh] = useState(false);
   const dispatch = useAppDispatch();
   const eventList = useAppSelector((state) => state?.event?.eventList);
+  const location = useLocation();
+  const eventRef = useRef({});
+  const queryParams = new URLSearchParams(location.search);
+  const selectedEventId = queryParams.get("eventId");
 
   const totalUnread = mockChats.reduce((acc, c) => acc + c.unread, 0);
 
@@ -29,6 +35,15 @@ const Events = () => {
       socket.off("event")
     }
   }, [])
+
+  useEffect(() => {
+    if (selectedEventId && eventRef.current[selectedEventId]) {
+      eventRef.current[selectedEventId].scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [selectedEventId, eventList]);
 
   const handleGetEvent = async () => {
     try {
@@ -78,7 +93,7 @@ const Events = () => {
                 const status = getEventStatus(event.date);
 
                 return (
-                  <div key={event._id} className="bg-card rounded-xl shadow-card overflow-hidden relative">
+                  <div key={event._id} ref={(el) => (eventRef.current[event?._id] = el)} className="bg-card rounded-xl shadow-card overflow-hidden relative cursor-pointer" onClick={() => navigate(`/event/detail/${event?._id}`)}>
 
                     {/* STATUS BADGE */}
                     <div className="absolute top-3 right-3">

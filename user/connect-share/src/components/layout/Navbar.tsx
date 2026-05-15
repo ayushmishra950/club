@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Home, Users, Calendar, Briefcase, MessageCircle, Megaphone, UserPlus, Menu, X, Lightbulb } from 'lucide-react';
-import { useConnections } from '@/hooks/useConnections';
 import socket from '@/socket/socket';
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
 import { setSearchQuery } from '@/redux-toolkit/slice/searchSlice';
-import { clearUnreadCount } from '@/redux-toolkit/slice/suggestionSlice';
-import { SuggestionModal } from '@/components/suggestions/SuggestionModal';
+import { incrementUnreadCount } from '@/redux-toolkit/slice/suggestionSlice';
 import EventTicker from './EventTicker';
 import appLogo from "@/assets/logo.jpg";
 
@@ -24,7 +22,8 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
   const location = useLocation();
   const [chatUnRead, setChatUnRead] = useState(0);
   const [friendUnRead, setFriendUnRead] = useState(0);
-  
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
   // ✅ READ SUGGESTION UNREAD COUNT FROM REDUX
   const suggestionUnreadCount = useAppSelector((state) => state?.suggestion?.unreadCount);
 
@@ -52,10 +51,6 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
   ];
 
   const isActive = (path: string) => location.pathname === path;
-
-
-
-
 
   useEffect(() => {
     if (user?._id) {
@@ -90,6 +85,18 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
     socket.on("newGroup", () => incrementBadge('/groups'));
     socket.on("addAnRemoveUserFromGroup", () => incrementBadge('/groups'));
 
+    socket.on("updateSuggestionStatus", () => {
+      if (location.pathname !== "/suggestions") {
+        dispatch(incrementUnreadCount());
+      }
+    });
+
+    socket.on("suggestionReply", (data) => {
+      if (location.pathname !== "/suggestions") {
+        dispatch(incrementUnreadCount());
+      }
+    });
+
     return () => {
       socket.off("totalUnReadChat");
       socket.off("unSeenFriendRequest");
@@ -99,6 +106,8 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
       socket.off("event");
       socket.off("newGroup");
       socket.off("addAnRemoveUserFromGroup");
+      socket.off("updateSuggestionStatus");
+      socket.off("suggestionReply");
     };
   }, [user?._id, location.pathname]);
 
@@ -106,27 +115,23 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
     socket.emit("friendRequestSeen", user?._id);
   }
 
-
-
-
-
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4">
         <div className="flex h-14 items-center justify-between gap-2">
           {/* Logo */}
-         <Link to="/" className="flex items-center gap-2 shrink-0">
-  <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center overflow-hidden">
-    <img
-      src={appLogo}
-      alt="Club Connect Logo"
-      className="h-full w-full object-cover"
-    />
-  </div>
-  <span className="font-heading font-bold text-lg text-foreground hidden sm:block">
-    J.S.G. GLORY
-  </span>
-</Link>
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center overflow-hidden">
+              <img
+                src={appLogo}
+                alt="Club Connect Logo"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <span className="font-heading font-bold text-lg text-foreground hidden sm:block">
+              J.S.G. GLORY
+            </span>
+          </Link>
 
           {/* Search */}
           <div className="hidden md:ms-2 md:flex flex-1 max-w-md">
@@ -178,60 +183,114 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
             <Link
               to="/friends"
               onClick={handleSeenRequests}
-              className={`relative p-2 rounded-full hover:bg-muted transition-colors ${isActive('/friends') ? 'text-primary' : 'text-muted-foreground'
+              className={`relative inline-flex group p-2 rounded-full hover:bg-muted transition-colors ${isActive('/friends') ? 'text-primary' : 'text-muted-foreground'
                 }`}
             >
               <UserPlus className="h-5 w-5" />
+
               {friendUnRead > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
                   {friendUnRead}
                 </span>
               )}
+
+              {/* Tooltip */}
+              <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-[9999] hidden group-hover:block">
+                <div className="bg-black text-white text-xs px-2 py-1 rounded-md whitespace-nowrap shadow-lg">
+                  Friends
+                </div>
+              </div>
             </Link>
 
             {/* Chat */}
-            <button
-              onClick={onChatToggle}
-              className="relative p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
-            >
-              <MessageCircle className="h-5 w-5" />
-              {chatUnRead > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
-                  {chatUnRead}
-                </span>
-              )}
-            </button>
+            <div className="relative inline-flex group overflow-visible">
+              <button
+                onClick={onChatToggle}
+                className="relative p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+              >
+                <MessageCircle className="h-5 w-5" />
 
-            <div className="relative">
+                {chatUnRead > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
+                    {chatUnRead}
+                  </span>
+                )}
+              </button>
+
+              {/* Tooltip */}
+              <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-[9999] hidden group-hover:block">
+                <div className="bg-black text-white text-xs px-2 py-1 rounded-md whitespace-nowrap shadow-lg">
+                  Chat
+                </div>
+              </div>
+            </div>
+
+            <div className="relative inline-flex group overflow-visible">
               <button
                 onClick={() => {
-                  setSuggestionModalOpen(true);
-                  dispatch(clearUnreadCount());
+                  navigate("/suggestions");
                 }}
                 className="relative p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
               >
                 <Lightbulb className="h-5 w-5" />
+
                 {suggestionUnreadCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
                     {suggestionUnreadCount}
                   </span>
                 )}
               </button>
-              <SuggestionModal
-                isOpen={suggestionModalOpen}
-                onClose={() => setSuggestionModalOpen(false)}
-                userId={user?._id}
-              />
+
+              {/* Tooltip */}
+              <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-[9999] hidden group-hover:block">
+                <div className="bg-black text-white text-xs px-2 py-1 rounded-md whitespace-nowrap shadow-lg">
+                  Suggestions
+                </div>
+              </div>
             </div>
 
             {/* Profile */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setProfileDropdownOpen((prev) => !prev)}
+                className="outline-none"
+              >
+                <img
+                  src={user?.profileImage}
+                  alt="Profile"
+                  className="h-8 w-8 rounded-full object-cover ring-2 ring-transparent hover:ring-primary/30 transition-all"
+                />
+              </button>
+              {profileDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setProfileDropdownOpen(false)}
+                  />
+                  <div className="absolute right-0 top-11 z-50 w-28 overflow-hidden rounded-lg border bg-card shadow-xl animate-in fade-in zoom-in-95">
+                    <button
+                      onClick={() => {
+                        navigate(`/profile/${user?._id}`);
+                        setProfileDropdownOpen(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs hover:bg-muted transition-colors"
+                    >
+                      Profile
+                    </button>
 
-            <div className='shrink-0 cursor-pointer' onClick={() => { navigate(`/profile/${user?._id}`) }} >
-              <img
-                src={user?.profileImage}
-                alt="Profile"
-                className="h-8 w-8 rounded-full object-cover ring-2 ring-transparent hover:ring-primary/30 transition-all"
-              />
+                    {/* REVIEW */}
+                    <button
+                      onClick={() => {
+                        navigate("/reviews");
+                        setProfileDropdownOpen(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs hover:bg-muted transition-colors border-t"
+                    >
+                      Review
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
 

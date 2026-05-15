@@ -11,7 +11,7 @@ import { setPostList, setDeletePostFromList } from "@/redux-toolkit/slice/postSl
 import socket from "@/socket/socket";
 
 
-export default function AnnouncementsPage() {
+export default function PostPage({ type }: { type?: "admin" | "user" }) {
     const { toast } = useToast();
     const [postDialogOpen, setPostDialogOpen] = useState(false);
     const [postListRefresh, setPostListRefresh] = useState(false);
@@ -21,6 +21,11 @@ export default function AnnouncementsPage() {
     const [deleteLoading, setDeleteLoading] = useState(false);
     const dispatch = useAppDispatch();
     const postList = useAppSelector((state) => state?.post?.postList);
+    const filteredPosts = postList?.filter((post: any) => {
+        if (type === "admin") return post?.create === "Admin";
+        if (type === "user") return post?.create === "User";
+        return true;
+    });
 
 
     const handleDeletePost = async () => {
@@ -69,7 +74,7 @@ export default function AnnouncementsPage() {
         });
 
         socket.on("postDeleted", (data) => {
-           dispatch(setDeletePostFromList(data))
+            dispatch(setDeletePostFromList(data))
         });
 
         return () => {
@@ -94,19 +99,21 @@ export default function AnnouncementsPage() {
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-center">
-                    <h3 className="font-display font-semibold text-lg">Post Management</h3>
-                    <Button
-                        className="gradient-gold text-secondary-foreground font-semibold"
-                        onClick={() => { setIntialData(null); setPostDialogOpen(true); }}
-                    >
-                        <Plus className="h-4 w-4 mr-1" /> Post
-                    </Button>
+                    <h3 className="font-display font-semibold text-lg">{type === "user" ? "User Posts" : "Admin Posts"}</h3>
+                    {type !== "user" && (
+                        <Button
+                            className="gradient-gold text-secondary-foreground font-semibold"
+                            onClick={() => { setIntialData(null); setPostDialogOpen(true); }}
+                        >
+                            <Plus className="h-4 w-4 mr-1" /> Post
+                        </Button>
+                    )}
                 </div>
 
                 {/* Grid Container */}
 
                 <div className="max-w-6xl mx-auto px-4">
-                    {postList?.length > 0 ? (
+                    {filteredPosts?.length > 0 ? (
                         <>
                             {/* ================= DESKTOP TABLE ================= */}
                             <div className="hidden md:block overflow-x-auto">
@@ -125,7 +132,7 @@ export default function AnnouncementsPage() {
                                     </thead>
 
                                     <tbody>
-                                        {postList.map((post) => {
+                                        {filteredPosts?.map((post) => {
                                             const url = post.images?.[0];
                                             const extension = url?.split(".").pop()?.toLowerCase();
 
@@ -210,7 +217,7 @@ export default function AnnouncementsPage() {
 
                             {/* ================= MOBILE VIEW ================= */}
                             <div className="md:hidden space-y-3">
-                                {postList.map((post) => {
+                                {filteredPosts?.map((post) => {
                                     const url = post.images?.[0];
                                     const extension = url?.split(".").pop()?.toLowerCase();
 

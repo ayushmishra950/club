@@ -9,10 +9,10 @@ const mongoUrl = process.env.MONGO_URI;
 if (!mongoUrl) {
   console.log("No Mongo URI found");
   process.exit(1);
-}
+} 
 
 async function run() {
-  await mongoose.connect(mongoUrl);
+  await mongoose.connect(mongoUrl as string);
   console.log("Connected to MongoDB");
 
   const latestSuggestions = await Suggestion.find()

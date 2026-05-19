@@ -1,10 +1,10 @@
-import Admin from "../../models/admin.model.js";
 import User from "../../models/user.model.js";
 import type { Request, Response } from "express";
 import xlsx from "xlsx";
 import { getIO } from "../../utils/socketHelper.js";
 import bcrypt from "bcryptjs";
 import { sendWelcomeSMS } from "../../utils/twilio.service.js";
+import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -387,11 +387,12 @@ export const addBusinessUser = async (req: Request, res: Response) => {
   try {
     const io = getIO();
     const { userId, businesses } = req.body;
+    const files = (req as any).files;
 
     if (!userId) {
       return res.status(400).json({ message: "user id not found" })
     }
-    if (businesses.length === 0) {
+    if (!businesses) {
       return res.status(400).json({ message: "businesses not found" })
     }
 
@@ -400,18 +401,77 @@ export const addBusinessUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "user not found" })
     }
 
-    const updatedBusinesses = businesses.map(
-      (biz: any) => ({
-        ...biz,
-        isVerified: "verified",
-      })
-    );
+    // Since businesses might be sent as a JSON string when using FormData
+    const parsedBusinesses = typeof businesses === 'string' ? JSON.parse(businesses) : businesses;
+
+    if (!Array.isArray(parsedBusinesses)) {
+      return res.status(400).json({ message: "businesses must be an array" })
+    }
+
+    const updatedBusinesses = await Promise.all(parsedBusinesses.map(
+      async (biz: any, index: number) => {
+        let imageUrl = biz.businessCoverImage || "";
+
+        // Check for file in req.files
+        const file = files?.find((f: any) => f.fieldname === `businessCoverImage_${index}`);
+        if (file && file.buffer) {
+          const uploaded = await uploadToCloudinary(file.buffer, file.mimetype, "businessCoverImage");
+          if (uploaded) imageUrl = uploaded;
+        }
+
+        return {
+          ...biz,
+          businessCoverImage: imageUrl,
+          isVerified: "verified",
+        };
+      }
+    ));
 
     user.businesses = updatedBusinesses;
+    user.accountType = "business";
     await user.save();
 
+    io.emit("businessUpdate");
 
     res.status(200).json({ success: true, message: "Business added successfully", user })
+
+  } catch (err: any) {
+    res.status(500).json({ message: err?.message || "Server Error" })
+  }
+};
+
+
+export const adminConvertPremiumUser = async (req: Request, res: Response) => {
+  try {
+    const io = getIO();
+    const { userId, amount, transactionNumber } = req.body;
+    const file = (req as any).files?.screenshot?.[0];
+
+    if (!userId || !amount || !file) return res.status(400).json({ message: "userId, amount or screenshot is required." })
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "user not found." });
+
+    const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({ message: "Invalid amount." });
+    };
+
+    const uploadResult = await uploadToCloudinary(file.buffer, file.mimetype, "payment_screenshots");
+    if (!uploadResult) return res.status(500).json({ message: "Failed to upload screenshot" });
+
+
+    user.paymentImage = uploadResult;
+    user.amount = numericAmount;
+    user.transitionNumber = transactionNumber ? transactionNumber : null;
+    user.premiumUser = "premium";
+    await user.save();
+
+    io.to(user?._id?.toString()).emit("userUpdate", user);
+
+    res.status(200).json({ success: true, message: "User converted to premium successfully", user });
+
 
   } catch (err: any) {
     res.status(500).json({ message: err?.message || "Server Error" })

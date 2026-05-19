@@ -21,6 +21,7 @@ interface IBusiness {
   businessAddress?: string;
   workingHours?: string;
   businessCoverImage?: string;
+  bannerPosition?: "center" | "left" | "right";
   isVerified: "pending" | "verified" | "rejected";
 }
 
@@ -98,6 +99,7 @@ const BusinessSchema = new Schema<IBusiness>(
     businessAddress: { type: String, trim: true },
     workingHours: { type: String, trim: true },
     businessCoverImage: { type: String, default: "" },
+    bannerPosition: { type: String, enum: ["center", "left", "right"], default: "center" },
     isVerified: {
       type: String,
       enum: ["pending", "verified", "rejected"],

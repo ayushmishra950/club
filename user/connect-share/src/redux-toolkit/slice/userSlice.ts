@@ -7,11 +7,11 @@ const initialState = {
     userData: null
 };
 
- 
+
 const userSlice = createSlice({
     name: "User",
     initialState,
-    reducers: { 
+    reducers: {
         setUserList: (state, action) => {
             state.userList = action.payload;
         },
@@ -24,12 +24,12 @@ const userSlice = createSlice({
         },
 
         setUpdateUser: (state, action) => {
-            if (state.userData?._id === action.payload?.user?._id) {
-                state.userData = action.payload?.user;
+            if (state.userData?._id === action.payload?.user?._id || state?.userData?._id === action.payload?._id) {
+                state.userData = action.payload?.user || action.payload;
             }
         }
     }
-}); 
+});
 
 export const { setUserList, setUserCount, setUserData, setUpdateUser } = userSlice.actions;
 

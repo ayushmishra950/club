@@ -203,3 +203,14 @@ export const personalFields = [
   { key: "country", label: "Country" },
   { key: "dob", label: "Date of Birth" },
 ];
+
+
+
+export const isVideo = (url: string) => {
+  return (
+    url.includes(".mp4") ||
+    url.includes(".webm") ||
+    url.includes(".mov") ||
+    url.includes("video")
+  );
+};

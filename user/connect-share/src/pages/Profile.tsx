@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import {  MapPin, Briefcase, Calendar, Gift, Edit2, ChevronRight, UserMinus, Users, UserPlus, LogOut, Crown } from 'lucide-react';
+import { MapPin, Briefcase, Calendar, Gift, Edit2, ChevronRight, UserMinus, Users, UserPlus, LogOut, Crown } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { PostCard } from '@/components/feed/PostCard';
-import { mockChats} from '@/data/mockData';
+import { mockChats } from '@/data/mockData';
 import { getSingleUser } from "@/service/auth";
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -54,11 +54,16 @@ const Profile = () => {
     });
     socket.on("friendRequestAccepted", () => {
       handleGetUser();
+    });
+
+    socket.on("userUpdate", (data) => {
+      dispatch(setUpdateUser(data));
     })
 
     return () => {
       socket.off("paymentRequestAccepted");
       socket.off("friendRequestAccepted");
+      socket.off("userUpdate");
     }
   }, [])
 
@@ -244,7 +249,7 @@ const Profile = () => {
               </div>}
             </div>
             <div className="flex-1 text-center sm:text-left">
-              <h1 className="font-heading text-2xl font-bold text-foreground">{userData?._id === user?._id ? "You" : userData?.fullName}</h1>
+              <h1 className="font-heading text-2xl font-bold text-foreground">{userData?._id === user?._id ? `${userData?.fullName} (You)` : userData?.fullName}</h1>
               <p className="text-muted-foreground text-sm flex items-center justify-center sm:justify-start gap-1.5 mt-1">
                 <Briefcase className="h-4 w-4" /> {userData?.occupation}
               </p>
@@ -297,7 +302,7 @@ const Profile = () => {
                   </button>
                 </div>
                 {/* Mobile Premium Card */}
-                {(premiumUser || (userData?.paymentImage && userData?.transitionNumber)) ? null : (
+                {(premiumUser || (userData?.paymentImage)) ? null : (
                   <div className="sm:hidden bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 shadow-sm w-full text-left">
                     <h3 className="text-base font-semibold text-yellow-700">
                       Upgrade to Premium
@@ -315,7 +320,7 @@ const Profile = () => {
           </div>
 
           {/* Desktop Premium Banner */}
-          {isTrue && !(premiumUser || (userData?.paymentImage && userData?.transitionNumber)) && (
+          {isTrue && !(premiumUser || (userData?.paymentImage)) && (
             <div className="hidden sm:flex items-center justify-between bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 shadow-sm mt-4">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 shrink-0 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 flex items-center justify-center text-white shadow-inner">

@@ -27,7 +27,8 @@ export default function AddBusinessDialog({ open, onOpenChange }: any) {
         const user = users.find((u: any) => u._id === selectedUser);
 
         if (user?.businesses?.length) {
-            setBusinesses(user.businesses);
+            // Clone the businesses to avoid direct mutation
+            setBusinesses(user.businesses.map((b: any) => ({ ...b })));
         } else {
             setBusinesses([
                 {
@@ -39,6 +40,7 @@ export default function AddBusinessDialog({ open, onOpenChange }: any) {
                     businessAddress: "",
                     workingHours: "",
                     businessCoverImage: "",
+                    bannerPosition: "center",
                     isVerified: "pending",
                 },
             ]);
@@ -57,6 +59,7 @@ export default function AddBusinessDialog({ open, onOpenChange }: any) {
                 businessAddress: "",
                 workingHours: "",
                 businessCoverImage: "",
+                bannerPosition: "center",
                 isVerified: "pending",
             },
         ]);
@@ -66,15 +69,16 @@ export default function AddBusinessDialog({ open, onOpenChange }: any) {
         setBusinesses((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const handleChange = (index: number, field: string, value: string) => {
-        const updated = [...businesses];
-        updated[index][field] = value;
-        setBusinesses(updated);
+    const handleChange = (index: number, field: string, value: any) => {
+        setBusinesses((prev) => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], [field]: value };
+            return updated;
+        });
     };
 
     const handleSubmit = async () => {
         try {
-
             const filtered = businesses.filter(
                 (b: any) => b.businessName?.trim() !== ""
             );
@@ -82,13 +86,28 @@ export default function AddBusinessDialog({ open, onOpenChange }: any) {
                 toast({ title: "Select User", description: "Please select a user", variant: "destructive" })
                 return;
             };
-            if (businesses.length === 0) {
+            if (filtered.length === 0) {
                 toast({ title: "Add Business", description: "Add Businesses", variant: "destructive" })
                 return;
             }
             setLoading(true);
-            let obj = { userId: selectedUser, businesses: businesses };
-            const res = await addBusinessUser(obj);
+
+            const formData = new FormData();
+            formData.append("userId", selectedUser);
+
+            // Send businesses as a JSON string
+            // We'll strip the file objects from this JSON and handle them separately
+            const businessesData = filtered.map((b: any, index: number) => {
+                const { businessCoverImage, ...rest } = b;
+                if (businessCoverImage instanceof File) {
+                    formData.append(`businessCoverImage_${index}`, businessCoverImage);
+                }
+                return rest;
+            });
+
+            formData.append("businesses", JSON.stringify(businessesData));
+
+            const res = await addBusinessUser(formData);
             if (res.status === 200) {
                 toast({ title: "Business Added", description: "Business added successfully", variant: "default" })
                 onOpenChange(false);
@@ -226,22 +245,69 @@ export default function AddBusinessDialog({ open, onOpenChange }: any) {
                                     </div>
 
                                     <div>
-                                        <Label>
-                                            Working Hours
-                                        </Label>
-
+                                        <Label> Working Hours </Label>
                                         <Input
-                                            value={
-                                                biz.workingHours
-                                            }
-                                            onChange={(e) =>
-                                                handleChange(
-                                                    index,
-                                                    "workingHours",
-                                                    e.target.value
-                                                )
-                                            }
+                                            value={biz.workingHours}
+                                            onChange={(e) => handleChange(index, "workingHours", e.target.value)}
                                         />
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <Label> Banner Position </Label>
+                                                <select
+                                                    value={biz.bannerPosition}
+                                                    onChange={(e) => handleChange(index, "bannerPosition", e.target.value)}
+                                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    <option value="center">Center (Top)</option>
+                                                    <option value="left">Left Vertical</option>
+                                                    <option value="right">Right Vertical</option>
+                                                </select>
+                                                <p className="text-[10px] text-muted-foreground mt-1 font-medium">
+                                                    {biz.bannerPosition === 'center' 
+                                                        ? "Recommended: 1200 x 400px (Wide)" 
+                                                        : "Recommended: 400 x 800px (Vertical)"}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <Label> Business Cover Image </Label>
+                                                <Input
+                                                    type="file"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            handleChange(index, "businessCoverImage", file);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* IMAGE PREVIEW - SMALL SIZE */}
+                                        {biz.businessCoverImage && (
+                                            <div className="relative rounded-lg overflow-hidden border bg-muted w-32 h-20 flex items-center justify-center group/preview">
+                                                <img 
+                                                    src={biz.businessCoverImage instanceof File 
+                                                        ? URL.createObjectURL(biz.businessCoverImage) 
+                                                        : biz.businessCoverImage} 
+                                                    alt="Preview" 
+                                                    className="w-full h-full object-cover" 
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/preview:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <Button 
+                                                        variant="destructive" 
+                                                        size="icon" 
+                                                        className="h-7 w-7"
+                                                        onClick={() => handleChange(index, "businessCoverImage", "")}
+                                                    >
+                                                        <Trash className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )

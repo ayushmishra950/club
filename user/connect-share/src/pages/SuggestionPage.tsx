@@ -1,30 +1,11 @@
 
-import { useEffect, useState } from "react";
-import {
-  Users,
-  Loader2,
-  ArrowLeft,
-  X,
-  Lightbulb,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Users, Loader2, ArrowLeft, X, Lightbulb } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import {
-  getAllSuggestion,
-  addSuggestion,
-  replyToSuggestion,
-} from "@/service/suggestion";
-import {
-  useAppDispatch,
-  useAppSelector,
-} from "@/redux-toolkit/customHook/hook";
-import {
-  setSuggestionList,
-  setNewSuggestion,
-  setUpdateSuggestion,
-  clearUnreadCount,
-  incrementUnreadCount,
-} from "@/redux-toolkit/slice/suggestionSlice";
+import { getAllSuggestion, addSuggestion, replyToSuggestion, markSuggestionAsRead } from "@/service/suggestion";
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
+import { setSuggestionList, setNewSuggestion, setUpdateSuggestion, clearUnreadCount, incrementUnreadCount } from "@/redux-toolkit/slice/suggestionSlice";
 import { useNavigate } from "react-router-dom";
 import socket from "@/socket/socket";
 
@@ -32,6 +13,8 @@ export default function SuggestionPage() {
   const { toast } = useToast();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const [loading, setLoading] = useState(false);
@@ -40,31 +23,61 @@ export default function SuggestionPage() {
 
   const [selectedSuggestion, setSelectedSuggestion] = useState<any>(null);
 
-  const suggestionList = useAppSelector(
-    (state) =>
-      state?.suggestion?.suggestionList
-  );
+  const suggestionList = useAppSelector((state) => state?.suggestion?.suggestionList);
+
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  };
+
+  useEffect(() => {
+    if (selectedSuggestion) {
+      scrollToBottom();
+    }
+  }, [selectedSuggestion, selectedSuggestion?.adminReplies?.length]);
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      const res = await markSuggestionAsRead(id);
+      if (res.status === 200) {
+        dispatch(setUpdateSuggestion(res.data.data));
+        setSelectedSuggestion((prev: any) => prev?._id === id ? res.data.data : prev);
+      }
+    } catch (err) {
+      console.error("Failed to mark suggestion as read", err);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedSuggestion?._id && selectedSuggestion?.userUnreadCount > 0) {
+      handleMarkAsRead(selectedSuggestion._id);
+    }
+  }, [selectedSuggestion?._id, selectedSuggestion?.userUnreadCount]);
 
   useEffect(() => {
     socket.on("updateSuggestionStatus", (data) => {
       dispatch(setUpdateSuggestion(data));
-      if (selectedSuggestion?._id === data._id) {
-        setSelectedSuggestion(data);
-      }
+      setSelectedSuggestion((prev: any) => prev?._id === data._id ? data : prev);
     });
 
     socket.on("suggestionReply", (data) => {
       dispatch(setUpdateSuggestion(data));
-      if (selectedSuggestion?._id === data._id) {
-        setSelectedSuggestion(data);
-      }
+      setSelectedSuggestion((prev: any) => prev?._id === data._id ? data : prev);
+    });
+
+    socket.on("suggestionRead", (data) => {
+      dispatch(setUpdateSuggestion(data));
+      setSelectedSuggestion((prev: any) => prev?._id === data._id ? data : prev);
     });
 
     return () => {
       socket.off("updateSuggestionStatus");
       socket.off("suggestionReply");
+      socket.off("suggestionRead");
     };
-  }, [selectedSuggestion]);
+  }, [dispatch]);
 
   // ================= FETCH =================
   const fetchSuggestions = async () => {
@@ -154,6 +167,8 @@ export default function SuggestionPage() {
           description: "Reply sent successfully",
         });
         setMessage("");
+        dispatch(setUpdateSuggestion(res.data.data));
+        setSelectedSuggestion(res.data.data);
       }
     } catch (err: any) {
       toast({
@@ -181,6 +196,28 @@ export default function SuggestionPage() {
         </h1>
       </div>
 
+      {/* INPUT AREA (MOVED TO TOP) */}
+      <div className="border-t px-4 py-3 flex gap-2">
+        <input
+          value={message}
+          onChange={(e) =>
+            setMessage(e.target.value)
+          }
+          placeholder="Write suggestion..."
+          className="flex-1 h-10 px-3 border rounded-md text-sm"
+        />
+
+        <button
+          onClick={handleSendMessage}
+          disabled={
+            sending || !message.trim()
+          }
+          className="px-4 h-10 bg-primary text-white rounded-md text-sm"
+        >
+          {sending ? "Sending..." : "Send"}
+        </button>
+      </div>
+
       {/* ================= LIST ================= */}
       <ScrollArea className="flex-1 px-6 py-4">
         <div className="space-y-4">
@@ -206,12 +243,20 @@ export default function SuggestionPage() {
                     {item?.suggestion}
                   </p>
 
-                  <span className={`text-xs px-3 py-1 rounded-full font-medium capitalize ${item?.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                    item?.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                    {item?.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {item?.userUnreadCount > 0 && (
+                      <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-primary text-primary-foreground animate-pulse shadow-sm">
+                        {item.userUnreadCount} New
+                      </span>
+                    )}
+
+                    <span className={`text-xs px-3 py-1 rounded-full font-medium capitalize ${item?.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                      item?.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                      {item?.status}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))
@@ -223,29 +268,6 @@ export default function SuggestionPage() {
 
         </div>
       </ScrollArea>
-
-      {/* ================= INPUT ================= */}
-      <div className="border-t px-4 py-3 flex gap-2">
-        <input
-          value={message}
-          onChange={(e) =>
-            setMessage(e.target.value)
-          }
-          placeholder="Write suggestion..."
-          className="flex-1 h-10 px-3 border rounded-md text-sm"
-        />
-
-        <button
-          onClick={handleSendMessage}
-          disabled={
-            sending || !message.trim()
-          }
-          className="px-4 h-10 bg-primary text-white rounded-md text-sm"
-        >
-          {sending ? "Sending..." : "Send"}
-        </button>
-      </div>
-
       {/* ================= CENTER MODAL ================= */}
       {selectedSuggestion && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
@@ -276,7 +298,8 @@ export default function SuggestionPage() {
             </div>
 
             {/* Chat Area */}
-            <ScrollArea className="flex-1 p-4">
+            {/* <ScrollArea className="flex-1 p-4"> */}
+            <div className="flex-1 overflow-y-auto p-4">
               <div className="space-y-6">
                 {/* User's Original Suggestion */}
                 <div className="flex flex-col gap-1.5 items-end max-w-[85%] ml-auto">
@@ -329,8 +352,10 @@ export default function SuggestionPage() {
                     </div>
                   )}
                 </div>
+                <div ref={messagesEndRef} />
               </div>
-            </ScrollArea>
+              {/* </ScrollArea> */}
+            </div>
 
             {/* Input Area */}
             <div className="p-4 border-t bg-muted/10">

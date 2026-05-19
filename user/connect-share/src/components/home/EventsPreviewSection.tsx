@@ -37,7 +37,6 @@ export function EventsPreviewSection() {
       handleGetEvent();
     }
   }, [eventList?.length]);
-  console.log(filteredEvents);
 
   return (
     <section className="py-20 bg-muted/30">
@@ -46,8 +45,8 @@ export function EventsPreviewSection() {
           <h2 className="text-3xl font-display font-bold mb-2">Yearly Event Timeline</h2>
           <p className="text-muted-foreground">Luxury experiences across 2026-2027</p>
         </div>
-        <div className="grid md:grid-cols-3 gap-6 cursor-pointer"> 
-          {filteredEvents?.slice(0, 6).map((event, i) => ( 
+        <div className="grid md:grid-cols-3 gap-6 cursor-pointer">
+          {filteredEvents?.slice(0, 6).map((event, i) => (
             <motion.div
               key={event?._id}
               custom={i}
@@ -56,13 +55,13 @@ export function EventsPreviewSection() {
               viewport={{ once: true }}
               variants={fadeUp}
             >
-              <Card className="shadow-card hover:shadow-elevated transition-shadow h-full overflow-hidden" onClick={() => {navigate(`/public/events/${event?._id}`)}}>
+              <Card className="shadow-card hover:shadow-elevated transition-shadow h-full overflow-hidden" onClick={() => { navigate(`/public/events/${event?._id}`) }}>
 
                 {/* Image Section */}
                 {event?.coverImage && (
                   <div className="w-full h-40 overflow-hidden">
                     <img
-                      src={event.coverImage}
+                      src={event.coverImage?.[0] || event?.coverImage}
                       alt={event.title}
                       className="w-full h-full object-cover"
                     />
@@ -82,16 +81,16 @@ export function EventsPreviewSection() {
                     {event.description}
                   </p>
 
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-  <span className="flex items-center gap-1">
-    <Calendar className="h-3 w-3" />
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
 
-    {new Date(event.date).toLocaleDateString("en-IN", {
-      month: "long",
-      year: "numeric",
-    })}
-  </span>
-</div>
+                      {new Date(event.date).toLocaleDateString("en-IN", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>

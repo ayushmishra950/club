@@ -14,7 +14,7 @@ import { CTASection } from "@/components/home/CTASection";
 export default function Home() {
   return (
     <div>
-      <HeroSection />
+      {/* <HeroSection />
       <StatsSection />
       <AboutSection />
       <WhyJoinSection />
@@ -23,6 +23,20 @@ export default function Home() {
       <TestimonialsSection />
       <LeadershipSection />
       <GallerySection />
+      <AnnouncementsSection />
+      <NewsSection />
+      <CTASection /> */}
+
+
+      <HeroSection />
+      <StatsSection />
+      <LeadershipSection />
+      <EventsPreviewSection />
+      <GallerySection />
+      <AboutSection />
+      <WhyJoinSection />
+      <ImpactSection />
+      <TestimonialsSection />
       <AnnouncementsSection />
       <NewsSection />
       <CTASection />

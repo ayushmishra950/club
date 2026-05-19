@@ -30,3 +30,16 @@ export const getCurrentMonthCount = (list, dateKey = "createdAt") => {
     );
   }).length;
 };
+
+
+
+
+
+export const isVideo = (url: string) => {
+  return (
+    url.includes(".mp4") ||
+    url.includes(".webm") ||
+    url.includes(".mov") ||
+    url.includes("video")
+  );
+};

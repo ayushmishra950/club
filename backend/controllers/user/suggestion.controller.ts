@@ -16,7 +16,13 @@ export const addSuggestion = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Suggestion is required" });
     }
 
-    const newSuggestion = await Suggestion.create({ suggestion, createdBy: userId, status: "pending" });
+    const newSuggestion = await Suggestion.create({
+      suggestion,
+      createdBy: userId,
+      status: "pending",
+      adminUnreadCount: 1,
+      userUnreadCount: 0,
+    });
     await newSuggestion.populate("createdBy", "fullName email profileImage");
 
     io.emit("addSuggestion", newSuggestion);
@@ -122,13 +128,29 @@ export const replyToSuggestion = async (req: Request, res: Response) => {
 
     const io = getIO();
 
+    const suggestionExist = await Suggestion.findById(id);
+    if (!suggestionExist) {
+      return res.status(404).json({ message: "Suggestion not found." });
+    }
+
+    const isUser = suggestionExist.createdBy.toString() === userId.toString();
+    const updateQuery: any = {
+      $push: {
+        adminReplies: { userId, message: adminReply, createdAt: new Date() },
+      },
+    };
+
+    if (isUser) {
+      updateQuery.$inc = { adminUnreadCount: 1 };
+      updateQuery.$set = { userUnreadCount: 0 };
+    } else {
+      updateQuery.$inc = { userUnreadCount: 1 };
+      updateQuery.$set = { adminUnreadCount: 0 };
+    }
+
     const suggestion = await Suggestion.findByIdAndUpdate(
       id,
-      {
-        $push: {
-          adminReplies: { userId, message: adminReply, createdAt: new Date() },
-        },
-      },
+      updateQuery,
       { new: true }
     ).populate("createdBy", "fullName email profileImage");
 
@@ -140,6 +162,35 @@ export const replyToSuggestion = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       message: "Reply sent successfully.",
+      data: suggestion,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+      error,
+    });
+  }
+};
+
+// ✅ MARK AS READ BY USER
+export const markAsReadByUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const suggestion = await Suggestion.findByIdAndUpdate(
+      id,
+      { $set: { userUnreadCount: 0 } },
+      { new: true }
+    ).populate("createdBy", "fullName email profileImage");
+
+    if (!suggestion) {
+      return res.status(404).json({ message: "Suggestion not found." });
+    }
+
+    const io = getIO();
+    io.emit("suggestionRead", suggestion);
+
+    return res.status(200).json({
+      message: "Suggestion marked as read by user",
       data: suggestion,
     });
   } catch (error) {

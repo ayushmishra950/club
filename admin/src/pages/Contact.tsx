@@ -18,10 +18,10 @@ export default function Contact() {
 
   return (
     <div>
-      <section className="py-20 gradient-hero">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-display font-bold text-primary-foreground mb-4">Contact Us</h1>
-          <p className="text-primary-foreground/70">We'd love to hear from you</p>
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4 text-center text-black">
+          <h1 className="text-4xl font-display font-bold text-primary mb-4">Contact Us</h1>
+          <p className="text-primary">We'd love to hear from you</p>
         </div>
       </section>
 

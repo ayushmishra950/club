@@ -19,6 +19,7 @@ import socket from "@/socket/socket";
 import PaymentDetailCard from "@/components/cards/PaymentDetailCard";
 import ConfirmCard from "@/components/cards/ConfirmCard";
 import AllMemberVerifyConfirmCard from "@/components/cards/AllMemberVerifyConfirmCard";
+import AddPremiumUser from "@/components/forms/AddPremiumUser";
 
 export default function MembersPage() {
   const { toast } = useToast();
@@ -48,6 +49,8 @@ export default function MembersPage() {
   const [openConfirmLoading, setOpenConfirmLoading] = useState(false);
   const [openAllMemberConfirmDialogOpen, setOpenAllMemberConfirmDialogOpen] = useState(false);
   const [openAllMemberConfirmLoading, setOpenAllMemberConfirmLoading] = useState(false);
+  const [addPremiumDialogOpen, setAddPremiumDialogOpen] = useState(false);
+  const [addPremiumInitialData, setAddPremiumInitialData] = useState(null);
   const dispatch = useAppDispatch();
 
   const memberList = useAppSelector((state) => state?.user?.userList);
@@ -171,6 +174,7 @@ export default function MembersPage() {
 
   return (
     <>
+      <AddPremiumUser open={addPremiumDialogOpen} onOpenChange={setAddPremiumDialogOpen} initialData={addPremiumInitialData} />
       <AllMemberVerifyConfirmCard
         isOpen={openAllMemberConfirmDialogOpen}
         onOpenChange={setOpenAllMemberConfirmDialogOpen}
@@ -416,7 +420,7 @@ export default function MembersPage() {
                             </Button>
                           )}
 
-                          {(m?.isVerified && m?.paymentImage && m?.transitionNumber) && (
+                          {(m?.isVerified && m?.paymentImage) && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -453,6 +457,9 @@ export default function MembersPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => { setInitialData(m); setRoleDialog(true); }} className="cursor-pointer">
                                 Role Assign
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { setAddPremiumInitialData(m); setAddPremiumDialogOpen(true); }} className="cursor-pointer">
+                                Add Premium
                               </DropdownMenuItem>
 
                               {m?.blocked === false && (

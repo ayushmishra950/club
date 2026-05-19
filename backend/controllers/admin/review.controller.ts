@@ -20,6 +20,20 @@ export const getReviews = async (_req: Request, res: Response) => {
   }
 };
 
+
+
+
+export const getGlobalReviews = async (req: Request, res: Response) => {
+  try {
+    const reviews = await Review.find({ status: "approved" }).populate("userId", "fullName profileImage");
+    return res.status(200).json({ reviews });
+  } catch (err: any) {
+    return res.status(500).json({
+      message: err?.message || "Internal server error",
+    });
+  }
+};
+
 // ✅ GET SINGLE REVIEW
 export const getReviewById = async (req: Request, res: Response) => {
   try {

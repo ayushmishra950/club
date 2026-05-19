@@ -148,7 +148,7 @@ export default function GalleryPage() {
 
                                         <td className="p-3">
                                             <img
-                                                src={gallery?.image}
+                                                src={gallery?.image?.[0] || gallery?.image}
                                                 className="w-12 h-12 rounded-md object-cover"
                                             />
                                         </td>

@@ -14,6 +14,8 @@ export interface ISuggestion extends Document {
   status: 'pending' | 'accepted' | 'rejected';
   adminReply?: string;
   adminReplies?: ISuggestionReply[];
+  userUnreadCount: number;
+  adminUnreadCount: number;
 }
 
 const suggestionSchema: Schema<ISuggestion> = new Schema(
@@ -59,6 +61,16 @@ const suggestionSchema: Schema<ISuggestion> = new Schema(
         },
       ],
       default: [],
+    },
+
+    userUnreadCount: {
+      type: Number,
+      default: 0,
+    },
+
+    adminUnreadCount: {
+      type: Number,
+      default: 0,
     },
 
   },

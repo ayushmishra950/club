@@ -116,7 +116,7 @@ const Events = () => {
                       )}
                     </div>
 
-                    <img src={event?.coverImage} alt="" className="w-full h-48 object-cover" />
+                    <img src={event?.coverImage?.[0]} alt="" className="w-full h-48 object-cover" />
 
                     <div className="p-5">
                       <div className="flex items-start justify-between gap-3">

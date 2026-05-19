@@ -8,38 +8,53 @@ import { NotificationType } from "../../models/notification.model.js";
 import { getIO } from "../../utils/socketHelper.js";
 
 
-
 export const addEvent = async (req: Request, res: Response) => {
     try {
         const { title, description, date, location, userId, category, type, isPinned } = req.body;
         const io = getIO();
-
         const files = (req as any).files;
-        const file = files?.coverImage?.[0];
+        const coverImages = files?.coverImage || [];
 
-        if (!title || !description || !date || !location || !userId || !category || !type) return res.status(400).json({ message: "title, description, date, location, type and userId field are required." });
-        if (!file) return res.status(400).json({ message: "coverImage is required." });
-
-        let imageUrl = null;
-        if (file && file.buffer) {
-            imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "coverImage")
+        if (!title || !description || !date || !location || !userId || !category || !type) {
+            return res.status(400).json({ message: "title, description, date, location, type and userId field are required." });
         }
-        if (imageUrl === null || !imageUrl) return res.status(404).json({ message: "coverImage uploaded failed." })
+
+        if (!coverImages || coverImages.length === 0) {
+            return res.status(400).json({ message: "coverImage is required." });
+        }
+
+        let imageUrls: string[] = [];
+
+        for (const file of coverImages) {
+            if (file?.buffer) {
+                const uploaded = await uploadToCloudinary(file.buffer, file.mimetype, "event-cover");
+                if (uploaded) imageUrls.push(uploaded);
+            }
+        }
+
+        if (imageUrls.length === 0) return res.status(400).json({ message: "coverImage upload failed." });
 
         const event = await Event.create({
-            title, description, date, location, createdBy: userId, createdAt: new Date(),
-            category: category,
-            coverImage: imageUrl,
-            type: type,
-            isPinned: isPinned === "true" || isPinned === true ? true : false
+            title,
+            description,
+            date,
+            location,
+            createdBy: userId,
+            createdAt: new Date(),
+            category,
+            coverImage: imageUrls,
+            type,
+            isPinned: isPinned === "true" || isPinned === true ? true : false,
         });
 
         await createNotificationInternal(userId, userId, NotificationType.EVENT, undefined, `Admin sent a new Event.`);
+
         const updatedEvent = await Event.findById(event._id).populate("gallery");
+
         io.emit("event", updatedEvent);
-        res.status(201).json({ message: "Event Created Sucessfully." })
-    }
-    catch (err: unknown) {
+
+        res.status(201).json({ message: "Event Created Successfully.", data: updatedEvent });
+    } catch (err: unknown) {
         if (err instanceof Error) {
             res.status(500).json({ message: err.message });
         } else {
@@ -112,35 +127,98 @@ export const getLatestEvent = async (req: Request, res: Response) => {
     }
 };
 
+
+// export const updateEvent = async (req: Request, res: Response) => {
+//     try {
+//         const { id, title, description, date, location, userId, category, type, coverImage, isPinned } = req.body;
+//         const files = (req as any).files;
+//         const file = files?.coverImage?.[0];
+
+//         if (!id || !title || !description || !date || !location || !userId || !category || !type) return res.status(400).json({ message: "eventId title, description, date, location, type and userId field are required." });
+
+//         let imageUrl: string = coverImage;
+
+//         if (file && file.buffer) {
+//             imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "coverImage");
+//         }
+
+//         const event = await Event.findByIdAndUpdate(id, {
+//             title, description, date, type, location,
+//             createdBy: userId, category: category,
+//             coverImage: imageUrl,
+//             isPinned: isPinned === "true" || isPinned === true ? true : false
+//         }, { new: true });
+//         if (!event) return res.status(404).json({ message: "Event not Found." });
+
+//         res.status(200).json({ message: "Event Update Successfully." })
+//     }
+//     catch (err: unknown) {
+//         if (err instanceof Error) {
+//             res.status(500).json({ message: err?.message })
+//         }
+//         else {
+//             res.status(500).json({ message: "Server Error" });
+//         }
+//     }
+// };
+
+
 export const updateEvent = async (req: Request, res: Response) => {
     try {
         const { id, title, description, date, location, userId, category, type, coverImage, isPinned } = req.body;
+
         const files = (req as any).files;
-        const file = files?.coverImage?.[0];
+        const newFiles = files?.coverImage || [];
 
-        if (!id || !title || !description || !date || !location || !userId || !category || !type) return res.status(400).json({ message: "eventId title, description, date, location, type and userId field are required." });
-
-        let imageUrl: string = coverImage;
-
-        if (file && file.buffer) {
-            imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "coverImage");
+        if (!id || !title || !description || !date || !location || !userId || !category || !type) {
+            return res.status(400).json({ message: "eventId title, description, date, location, type and userId field are required." });
         }
 
-        const event = await Event.findByIdAndUpdate(id, { 
-            title, description, date, type, location, 
-            createdBy: userId, category: category, 
-            coverImage: imageUrl, 
-            isPinned: isPinned === "true" || isPinned === true ? true : false 
-        }, { new: true });
-        if (!event) return res.status(404).json({ message: "Event not Found." });
+        let oldImages: string[] = [];
 
-        res.status(200).json({ message: "Event Update Successfully." })
-    }
-    catch (err: unknown) {
+        if (coverImage) {
+            if (typeof coverImage === "string") {
+                try {
+                    oldImages = JSON.parse(coverImage);
+
+                    if (!Array.isArray(oldImages)) { oldImages = [coverImage]; }
+                } catch {
+                    oldImages = [coverImage];
+                }
+            }
+            else if (Array.isArray(coverImage)) { oldImages = coverImage; }
+        }
+
+        let uploadedImages: string[] = [];
+
+        for (const file of newFiles) {
+            if (file?.buffer) {
+                const uploaded = await uploadToCloudinary(file.buffer, file.mimetype, "coverImage");
+
+                if (uploaded) {
+                    uploadedImages.push(uploaded);
+                }
+            }
+        }
+        const finalImages = [...oldImages, ...uploadedImages,];
+
+        const event = await Event.findByIdAndUpdate(id,
+            {
+                title, description, date, type, location, createdBy: userId, category, coverImage: finalImages,
+                isPinned: isPinned === "true" || isPinned === true ? true : false,
+            },
+            { new: true }
+        );
+
+        if (!event) {
+            return res.status(404).json({ message: "Event not Found." });
+        }
+
+        res.status(200).json({ message: "Event Updated Successfully.", data: event });
+    } catch (err: unknown) {
         if (err instanceof Error) {
-            res.status(500).json({ message: err?.message })
-        }
-        else {
+            res.status(500).json({ message: err.message });
+        } else {
             res.status(500).json({ message: "Server Error" });
         }
     }

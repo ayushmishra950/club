@@ -24,3 +24,8 @@ export const replyToSuggestion = async (obj: any) => {
     const res = await api.post(`${base_url}/user/suggestion/reply`, obj);
     return res;
 }
+
+export const markSuggestionAsRead = async (id: string) => {
+    const res = await api.post(`${base_url}/user/suggestion/mark-read/${id}`);
+    return res;
+}

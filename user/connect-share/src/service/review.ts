@@ -12,6 +12,11 @@ export const getReviews = async (id: string) => {
     return res;
 };
 
+export const getGlobalReviews = async () => {
+    const res = await api.get(`${base_url}/user/review/get/global`);
+    return res;
+};
+
 
 export const getByIdReview = async (id: string) => {
     const res = await api.get(`${base_url}/admin/reviews/getbyid/${id}`);

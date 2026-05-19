@@ -59,8 +59,7 @@ export default function EventsPage() {
     } finally {
       setDeleteLoading(false);
     }
-
-  }
+  };
 
   const handleGetEvent = async () => {
     try {
@@ -127,9 +126,9 @@ export default function EventsPage() {
                   {eventList?.map((event) => (
                     <tr key={event?._id} className="border-t hover:bg-gray-50">
                       <td className="p-3">
-                        {event?.coverImage ? (
+                        {event?.coverImage?.length > 0 ? (
                           <img
-                            src={event.coverImage}
+                            src={event.coverImage[0]}
                             className="w-12 h-12 rounded-full object-cover border"
                           />
                         ) : (

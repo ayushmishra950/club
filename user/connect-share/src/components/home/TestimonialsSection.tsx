@@ -2,7 +2,7 @@ import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook"
 import { motion } from "framer-motion";
 import { Quote } from "lucide-react";
 import { useEffect } from "react";
-import { getReviews } from "@/service/review";
+import { getGlobalReviews } from "@/service/review";
 import { setReviewList, setRemoveReview, setNewReview } from "@/redux-toolkit/slice/reviewSlice";
 import socket from "@/socket/socket";
 
@@ -13,28 +13,29 @@ const fadeUp = {
 
 
 export function TestimonialsSection() {
-  const dispatch = useAppDispatch();
-   const reviewList = useAppSelector((state) => state?.reviews?.reviewsList);
-  
-   useEffect(()=>{
-     socket.connect();
-     socket.on("deleteReview", (id)=>{
-      dispatch(setRemoveReview(id));
-     });
-     socket.on("addReview", (data)=>{
-      dispatch(setNewReview(data));
-     })
 
-     return () => {
+  const dispatch = useAppDispatch();
+  const reviewList = useAppSelector((state) => state?.reviews?.reviewsList);
+
+  useEffect(() => {
+    socket.connect();
+    socket.on("deleteReview", (id) => {
+      dispatch(setRemoveReview(id));
+    });
+    socket.on("addReview", (data) => {
+      dispatch(setNewReview(data));
+    })
+
+    return () => {
       socket.off("deleteReview");
       socket.off("addReview");
-     }
-   },[]);
+    }
+  }, []);
 
   // ✅ GET REVIEWS
   const handleGetReview = async () => {
     try {
-      const res = await getReviews();
+      const res = await getGlobalReviews();
       if (res.status === 200) {
         dispatch(setReviewList(res?.data?.data));
       }
@@ -51,14 +52,14 @@ export function TestimonialsSection() {
 
 
   return (
-    <section className="py-20 bg-background">
+    reviewList?.length > 0 && <section className="py-20 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-display font-bold mb-2">What Our Members Say</h2>
           <p className="text-muted-foreground">Real stories from real members</p>
         </div>
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {reviewList?.slice(0,3)?.map((t, i) => (
+          {reviewList?.slice(0, 3)?.map((t, i) => (
             <motion.div
               key={t.name}
               custom={i}

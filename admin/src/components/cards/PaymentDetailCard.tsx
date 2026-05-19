@@ -72,12 +72,12 @@ export default function PaymentDetailCard({ paymentDialog, setPaymentDialog, sel
                     />
                 </div>
 
-                <div className="mt-3">
+                {selectedPayment?.transitionNumber && <div className="mt-3">
                     <p className="text-sm text-muted-foreground">Transaction Number</p>
                     <p className="font-semibold">
                         {selectedPayment?.transitionNumber || "N/A"}
                     </p>
-                </div>
+                </div>}
 
                 <Button
                     className="w-full mt-4"

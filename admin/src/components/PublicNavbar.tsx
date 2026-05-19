@@ -7,10 +7,10 @@ import appLogo from "@/assets/logo.jpg";
 
 const navLinks = [
   { label: "Home", path: "/" },
-  { label: "About", path: "/about" },
-  { label: "Events", path: "/events" },
-  { label: "Announcements", path: "/announcements" },
-  { label: "Contact", path: "/contact" },
+  { label: "About", path: "/public/about" },
+  { label: "Events", path: "/public/events" },
+  { label: "Announcements", path: "/public/announcements" },
+  { label: "Contact", path: "/public/contact" },
 ];
 
 export function PublicNavbar() {
@@ -21,22 +21,21 @@ export function PublicNavbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
         <Link to="/" className="flex items-center gap-2">
-  <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center overflow-hidden">
-    <img src={appLogo} alt="logo" className="w-full h-full object-cover" />
-  </div>
-  <span className="font-display font-bold text-lg text-foreground">J.S.G. GLORY</span>
-</Link>
+          <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center overflow-hidden">
+            <img src={appLogo} alt="logo" className="w-full h-full object-cover" />
+          </div>
+          <span className="font-display font-bold text-lg text-foreground">J.S.G. GLORY</span>
+        </Link>
 
         <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                location.pathname === link.path
-                  ? "text-primary bg-primary/5"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname === link.path
+                ? "text-primary bg-primary/5"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
             >
               {link.label}
             </Link>
@@ -73,11 +72,10 @@ export function PublicNavbar() {
                   key={link.path}
                   to={link.path}
                   onClick={() => setOpen(false)}
-                  className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    location.pathname === link.path
-                      ? "text-primary bg-primary/5"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname === link.path
+                    ? "text-primary bg-primary/5"
+                    : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   {link.label}
                 </Link>

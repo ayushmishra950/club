@@ -3,17 +3,30 @@ import { useParams } from "react-router-dom";
 import { useAppSelector } from "@/redux-toolkit/customHook/hook";
 import { Calendar, MapPin } from "lucide-react";
 import { Navbar } from '@/components/layout/Navbar';
+import { isVideo } from "@/service/global";
 
 
 export default function EventDetail() {
   const { id } = useParams();
   const [chatOpen, setChatOpen] = useState(false);
+  const [currentImage, setCurrentImage] = useState(0);
   const eventList = useAppSelector((state) => state?.event?.eventList);
   const totalUnread = 0;
+  const event = eventList.find((e) => e?._id === id);
 
-  const event = eventList.find(
-    (e) => e?._id === id && e?.type === "public"
-  );
+  const images = Array.isArray(event?.coverImage) ? event?.coverImage : [event?.coverImage];
+
+  // Auto Change Image Every 4 Seconds
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentImage((prev) => prev === images.length - 1 ? 0 : prev + 1);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [images.length]);
+
   // ---------------- COUNTDOWN LOGIC ----------------
   const calculateTimeLeft = () => {
     const diff = new Date(event?.date).getTime() - new Date().getTime();
@@ -48,19 +61,21 @@ export default function EventDetail() {
         {/* ================= HERO SECTION ================= */}
         <div className="relative h-screen w-full overflow-hidden">
 
-          {/* Background Image */}
-          <img
-            src={event.coverImage}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          {/* Background Slider */}
+          <div className="absolute inset-0">
+            {images.map((image: string, index: number) => (
+              <img key={index} src={image} alt={`cover-${index}`} className={` absolute inset-0 h-full w-full object-cover transition-all duration-1000 ease-in-out ${index === currentImage ? "opacity-100 translate-x-0 scale-100" : "opacity-0 translate-x-8 scale-105"}`}
+              />
+            ))}
+          </div>
 
           {/* Overlay */}
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-black/60 z-[1]" />
 
           {/* CENTER CONTENT */}
           <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
 
-            <span className="bg-white/20 text-white px-4 py-1 rounded-full text-sm mb-4">
+            <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-1 rounded-full text-sm mb-4">
               {event.category}
             </span>
 
@@ -72,6 +87,20 @@ export default function EventDetail() {
               {event.description}
             </p>
           </div>
+
+          {/* Dots Navigation */}
+          {images.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+              {images.map((_: string, index: number) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentImage(index)}
+                  className={` h-2.5 rounded-full transition-all duration-300
+                  ${currentImage === index ? "w-8 bg-white" : "w-2.5 bg-white/50 hover:bg-white/80"} `}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ================= COUNTDOWN SECTION ================= */}
@@ -121,7 +150,7 @@ export default function EventDetail() {
           <div className="mt-10 grid md:grid-cols-2 gap-8 items-center text-left">
 
             <img
-              src={event.coverImage}
+              src={event.coverImage?.[0]}
               className="rounded-2xl w-full h-80 object-cover"
             />
 
@@ -148,7 +177,7 @@ export default function EventDetail() {
         </div>
 
         {/* ================= GALLERY SECTION ================= */}
-        <div className="py-20 bg-gray-50 text-center">
+        {event?.gallery?.length > 0 && <div className="py-20 bg-gray-50 text-center">
 
           <h2 className="text-3xl font-bold">
             VIDEO GALLERY OF RESORT
@@ -160,17 +189,30 @@ export default function EventDetail() {
 
           <div className="grid md:grid-cols-3 gap-6 mt-10 max-w-6xl mx-auto px-4">
 
-            {/* Images / Videos placeholder */}
-            {event?.gallery?.map((i) => (
-              <div
-                key={i?._id}
-                className="h-64 bg-black/10 rounded-xl flex items-center justify-center"
-              >
-                <img src={i?.image} className="w-full h-full" />
-              </div>
-            ))}
+            {event?.gallery?.map((galleryItem) => {
+
+              const images = Array.isArray(galleryItem?.image) ? galleryItem.image : [galleryItem?.image];
+
+              return images.map((media, index) => {
+                const isVideo = typeof media === "string" && (media.includes(".mp4") || media.includes(".webm") || media.includes(".mov"));
+
+                return (
+                  <div key={`${galleryItem._id}-${index}`} className="h-64 bg-black/10 rounded-xl overflow-hidden"
+                  >
+                    {isVideo ? (
+                      <video src={media} className="w-full h-full object-cover" controls />
+                    ) : (
+                      <img src={media} className="w-full h-full object-cover" alt="gallery" />
+                    )}
+
+                  </div>
+                );
+              });
+
+            })}
+
           </div>
-        </div>
+        </div>}
 
 
 

@@ -114,3 +114,9 @@ export const addBusinessUser = async (obj: any) => {
     const res = await api.post(`${base_url}/admin/user/business/add`, obj);
     return res;
 };
+
+
+export const adminConvertPremiumUser = async (obj: any) => {
+    const res = await api.patch(`${base_url}/admin/user/convert/premium`, obj);
+    return res;
+}; 

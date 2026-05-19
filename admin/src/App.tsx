@@ -33,6 +33,7 @@ import ReviewPage from "./pages/dashboard/ReviewPage";
 import NewsPage from "./pages/dashboard/NewsPage";
 import NotFound from "@/pages/NotFound";
 import socket from "./socket/socket";
+import PublicEventDetail from "@/components/home/PublicEventDetail.tsx";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -40,60 +41,62 @@ const queryClient = new QueryClient();
 const App = () => {
   const user = JSON.parse(localStorage.getItem("user"));
 
-   useEffect(()=>{
-    if(user && user?._id){
+  useEffect(() => {
+    if (user && user?._id) {
       socket.connect();
-  socket.emit("joinRoom", user?._id);
+      socket.emit("joinRoom", user?._id);
     }
   }, [user]);
-  
-  return(
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <HashRouter>
-        <Routes>
-          {/* Public */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/events" element={<PublicEvents />} />
-            <Route path="/announcements" element={<PublicAnnouncements />} />
-            <Route path="/contact" element={<Contact />} />
-          </Route>
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
 
-          {/* Dashboard */}
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={<DashboardHome />} />
-            <Route path="members" element={<MembersPage />} />
-            <Route path="events" element={<EventsPage />} />
-            <Route path="announcements" element={<AnnouncementsPage />} />
-            <Route path="suggestions" element={<SuggestionPage />} />
-            <Route path="referrals" element={<ReferralsPage />} />
-            <Route path="tasks" element={<TasksPage />} />
-            <Route path="finance" element={<FinancePage />} />
-            <Route path="payments" element={<PaymentsPage />} />
-            <Route path="attendance" element={<AttendancePage />} />
-            <Route path="polls" element={<PollsPage />} />
-            <Route path="admin-posts" element={<PostPage type="admin" />} />
-            <Route path="user-posts" element={<PostPage type="user" />} />
-            <Route path="groups" element={<GroupsPage />} />
-            <Route path="businessDirectory" element={<BusinessDirectoryPage />} />
-            <Route path="gallery" element={<GalleryPage />} />
-            <Route path="reviews" element={<ReviewPage />} />
-            <Route path="news" element={<NewsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <HashRouter>
+          <Routes>
+            {/* Public */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/public/about" element={<About />} />
+              <Route path="/public/events" element={<PublicEvents />} />
+              <Route path="/public/events/:id" element={<PublicEventDetail />} />
+              <Route path="/public/announcements" element={<PublicAnnouncements />} />
+              <Route path="/public/contact" element={<Contact />} />
+            </Route>
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </HashRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-)};
+            {/* Dashboard */}
+            <Route path="/dashboard" element={<DashboardLayout />}>
+              <Route index element={<DashboardHome />} />
+              <Route path="members" element={<MembersPage />} />
+              <Route path="events" element={<EventsPage />} />
+              <Route path="announcements" element={<AnnouncementsPage />} />
+              <Route path="suggestions" element={<SuggestionPage />} />
+              <Route path="referrals" element={<ReferralsPage />} />
+              <Route path="tasks" element={<TasksPage />} />
+              <Route path="finance" element={<FinancePage />} />
+              <Route path="payments" element={<PaymentsPage />} />
+              <Route path="attendance" element={<AttendancePage />} />
+              <Route path="polls" element={<PollsPage />} />
+              <Route path="admin-posts" element={<PostPage type="admin" />} />
+              <Route path="user-posts" element={<PostPage type="user" />} />
+              <Route path="groups" element={<GroupsPage />} />
+              <Route path="businessDirectory" element={<BusinessDirectoryPage />} />
+              <Route path="gallery" element={<GalleryPage />} />
+              <Route path="reviews" element={<ReviewPage />} />
+              <Route path="news" element={<NewsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </HashRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  )
+};
 
 export default App;

@@ -10,59 +10,69 @@ export const addGallery = async (req: Request, res: Response) => {
     const { event } = req.body;
 
     const files = (req as any).files;
-    const file = files?.image?.[0];
+    const galleryImages = files?.image || [];
 
-    if (!event || !file) {
-      return res.status(400).json({ message: "event or image is required." });
+    if (!event || galleryImages.length === 0) {
+      return res.status(400).json({ message: "Event and at least one image are required." });
     }
 
+    const eventDoc = await Event.findById(event);
 
-    const events = await Event.findById(event);
-    if (!events) {
+    if (!eventDoc) {
       return res.status(404).json({ message: "Event not found." });
     }
 
-    if (!file || !file.buffer) return res.status(404).json({ message: "file not found." });
+    const uploadedImages = [];
 
-    let type = "";
+    for (const file of galleryImages) {
+      if (file?.buffer) {
 
-    if (file.mimetype.startsWith("image")) {
-      type = "image";
-    } else if (file.mimetype.startsWith("video")) {
-      type = "video";
-    } else {
-      type = "other";
+        const imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "gallery");
+
+        uploadedImages.push(imageUrl);
+      }
     }
-
-    const imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "gallery");
 
     const gallery = await Gallery.create({
-      event: events._id,
-      image: imageUrl,
-      type: type
+      event: eventDoc._id,
+      image: uploadedImages,
+      type: "image",
     });
 
-    if(!events.gallery.includes(gallery?._id)){
-      events.gallery.push(gallery?._id);
-      await events.save();
+    // Push Gallery Id Into Event
+    if (!eventDoc.gallery.includes(gallery._id)) {
+      eventDoc.gallery.push(gallery._id);
     }
 
-     await gallery.populate("event");
+    await eventDoc.save();
 
+    // Populate
+    const populatedGallery = await Gallery.findById(
+      gallery._id
+    ).populate("event");
 
     return res.status(201).json({
-      message: "Gallery created successfully",
-       gallery,
+      success: true,
+      message: "Gallery created successfully.",
+      gallery: populatedGallery,
     });
 
   } catch (err: unknown) {
+
+    console.error(err);
+
     if (err instanceof Error) {
-      res.status(500).json({ message: err.message });
-    } else {
-      res.status(500).json({ message: "Unknown error" });
+      return res.status(500).json({
+        message: err.message,
+      });
     }
+
+    return res.status(500).json({
+      message: "Unknown error",
+    });
   }
 };
+
 
 export const getAllGallery = async (req: Request, res: Response) => {
   try {
@@ -86,7 +96,7 @@ export const getAllGallery = async (req: Request, res: Response) => {
       .populate("event")
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 }); 
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       message: "Gallery fetched successfully",
@@ -108,82 +118,67 @@ export const getAllGallery = async (req: Request, res: Response) => {
   }
 };
 
-
 export const updateGallery = async (req: Request, res: Response) => {
   try {
-    const { id, event, image } = req.body;
-   
-    const files = (req as MulterRequest).files;
+    const { id, event } = req.body;
+    const files = (req as any).files;
 
-    if (!id) {
-      return res.status(400).json({ message: "Gallery ID is required." });
-    }
-    if(!event) return res.status(400).json({message:"event not found."});
+    if (!id) return res.status(400).json({ message: "Gallery ID is required." });
+
+    if (!event) return res.status(400).json({ message: "Event not found." });
 
     const existingGallery = await Gallery.findById(id);
-    if (!existingGallery) {
-      return res.status(404).json({ message: "Gallery not found." });
-    }
 
-    let eventId = event;
+    if (!existingGallery) return res.status(404).json({ message: "Gallery not found." });
 
-   
-      const events = await Event.findById(event);
-      if (!events) {
-        return res.status(404).json({ message: "Event not found." });
-      }
-  
-  
+    const eventDoc = await Event.findById(event);
 
-    let imageUrl: string = existingGallery.image;
-    let type = "image";
+    if (!eventDoc) return res.status(404).json({ message: "Event not found." });
 
-    if (files) {
-      const fileArray = Array.isArray(files)
-        ? files
-        : Object.values(files).flat();
 
-      const file = fileArray[0];
+    let uploadedImages: string[] = [];
 
-      if (file && file.buffer) {
+    // STEP 1: Handle new uploaded files (MULTIPLE)
+    if (files?.image) {
+      const fileArray = Array.isArray(files.image) ? files.image : [files.image];
 
-        if (file.mimetype.startsWith("image")) {
-          type = "image";
-        } else if (file.mimetype.startsWith("video")) {
-          type = "video";
-        } else {
-          type = "other";
+      for (const file of fileArray) {
+        if (file?.buffer) {
+          const url = await uploadToCloudinary(file.buffer, file.mimetype, "gallery");
+          uploadedImages.push(url);
         }
-
-        imageUrl = await uploadToCloudinary(
-          file.buffer,
-          file.mimetype,
-          "gallery"
-        );
       }
     }
 
-    else if (image && typeof image === "string") {
-      imageUrl = image;
+    if (req.body.image) {
+      try {
+        const parsed = typeof req.body.image === "string" ? JSON.parse(req.body.image) : req.body.image;
+
+        if (Array.isArray(parsed)) {
+          uploadedImages = [...uploadedImages, ...parsed];
+        }
+      } catch {
+
+      }
     }
 
-    const updatedGallery = await Gallery.findByIdAndUpdate( id, { event: eventId, image: imageUrl, type:type}, { new: true } );
-     await updatedGallery?.populate("event");
+    if (uploadedImages.length === 0) {
+      uploadedImages = existingGallery.image || [];
+    }
 
-    return res.status(200).json({
-      message: "Gallery updated successfully",
-      gallery: updatedGallery,
-    });
+    const updatedGallery = await Gallery.findByIdAndUpdate(
+      id, { event, image: uploadedImages, type: "image", }, { new: true }
+    ).populate("event");
+
+    return res.status(200).json({ success: true, message: "Gallery updated successfully", gallery: updatedGallery });
 
   } catch (err: unknown) {
     if (err instanceof Error) {
-      res.status(500).json({ message: err.message });
-    } else {
-      res.status(500).json({ message: "Unknown error" });
+      return res.status(500).json({ message: err.message });
     }
+    return res.status(500).json({ message: "Unknown error", });
   }
 };
-
 
 
 export const deleteGallery = async (req: Request, res: Response) => {
@@ -194,13 +189,13 @@ export const deleteGallery = async (req: Request, res: Response) => {
     const gallery = await Gallery.findByIdAndDelete(galleryId);
     if (!gallery) return res.status(404).json({ message: "Gallery not Found." });
 
-const event = await Event.findById(gallery?.event);
-if (event) {
-  event.gallery = event.gallery.filter(
-    (id: any) => id.toString() !== gallery._id.toString()
-  );
-  await event.save();
-}
+    const event = await Event.findById(gallery?.event);
+    if (event) {
+      event.gallery = event.gallery.filter(
+        (id: any) => id.toString() !== gallery._id.toString()
+      );
+      await event.save();
+    }
 
     res.status(200).json({ message: "Gallery Delete Successfully." })
   }

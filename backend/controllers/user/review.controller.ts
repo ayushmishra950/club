@@ -23,6 +23,18 @@ export const addReview = async (req: Request, res: Response) => {
     }
 };
 
+
+export const getGlobalReviews = async (req: Request, res: Response) => {
+    try {
+        const reviews = await Review.find({ status: "approved" }).populate("userId", "fullName profileImage");
+        return res.status(200).json({ reviews });
+    } catch (err: any) {
+        return res.status(500).json({
+            message: err?.message || "Internal server error",
+        });
+    }
+};
+
 export const getAllReviews = async (req: Request, res: Response) => {
     try {
         const userId = req.params.id;

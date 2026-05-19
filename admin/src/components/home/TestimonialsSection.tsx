@@ -1,39 +1,64 @@
+import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
 import { motion } from "framer-motion";
 import { Quote } from "lucide-react";
+import { useEffect } from "react";
+import { getReviews } from "@/service/review";
+import { setReviewList, setRemoveReview, setNewReview } from "@/redux-toolkit/slice/reviewSlice";
+import socket from "@/socket/socket";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5 } }),
 };
 
-const testimonials = [
-  {
-    name: "Sneha Gupta",
-    role: "Member since 2021",
-    quote: "Joining ClubConnect was a turning point in my career. The mentorship and connections I've built here have been invaluable for my personal and professional growth.",
-  },
-  {
-    name: "Karan Mehta",
-    role: "Member since 2023",
-    quote: "The community service projects gave me a deep sense of purpose. I've made lifelong friends and truly feel like I'm making a difference every day.",
-  },
-  {
-    name: "Anita Desai",
-    role: "Vice President",
-    quote: "ClubConnect empowered me to lead. From organizing events to mentoring new members, every experience has shaped me into a more confident leader.",
-  },
-];
 
 export function TestimonialsSection() {
+  const dispatch = useAppDispatch();
+  const reviewList = useAppSelector((state) => state?.reviews?.reviewsList);
+
+  useEffect(() => {
+    socket.connect();
+    socket.on("deleteReview", (id) => {
+      dispatch(setRemoveReview(id));
+    });
+    socket.on("addReview", (data) => {
+      dispatch(setNewReview(data));
+    })
+
+    return () => {
+      socket.off("deleteReview");
+      socket.off("addReview");
+    }
+  }, []);
+
+  // ✅ GET REVIEWS
+  const handleGetReview = async () => {
+    try {
+      const res = await getReviews();
+      if (res.status === 200) {
+        dispatch(setReviewList(res?.data?.data));
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    if (reviewList?.length === 0) {
+      handleGetReview();
+    }
+  }, [reviewList?.length]);
+
+
   return (
-    <section className="py-20 bg-background">
+    reviewList?.length > 0 && <section className="py-20 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-display font-bold mb-2">What Our Members Say</h2>
           <p className="text-muted-foreground">Real stories from real members</p>
         </div>
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {testimonials.map((t, i) => (
+          {reviewList?.slice(0, 3)?.map((t, i) => (
             <motion.div
               key={t.name}
               custom={i}
@@ -44,16 +69,16 @@ export function TestimonialsSection() {
               className="bg-card rounded-xl p-6 shadow-card border border-border relative"
             >
               <Quote className="h-8 w-8 text-secondary/30 absolute top-4 right-4" />
-              <p className="text-muted-foreground text-sm leading-relaxed mb-6 italic">"{t.quote}"</p>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-6 italic">"{t.description}"</p>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
                   <span className="text-primary-foreground font-display font-bold text-sm">
-                    {t.name.split(" ").map(n => n[0]).join("")}
+                    {t?.fullName?.split(" ")?.map(n => n[0])?.join("")}
                   </span>
                 </div>
                 <div>
-                  <div className="font-display font-semibold text-sm">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.role}</div>
+                  <div className="font-display font-semibold text-sm">{t?.fullName}</div>
+                  <div className="text-xs text-muted-foreground">{new Date(t?.createdAt)?.toLocaleString()}</div>
                 </div>
               </div>
             </motion.div>

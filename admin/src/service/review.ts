@@ -11,7 +11,7 @@ export const getReviews = async () => {
     const res = await api.get(`${base_url}/admin/reviews/get`);
     return res;
 };
-
+ 
 
 export const getByIdReview = async (id: string) => {
     const res = await api.get(`${base_url}/admin/reviews/getbyid/${id}`);

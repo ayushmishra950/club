@@ -4,7 +4,7 @@ import { Suggestion } from "./models/suggestion.model.js";
 
 dotenv.config();
 
-const mongoUrl = process.env.MONGO_URI;
+  const mongoUrl = process.env.MONGO_URI;
 
 if (!mongoUrl) {
   console.log("No Mongo URI found");

@@ -303,7 +303,7 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
             </button>
           </div>
         </div>
-
+   
         {/* Mobile search bar */}
         {searchOpen && (
           <div className="md:hidden pb-3 animate-fade-in">

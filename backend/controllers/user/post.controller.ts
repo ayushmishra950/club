@@ -10,6 +10,36 @@ import Message from "../../models/message.model.js";
 import { getIO } from "../../utils/socketHelper.js";
 
 
+export const getAllPosts = async (req: Request, res: Response) => {
+  try {
+    // Sab posts lao
+    const posts = await Post.find()
+      .populate("comments.user", "fullName name profileImage")
+      .sort({ isPinned: -1, createdAt: -1 });
+
+    // Har post ke createdBy ko User model me check karo
+    const validPosts = [];
+
+    for (const post of posts) {
+      const userExists = await User.findById(post.createdBy);
+
+      if (userExists) {
+        const populatedPost = await Post.findById(post._id)
+          .populate(
+            "createdBy",
+            "name email fullName profileImage occupation role"
+          )
+          .populate("comments.user", "fullName name profileImage");
+
+        validPosts.push(populatedPost);
+      }
+    }
+    res.status(200).json({ success: true, posts: validPosts});
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message});
+  }
+};
+
 
 export const addPostNotes = async (req: Request, res: Response) => {
   try {

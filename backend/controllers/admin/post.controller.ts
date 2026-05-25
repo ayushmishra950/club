@@ -58,7 +58,7 @@ export const createPost = async (req: any, res: any) => {
   }
 };
 
-
+  
 // ✅ Get All Posts
 export const getAllPosts = async (req: Request, res: Response) => {
   try {

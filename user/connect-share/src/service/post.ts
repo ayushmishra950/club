@@ -73,7 +73,7 @@ export const addPost = async(obj:any) =>{
 
 
 export const getAllPost = async() =>{
-    const res = await api.get(`${base_url}/admin/post/get`);
+    const res = await api.get(`${base_url}/user/post/get`);
     return res;
 };
 

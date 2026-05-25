@@ -1,9 +1,10 @@
 import express from "express";
-import {toggleLikePost,addPostNotes,deletePost, sharePost, addComment, likeUnlikeComment, replyToComment} from "../../controllers/user/post.controller.js";
+import {toggleLikePost,addPostNotes,deletePost,getAllPosts, sharePost, addComment, likeUnlikeComment, replyToComment} from "../../controllers/user/post.controller.js";
 
 
 const router = express.Router();
 
+router.get("/get", getAllPosts);
 router.post("/like/toggle", toggleLikePost);
 router.post("/notes/add", addPostNotes);
 router.post("/comment/add", addComment);

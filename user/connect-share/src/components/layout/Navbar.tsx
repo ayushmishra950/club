@@ -120,7 +120,7 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
       <div className="mx-auto max-w-7xl px-4">
         <div className="flex h-14 items-center justify-between gap-2">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 shrink-0">
+          <Link to="/home" className="flex items-center gap-2 shrink-0">
             <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center overflow-hidden">
               <img
                 src={appLogo}

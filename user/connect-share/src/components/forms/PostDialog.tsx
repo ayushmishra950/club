@@ -142,9 +142,7 @@ const PostDialog = ({
 
       setIsLoading(true);
 
-      const res = await (isEdit
-        ? updatePost(form)
-        : addPost(form));
+      const res = await (isEdit ? updatePost(form) : addPost(form));
 
       if (res.status === 200 || res.status === 201) {
         toast({

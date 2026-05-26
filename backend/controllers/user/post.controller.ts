@@ -9,37 +9,58 @@ import Chat from "../../models/chat.model.js";
 import Message from "../../models/message.model.js";
 import { getIO } from "../../utils/socketHelper.js";
 
-
 export const getAllPosts = async (req: Request, res: Response) => {
   try {
-    // Sab posts lao
-    const posts = await Post.find()
-      .populate("comments.user", "fullName name profileImage")
-      .sort({ isPinned: -1, createdAt: -1 });
+    // Saari posts lao
+    const posts = await Post.find().sort({
+      isPinned: -1,
+      createdAt: -1,
+    });
 
-    // Har post ke createdBy ko User model me check karo
     const validPosts = [];
 
+    // Har post check karo
     for (const post of posts) {
+      // createdBy user exist karta hai ya nahi
       const userExists = await User.findById(post.createdBy);
 
-      if (userExists) {
-        const populatedPost = await Post.findById(post._id)
-          .populate(
-            "createdBy",
-            "name email fullName profileImage occupation role"
-          )
-          .populate("comments.user", "fullName name profileImage");
+      // Agar user deleted hai to post skip karo
+      if (!userExists) continue;
 
-        validPosts.push(populatedPost);
-      }
+      // Proper populate karo
+      const populatedPost = await Post.findById(post._id)
+        .populate(
+          "createdBy",
+          "name email fullName profileImage occupation role"
+        )
+
+        // Comment user populate
+        .populate({
+          path: "comments.user",
+          select: "fullName name profileImage",
+        })
+
+        // Reply user bhi populate
+        .populate({
+          path: "comments.replies.user",
+          select: "fullName name profileImage",
+        });
+
+      validPosts.push(populatedPost);
     }
-    res.status(200).json({ success: true, posts: validPosts});
+
+    return res.status(200).json({
+      success: true,
+      posts: validPosts,
+    });
+
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message});
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
-
 
 export const addPostNotes = async (req: Request, res: Response) => {
   try {

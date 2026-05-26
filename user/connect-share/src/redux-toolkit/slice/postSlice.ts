@@ -23,7 +23,7 @@ const postSlice = createSlice({
         item.likes.push(userId);
       }
     },
-
+ 
     setPostComment: (state, action) => {
       const { postId, text, userId, fullName } = action.payload;
       const post = state.postList.find(p => p._id === postId);

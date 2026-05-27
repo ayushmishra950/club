@@ -297,17 +297,38 @@ export const getFriendUsers = async (req: Request, res: Response) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "You are not logged in." });
 
-    const friendsRequests = await FriendRequest.find({ status: "accepted", $or : [{from:userId}, {to:userId}] })
-      .populate<{ to: any }>("to", "fullName profileImage");
+   const friendRequests = await FriendRequest.find({
+      status: "accepted",
+      $or: [
+        { from: userId },
+        { to: userId }
+      ]
+    })
+      .populate("from", "fullName profileImage")
+      .populate("to", "fullName profileImage");
 
-    const friends = friendsRequests.map(fr => ({
-      _id: fr.to._id,
-      fullName: fr.to.fullName,
-      profileImage: fr.to.profileImage,
-      friendshipCreatedAt: fr.createdAt
-    }));
+    const friends = friendRequests.map((fr: any) => {
 
-    res.status(200).json({ friends });
+      // agar current user sender hai
+      if (fr.from._id.toString() === userId) {
+        return {
+          _id: fr.to._id,
+          fullName: fr.to.fullName,
+          profileImage: fr.to.profileImage,
+          friendshipCreatedAt: fr.createdAt
+        };
+      }
+
+      // agar current user receiver hai
+      return {
+        _id: fr.from._id,
+        fullName: fr.from.fullName,
+        profileImage: fr.from.profileImage,
+        friendshipCreatedAt: fr.createdAt
+      };
+    });
+
+    return res.status(200).json({ friends });
   } catch (err: any) {
     res.status(500).json({ message: err?.message });
   }

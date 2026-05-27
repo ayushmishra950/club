@@ -297,7 +297,7 @@ export const getFriendUsers = async (req: Request, res: Response) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "You are not logged in." });
 
-    const friendsRequests = await FriendRequest.find({ from: user._id, status: "accepted" })
+    const friendsRequests = await FriendRequest.find({ status: "accepted", $or : [{from:userId}, {to:userId}] })
       .populate<{ to: any }>("to", "fullName profileImage");
 
     const friends = friendsRequests.map(fr => ({

@@ -9,7 +9,7 @@ const base_url = import.meta.env.VITE_BACKEND_URL;
 
 
 
-export const getSuggestedUsers = async(id) => {
+export const getSuggestedUsers = async(id :string) => {
     const res = await api.get(`${base_url}/user/friend/suggestion/get/${id}`);
     return res;
 };

@@ -63,7 +63,6 @@ const FriendRequests = () => {
         toast({ title: "Request Send Successfully.", description: res?.data?.message });
         socket.emit("unSeenFriendRequest", {from:user?._id, to:userId});
         setUserListRefresh(true);
-      
       }
     }
     catch (err) {

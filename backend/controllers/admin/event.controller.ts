@@ -84,7 +84,7 @@ export const getSingleEvent = async (req: Request, res: Response) => {
         const eventId = req.params.id;
         if (!eventId) return res.status(400).json({ message: "eventId not Found." });
 
-        const event = await Event.findById(eventId);
+        const event = await Event.findById(eventId).populate("interestedCandidate" , "profileImage");
         if (!event) return res.status(404).json({ message: "event not found." });
 
         res.status(200).json({ event, success: true })

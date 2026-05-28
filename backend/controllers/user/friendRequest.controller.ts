@@ -310,7 +310,7 @@ export const getFriendUsers = async (req: Request, res: Response) => {
     const friends = friendRequests.map((fr: any) => {
 
       // agar current user sender hai
-      if (fr.from._id.toString() === userId) {
+      if (fr.from._id.toString() === userId) {  
         return {
           _id: fr.to._id,
           fullName: fr.to.fullName,

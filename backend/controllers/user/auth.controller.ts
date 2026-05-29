@@ -9,6 +9,7 @@ import { getIO } from "../../utils/socketHelper.js";
 import { createNotificationInternal } from "./notification.controller.js";
 import { NotificationType } from "../../models/notification.model.js";
 import { nanoid } from "nanoid";
+import Post from "../../models/post.model.js";
 
 
 export const registerUser = async (req: Request, res: Response) => {
@@ -393,4 +394,62 @@ export const convertPremiumUser = async (req: Request, res: Response) => {
   catch (err: any) {
     res.status(500).json({ success: false, message: "Failed to convert user to premium", error: err.message, });
   }
-}
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export const getSingleUserDetail = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+
+    if (!userId)
+      return res.status(400).json({ message: "userId not found." });
+
+    // 1. USER
+    const user = await User.findById(userId);
+    if (!user)
+      return res.status(404).json({ message: "user not found." });
+
+    // 2. POSTS (createdBy match)
+    const posts = await Post.find({ createdBy: userId });
+
+    // 3. FOLLOWERS (people who sent request TO this user and accepted)
+    const followers = await FriendRequest.find({
+      to: userId,
+      status: "accepted",
+    }).populate("from", "fullName profileImage");
+
+    // 4. FOLLOWING (this user sent request TO others and accepted)
+    const following = await FriendRequest.find({
+      from: userId,
+      status: "accepted",
+    }).populate("to", "fullName profileImage");
+
+    // 5. RESPONSE
+    return res.status(200).json({
+      user,
+      posts,
+      followers: followers.map((f) => f.from),
+      following: following.map((f) => f.to),
+    });
+
+  } catch (err: any) {
+    return res.status(500).json({
+      message: err?.message || "Server Error.",
+    });
+  }
+};

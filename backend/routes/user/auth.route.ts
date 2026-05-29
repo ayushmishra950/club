@@ -1,5 +1,5 @@
 import express from "express";
-import { registerUser, loginUser, updateUser, convertPremiumUser, refreshAccessToken, getAllUsers, getSingleUser, deleteUser } from "../../controllers/user/auth.controller.js";
+import { registerUser, loginUser,getSingleUserDetail, updateUser, convertPremiumUser, refreshAccessToken, getAllUsers, getSingleUser, deleteUser } from "../../controllers/user/auth.controller.js";
 import upload from "../../middlewares/upload.js";
 import rateLimit from "express-rate-limit";  
 
@@ -20,6 +20,7 @@ router.get("/getbyid/:id", getSingleUser);
 router.delete("/delete", deleteUser);
 router.put("/update", upload.any(), updateUser);
 router.put("/convert-premium", upload.fields([{ name: "paymentImage", maxCount: 1 }]), convertPremiumUser);
+router.get("/get-by-id/:id", getSingleUserDetail);
 
 export default router;
 

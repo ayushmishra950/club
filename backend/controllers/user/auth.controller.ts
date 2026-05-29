@@ -425,7 +425,7 @@ export const getSingleUserDetail = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "user not found." });
 
     // 2. POSTS (createdBy match)
-    const posts = await Post.find({ createdBy: userId });
+    const posts = await Post.find({ createdBy: userId }).populate("createdBy", "fullName profileImage email isOnline isVerified");
 
     // 3. FOLLOWERS (people who sent request TO this user and accepted)
     const followers = await FriendRequest.find({

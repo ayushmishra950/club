@@ -464,7 +464,7 @@ export const getSingleUserDetail = async (req: Request, res: Response) => {
     // OPTIONAL: agar friend list chahiye
     const friends = await User.find({
       _id: { $in: Array.from(friendSet) },
-    }).select("fullName profileImage");
+    }).select("fullName profileImage, email mobile");
 
     // 6. RESPONSE
     return res.status(200).json({

@@ -410,8 +410,6 @@ export const convertPremiumUser = async (req: Request, res: Response) => {
 
 
 
-
-
 export const getSingleUserDetail = async (req: Request, res: Response) => {
   try {
     const userId = req.params.id;
@@ -424,27 +422,60 @@ export const getSingleUserDetail = async (req: Request, res: Response) => {
     if (!user)
       return res.status(404).json({ message: "user not found." });
 
-    // 2. POSTS (createdBy match)
-    const posts = await Post.find({ createdBy: userId }).populate("createdBy", "fullName profileImage email isOnline isVerified");
+    // 2. POSTS
+    const posts = await Post.find({ createdBy: userId })
+      .populate("createdBy", "fullName profileImage email isOnline isVerified");
 
-    // 3. FOLLOWERS (people who sent request TO this user and accepted)
+    // 3. FOLLOWERS
     const followers = await FriendRequest.find({
       to: userId,
       status: "accepted",
     }).populate("from", "fullName profileImage");
 
-    // 4. FOLLOWING (this user sent request TO others and accepted)
+    // 4. FOLLOWING
     const following = await FriendRequest.find({
       from: userId,
       status: "accepted",
     }).populate("to", "fullName profileImage");
 
-    // 5. RESPONSE
+    // 5. FRIENDS (mutual accepted)
+    const sentRequests = await FriendRequest.find({
+      from: userId,
+      status: "accepted",
+    });
+
+    const receivedRequests = await FriendRequest.find({
+      to: userId,
+      status: "accepted",
+    });
+
+    const friendSet = new Set<string>();
+
+    sentRequests.forEach((req) => {
+      friendSet.add(req.to.toString());
+    });
+
+    receivedRequests.forEach((req) => {
+      friendSet.add(req.from.toString());
+    });
+
+    const friendCount = friendSet.size;
+
+    // OPTIONAL: agar friend list chahiye
+    const friends = await User.find({
+      _id: { $in: Array.from(friendSet) },
+    }).select("fullName profileImage");
+
+    // 6. RESPONSE
     return res.status(200).json({
       user,
       posts,
       followers: followers.map((f) => f.from),
       following: following.map((f) => f.to),
+
+      // NEW
+      friends,
+      friendCount,
     });
 
   } catch (err: any) {

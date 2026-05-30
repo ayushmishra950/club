@@ -472,10 +472,7 @@ export const getSingleUserDetail = async (req: Request, res: Response) => {
       posts,
       followers: followers.map((f) => f.from),
       following: following.map((f) => f.to),
-
-      // NEW
-      friends,
-      friendCount,
+      friends, friendCount,
     });
 
   } catch (err: any) {

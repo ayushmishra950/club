@@ -38,7 +38,6 @@ export const initSocket = (server: HTTPServer) => {
     cors: {
       origin: ["http://localhost:8080","exp://192.168.2.5:8081", "http://localhost:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"],
     },
-    transports : ["websocket", "polling"]
   });
 
   let onlineUsers: { [userId: string]: string[] } = {};

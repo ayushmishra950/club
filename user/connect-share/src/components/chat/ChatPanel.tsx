@@ -113,6 +113,7 @@ export function ChatPanel({ open, onClose }: Props) {
       setAcceptLoading(true);
       const res = await acceptGroupInvite({ chatId, userId });
       if (res.status === 200 || res.status === 201) {
+         dispatch(setAcceptedInvite({ chatId, userId }));
         toast({ title: "Group invite accepted successfully.", description: res?.data?.message || "invite accepted successfully" });
       } else {
         toast({ title: "Failed to accept group invite", description: res?.data?.message || "invite accepted failed", variant: "destructive" });
@@ -449,7 +450,7 @@ export function ChatPanel({ open, onClose }: Props) {
                             }`}
                         >
                           {/* ------------------- Message or Post ------------------- */}
-                          {m.postId?._id ? (
+                          { m.postId?._id ? (
                             <div className="flex flex-col gap-1 border rounded-lg p-2 bg-white shadow-sm max-h-48 overflow-hidden">
                               {m.postId.images?.length > 0 && (
                                 <img
@@ -474,6 +475,8 @@ export function ChatPanel({ open, onClose }: Props) {
                             <p>{m.text}</p>
                           )}
 
+
+                        
                           {/* ------------------- Time + Status ------------------- */}
                           <div className="flex items-center justify-end mt-1 text-[10px] gap-1">
                             <span className={isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}>
@@ -525,10 +528,7 @@ export function ChatPanel({ open, onClose }: Props) {
                     )}
 
                     {/* Message Row */}
-                    <div
-                      className={`flex items-end gap-2 mb-2 ${isMe ? "justify-end" : "justify-start"
-                        }`}
-                    >
+                    <div className={`flex items-end gap-2 mb-2 ${isMe ? "justify-end" : "justify-start" }`} >
                       {/* NAME ONLY */}
                       {!isMe && (
                         <div className="flex flex-col items-start w-10">

@@ -34,7 +34,7 @@ const Events = () => {
     return () => {
       socket.off("event")
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (selectedEventId && eventRef.current[selectedEventId]) {

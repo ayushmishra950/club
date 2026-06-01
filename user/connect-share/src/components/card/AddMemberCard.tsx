@@ -5,11 +5,13 @@ import { addMemberToGroup } from "@/service/group";
 import { setUpdateGroup } from "@/redux-toolkit/slice/businessGroupSlice";
 import { getAllUser } from "@/service/auth";
 import { setUserList } from "@/redux-toolkit/slice/userSlice";
+import { Loader2 } from "lucide-react";
 
 const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
     const { toast } = useToast();
     const dispatch = useAppDispatch();
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+    const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(8);
     const [memberListRefresh, setMemberListRefresh] = useState(false);
@@ -42,6 +44,7 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
     const handleAddMembers = async () => {
         try {
             const payload = { groupId, members: selectedUsers };
+            setLoading(true);
             const res = await addMemberToGroup(payload);
             if (res.status === 200) {
                 toast({
@@ -60,8 +63,10 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
                 variant: "destructive"
             });
         }
+        finally {
+            setLoading(false);
+        }
     };
-
 
     const handleGetUsers = async () => {
         try {
@@ -150,10 +155,10 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
                 <div className="px-4 py-3 border-t">
                     <button
                         onClick={handleAddMembers}
-                        disabled={!selectedUsers.length}
+                        disabled={!selectedUsers.length || loading}
                         className="w-full py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50"
                     >
-                        Add Members
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Members"}
                     </button>
                 </div>
             </div>

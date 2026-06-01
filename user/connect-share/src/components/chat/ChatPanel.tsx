@@ -5,7 +5,7 @@ import { getChatUsers, sendMessage, getMessages, rejectGroupInvite, acceptGroupI
 import { formatChatDate, formatMessageTimestamp, formatMongoDate } from "@/service/global";
 import socket from '@/socket/socket';
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
-import { setMessageList, setMessageRefresh, setNewMessageAdd, setAcceptedInvite, setGroupInvited, setRejectGroupInvite, setUnreadCountRemove, setUserChatList } from '@/redux-toolkit/slice/chatSlice';
+import { setMessageList, setMessageRefresh, setNewMessageAdd, setAcceptedInvite, setGroupInvited, setRejectGroupInvite, setUnreadCountRemove, setUserChatList, setExitUserFromGroup } from '@/redux-toolkit/slice/chatSlice';
 import { exitMemberFromGroup } from "@/service/group";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import DeleteCard from "@/components/card/DeleteCard";
@@ -229,15 +229,15 @@ export function ChatPanel({ open, onClose }: Props) {
   }, [open, user?._id]);
 
 
-
   const handleExitGroup = async () => {
-    try {
+    try { 
       setDeleteLoading(true);
       const res = await exitMemberFromGroup({ chatId: activeChat?.chatId, userId: user?._id });
       if (res.status === 200 || res.status === 201) {
         toast({ title: "exit the group", description: res?.data?.message || "You have exited the group successfully" });
         setShowProfileCard(false);
         setActiveChat(null);
+        dispatch(setExitUserFromGroup({ chatId: activeChat?.chatId, userId: user?._id }));
         setDeleteChatData(null);
         setDeleteDialogOpen(false);
         await handleGetFriendList();

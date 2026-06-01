@@ -116,11 +116,18 @@ const chatSlice = createSlice({
           chat.members.push(userId);
         }
       }
-    }
+    },
+    setExitUserFromGroup: (state, action) => {
+  const { chatId } = action.payload;
+
+  state.userChatList = state.userChatList.filter(
+    (chat) => chat.chatId?.toString() !== chatId?.toString()
+  );
+}
   }
 });
 
-export const { setUserChatList, setAcceptedInvite, setMessageRefresh, setRejectGroupInvite, setGroupInvited, setUnreadCountRemove, setMessageList, setNewMessageAdd } = chatSlice.actions;
+export const { setUserChatList,setExitUserFromGroup, setAcceptedInvite, setMessageRefresh, setRejectGroupInvite, setGroupInvited, setUnreadCountRemove, setMessageList, setNewMessageAdd } = chatSlice.actions;
 
 export default chatSlice.reducer;
 

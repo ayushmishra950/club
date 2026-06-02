@@ -177,6 +177,20 @@ export default function ReviewPage() {
                         <div>
                           <p className="font-semibold text-sm">{user?.fullName || "Unknown User"}</p>
                           <p className="text-sm text-muted-foreground mt-1"> {item?.message} </p>
+                          <div className="flex items-center gap-1 mt-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span
+                                key={star}
+                                className={
+                                  star <= item?.rating
+                                    ? "text-yellow-500"
+                                    : "text-gray-300"
+                                }
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
 

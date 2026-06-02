@@ -5,6 +5,7 @@ export interface IReview extends Document {
   message: string;
   status: string;
   adminReply: string;
+  rating?: number;
   createdAt: Date;
 }
 
@@ -18,6 +19,11 @@ const ReviewSchema: Schema<IReview> = new Schema(
     message: {
       type: String,
       required: true,
+    },
+    rating:{
+      type: Number,
+      min: 0,
+      max: 5,
     },
     createdAt: {
       type: Date,

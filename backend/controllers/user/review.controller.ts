@@ -7,13 +7,13 @@ import mongoose from "mongoose";
 
 export const addReview = async (req: Request, res: Response) => {
     try {
-        const { userId, message } = req.body;
+        const { userId, message, rating } = req.body;
         const io = getIO();
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        const review = new Review({ userId, message, status: "pending" });
+        const review = new Review({ userId, message, rating, status: "pending" });
         await review.save();
 
         await review.populate("userId", "fullName profileImage");

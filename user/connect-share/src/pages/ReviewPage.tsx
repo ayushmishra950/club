@@ -13,6 +13,7 @@ export default function ReviewPage() {
     const navigate = useNavigate();
     const [text, setText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [rating, setRating] = useState(0);
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const user = JSON.parse(localStorage.getItem("user"));
     const dispatch = useAppDispatch();
@@ -33,7 +34,8 @@ export default function ReviewPage() {
         if (!text.trim() && !user?._id) return;
         const obj = {
             userId: user?._id,
-            message: text
+            message: text,
+            rating,
         };
         try {
             setIsLoading(true);
@@ -52,7 +54,6 @@ export default function ReviewPage() {
         finally {
             setIsLoading(false);
         }
-
     };
 
     const getStatusColor = (status: string) => {
@@ -124,6 +125,15 @@ export default function ReviewPage() {
                             placeholder="Write your review..."
                             className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background outline-none focus:ring-2 focus:ring-primary/30"
                         />
+                        <input
+                            type="number"
+                            min="1"
+                            max="5"
+                            value={rating}
+                            onChange={(e) => setRating(Number(e.target.value))}
+                            placeholder="Rating (1-5)"
+                            className="w-28 px-3 py-2 text-sm rounded-lg border bg-background outline-none focus:ring-2 focus:ring-primary/30"
+                        />
 
                         <button
                             onClick={() => setConfirmDialogOpen(true)}
@@ -154,10 +164,26 @@ export default function ReviewPage() {
                                 >
                                     {/* REVIEW + STATUS */}
                                     <div className="flex items-start justify-between gap-3">
-                                        <p className="text-sm text-foreground leading-relaxed">
-                                            {item.message}
-                                        </p>
+                                        <div>
+                                            <p className="text-sm text-foreground leading-relaxed">
+                                                {item.message}
+                                            </p>
 
+                                            <div className="flex items-center gap-1 mt-1">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <span
+                                                        key={star}
+                                                        className={
+                                                            star <= item?.rating
+                                                                ? "text-yellow-500"
+                                                                : "text-gray-300"
+                                                        }
+                                                    >
+                                                        ★
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
                                         <span
                                             className={`text-[10px] px-2 py-1 rounded-full font-medium ${getStatusColor(
                                                 item.status

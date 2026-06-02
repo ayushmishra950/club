@@ -42,6 +42,8 @@ export const createPost = async (req: any, res: any) => {
       isPinned: isPinned === "true" || isPinned === true ? true : false,
     });
 
+    await post.populate("createdBy", "fullName profileImage email occupation");
+
     res.status(201).json({
       success: true,
       message: "Post created successfully",
@@ -138,6 +140,8 @@ export const updatePost = async (req: any, res: any) => {
     }
 
     await post.save();
+
+    await post.populate("createdBy", "fullName profileImage email occupation");
 
     res.status(200).json({
       success: true,

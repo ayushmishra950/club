@@ -18,6 +18,7 @@ export default function ReviewPage() {
     const user = JSON.parse(localStorage.getItem("user"));
     const dispatch = useAppDispatch();
     const reviews = useAppSelector((state) => state?.reviews?.reviewsList);
+    
 
     useEffect(() => {
         socket.on("updateReview", (data: any) => {
@@ -30,7 +31,7 @@ export default function ReviewPage() {
         }
     }, [])
 
-    const handleSubmit = async () => {
+    const handleSubmit = async() => {
         if (!text.trim() && !user?._id) return;
         const obj = {
             userId: user?._id,

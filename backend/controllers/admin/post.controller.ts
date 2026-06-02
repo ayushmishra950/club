@@ -143,19 +143,12 @@ export const updatePost = async (req: any, res: any) => {
 
     await post.populate("createdBy", "fullName profileImage email occupation");
 
-    res.status(200).json({
-      success: true,
-      message: "Post updated successfully",
-      post,
-    });
+    res.status(200).json({ success: true, message: "Post updated successfully", post});
 
     const io = getIO();
     io.emit("postRefresh");
   } catch (err: any) {
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({success: false, message: err.message});
   }
 };
 

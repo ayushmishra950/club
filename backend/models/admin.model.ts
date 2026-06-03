@@ -14,6 +14,7 @@ export interface IAdmin extends Document {
   mobile:string;
   clubName:string;
   foundedYear:string;
+  refreshToken? : string;
 }
 
 const AdminSchema = new Schema<IAdmin>(
@@ -72,7 +73,8 @@ const AdminSchema = new Schema<IAdmin>(
     lastSeen:{
       type:String,
       default:null,
-    }
+    },
+    refreshToken : String
   },
   {
     timestamps: true

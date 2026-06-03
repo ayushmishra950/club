@@ -74,6 +74,7 @@ export interface IUser extends Document {
   amount?: string;
   transitionNumber?: string;
   premiumUser?: null | "premium";
+  refreshTokens?:string[];
 
   comparePassword(password: string): Promise<boolean>;
 }
@@ -174,6 +175,10 @@ const UserSchema = new Schema<IUser>(
     paymentImage: String,
     amount: String,
     transitionNumber: String,
+    refreshTokens: {
+  type: [String],
+  default: []
+},
     premiumUser: {
       type: String,
       enum: [null, "premium"],

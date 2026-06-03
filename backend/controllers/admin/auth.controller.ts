@@ -1,7 +1,7 @@
-import type  { Request, Response } from "express";
+import type { Request, Response } from "express";
 import Admin from "../../models/admin.model.js";
 import User from "../../models/user.model.js";
-import {generateAccessToken, generateRefreshToken} from "../../utils/generateToken.js";
+import { generateAccessToken, generateRefreshToken } from "../../utils/generateToken.js";
 import jwt from "jsonwebtoken";
 
 // CREATE ADMIN
@@ -12,8 +12,8 @@ export const createAdmin = async (req: Request, res: Response) => {
 
     let existingAdmin = await Admin.findOne({ email });
 
-    if(!existingAdmin) {
-        existingAdmin = await User.findOne({email});
+    if (!existingAdmin) {
+      existingAdmin = await User.findOne({ email });
     }
 
     if (existingAdmin) {
@@ -70,19 +70,22 @@ export const adminLogin = async (req: Request, res: Response) => {
       });
     }
 
-     const accessToken = generateAccessToken(admin._id.toString());
-      const refreshToken = generateRefreshToken(admin._id.toString());
-    
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000
-      });
+    const accessToken = generateAccessToken(admin._id.toString());
+    const refreshToken = generateRefreshToken(admin._id.toString());
+
+    admin.refreshToken = refreshToken;
+    await admin.save();
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
     res.status(200).json({
       success: true,
       message: "Login successful",
-       admin,
+      admin,
       accessToken
     });
 

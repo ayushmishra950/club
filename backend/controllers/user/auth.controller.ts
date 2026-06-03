@@ -10,6 +10,7 @@ import { createNotificationInternal } from "./notification.controller.js";
 import { NotificationType } from "../../models/notification.model.js";
 import { nanoid } from "nanoid";
 import Post from "../../models/post.model.js";
+import Admin from "../../models/admin.model.js";
 
 
 export const registerUser = async (req: Request, res: Response) => {
@@ -36,7 +37,7 @@ export const registerUser = async (req: Request, res: Response) => {
       fullName, email, mobile, dob, gender, maritalStatus, occupation, address, city, state, password, userId
     });
 
-    if (!user) { return res.status(500).json({ success: false, message: "Failed to create user" });}
+    if (!user) { return res.status(500).json({ success: false, message: "Failed to create user" }); }
 
     const safeUser = await User.findById(user._id).select("-password");
 
@@ -64,7 +65,7 @@ export const loginUser = async (req: Request, res: Response) => {
     const { identifier, password } = req.body;
 
 
-    let user = await User.findOne({ $or:[{email:identifier}, {mobile:identifier}] }).select("+password");
+    let user = await User.findOne({ $or: [{ email: identifier }, { mobile: identifier }] }).select("+password");
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -84,6 +85,24 @@ export const loginUser = async (req: Request, res: Response) => {
     const accessToken = generateAccessToken(user._id.toString());
     const refreshToken = generateRefreshToken(user._id.toString());
 
+    if (user && user.refreshTokens) {
+      user.refreshTokens.push(refreshToken);
+    
+    }
+      await user.save();
+
+    const platform = req?.body?.platform;
+
+    if (platform === "mobile") {
+      return res.status(200).json({
+        success: true,
+        message: "Login successful",
+        data: user,
+        accessToken,
+        refreshToken
+      });
+    }
+
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: false,
@@ -102,26 +121,57 @@ export const loginUser = async (req: Request, res: Response) => {
 
 };
 
-export const refreshAccessToken = async (req: Request, res: Response) => {
+// export const refreshAccessToken = async (req: Request, res: Response) => {
 
+//   try {
+//     // const refreshToken = req.cookies.refreshToken;
+//     const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+//     if (!refreshToken) {
+//       return res.status(401).json({ success: false, message: "Refresh token not found" });
+//     }
+
+//     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as { id: string };
+
+//     const newAccessToken = jwt.sign({ id: decoded.id }, process.env.ACCESS_TOKEN_SECRET!, { expiresIn: "15m" });
+//     res.status(200).json({ success: true, accessToken: newAccessToken });
+
+//   } catch (error: any) {
+
+//     res.status(403).json({ success: false, message: "Invalid refresh token", error: error.message });
+//   }
+// };
+
+
+export const refreshAccessToken = async ( req: Request, res: Response) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
     if (!refreshToken) {
       return res.status(401).json({ success: false, message: "Refresh token not found" });
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as { id: string };
+    const decoded = jwt.verify( refreshToken, process.env.REFRESH_TOKEN_SECRET! ) as { id: string };
 
-    const newAccessToken = jwt.sign({ id: decoded.id }, process.env.ACCESS_TOKEN_SECRET!, { expiresIn: "15m" });
-    res.status(200).json({ success: true, accessToken: newAccessToken });
- 
+    // First check User
+    let account = await User.findOne({ _id: decoded.id, refreshTokens: refreshToken });
+
+    // If not found then check Admin
+    if (!account) {
+      account = await Admin.findOne({ _id: decoded.id, refreshToken: refreshToken});
+    }
+
+    if (!account) {
+      return res.status(403).json({ success: false, message: "Invalid refresh token"});
+    }
+    const newAccessToken = generateAccessToken( account._id.toString());
+
+    return res.status(200).json({ success: true, accessToken: newAccessToken});
   } catch (error: any) {
-
-    res.status(403).json({ success: false, message: "Invalid refresh token", error: error.message });
+    console.error( "Refresh Token Error:", error?.message);
+    return res.status(403).json({ success: false, message: "Invalid or expired refresh token"});
   }
 };
-
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await User.find({ isVerified: true, blocked: false }).select("-password");

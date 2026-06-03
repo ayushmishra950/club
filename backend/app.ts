@@ -49,7 +49,7 @@ connectDb();
 app.use(globalRateLimit);
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors())
+app.use(cors({origin: "*"}))
 
 // { origin: ["http://localhost:3000","http://localhost:8080", "http://localhost:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"], credentials: true }
 // admin route

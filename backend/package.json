@@ -3,7 +3,8 @@
   "scripts": {
     "dev": "nodemon --exec tsx app.ts",
     "build": "tsc",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js",
+    "prestart": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

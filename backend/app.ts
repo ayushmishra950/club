@@ -49,7 +49,7 @@ connectDb();
 app.use(globalRateLimit);
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: ["http://localhost:8080","exp://192.168.2.5:8081", "http://localhost:8081","exp://192.168.2.5:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"], credentials: true }))
+app.use(cors({ origin: ["http://localhost:3000","http://localhost:8080","exp://192.168.2.5:8081", "http://localhost:8081","exp://192.168.2.5:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"], credentials: true }))
 
 // admin route
 app.use("/api/admin/auth", adminAuthRoutes);

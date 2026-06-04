@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UserPlus, Check, X, Users, MessageCircle } from 'lucide-react';
+import { UserPlus, Check, X, Users, MessageCircle, Loader2 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { FriendButton } from '@/components/connections/FriendButton';
@@ -26,6 +26,10 @@ const FriendRequests = () => {
   const [receivedRequestList, setReceivedRequestList] = useState([]);
   const [userListRefresh, setUserListRefresh] = useState(false);
   const [friendList, setFriendList] = useState([]);
+  const [messageLoading, setMessageLoading] = useState<string | null>(null);
+  const [cancelLoading, setCancelLoading] = useState<string | null>(null);
+  const [acceptLoading, setAcceptLoading] = useState<string | null>(null);
+  const [sendLoading, setSendLoading] = useState<string | null>(null);
 
   useEffect(()=>{
     socket.on("unSeenFriendRequest",()=>{
@@ -41,6 +45,7 @@ const FriendRequests = () => {
     if(!user?._id || !userId) return;
     let obj = {senderId:user?._id, receiverId:userId};
     try{
+      setMessageLoading(userId);
       const res = await addUserFromChat(obj);
     
       if(res.status===200){
@@ -51,6 +56,8 @@ const FriendRequests = () => {
     catch(err){
       console.log(err);
       toast({title:"Add User From Chat Failed.", description:err?.response?.data?.message || err?.message, variant:"destructive"});
+    }finally{
+      setMessageLoading(null);
     }
   }
 
@@ -58,6 +65,7 @@ const FriendRequests = () => {
      if(!user?._id || !userId) return;
     let obj = { fromId: user?._id, toId: userId };
     try {
+      setSendLoading(userId);
       const res = await sendRequest(obj);
       if (res.status === 201) {
         toast({ title: "Request Send Successfully.", description: res?.data?.message });
@@ -68,12 +76,15 @@ const FriendRequests = () => {
     catch (err) {
       console.log(err);
       toast({ title: "Send Request Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
+    }finally{
+      setSendLoading(null);
     }
   };
 
   const handleAcceptRequest = async (userId: string) => {
   if(!userId) return;
     try {
+      setAcceptLoading(userId);
       const res = await acceptRequest(userId);
       if (res.status === 200) {
         toast({ title: "Request Accept Successfully.", description: res?.data?.message });
@@ -83,12 +94,15 @@ const FriendRequests = () => {
     catch (err) {
       console.log(err);
       toast({ title: "Request Accept Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
+    }finally{
+      setAcceptLoading(null);
     }
   };
 
   const handleCancelRequest = async (userId: string) => {
     if(!userId) return;
     try {
+      setCancelLoading(userId);
       const res = await cancelRequest(userId);
       if (res.status === 200) {
         toast({ title: "Request Cancel Successfully.", description: res?.data?.message });
@@ -98,6 +112,8 @@ const FriendRequests = () => {
     catch (err) {
       console.log(err);
       toast({ title: "Request Cancel Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
+    }finally{
+      setCancelLoading(null);
     }
   };
 
@@ -217,13 +233,13 @@ const FriendRequests = () => {
                       onClick={() => handleAcceptRequest(req._id)}
                       className="flex items-center gap-1.5 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
                     >
-                      <Check className="h-4 w-4" /> Accept
+                     {acceptLoading === req?._id ? <Loader2 className='animate-spin' /> : <span><Check className="h-4 w-4" /> Accept</span>}
                     </button>
                     <button
                       onClick={() => handleCancelRequest(req._id)}
                       className="flex items-center gap-1.5 rounded-lg bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     >
-                      <X className="h-4 w-4" /> Decline
+                      {cancelLoading === req?._id ? <Loader2 className='animate-spin' /> :<span className='flex items-center gap-1'><X className="h-4 w-4" /> Decline</span>}
                     </button>
                   </div>
                 </div>
@@ -255,7 +271,7 @@ const FriendRequests = () => {
                     onClick={() => handleCancelRequest(req?._id)}
                     className="flex items-center gap-1.5 rounded-lg bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                   >
-                    <X className="h-4 w-4" /> Cancel
+                   {cancelLoading === req?._id ? <Loader2 className='animate-spin' /> : <span className='flex items-center gap-1'><X className="h-4 w-4" /> Cancel</span>}
                   </button>
                 </div>
               ))
@@ -285,7 +301,7 @@ const FriendRequests = () => {
                     </p>
                   </div>
                   <Button className='h-7.2' onClick={() => handleSendRequest(user?._id)}>
-                    <UserPlus /> Add friend
+                  {sendLoading === user?._id ? <Loader2 className='animate-spin'/> : <span className='flex items-center gap-1'> <UserPlus /> Add friend</span>}
                   </Button>
                 </div>
               ))
@@ -324,13 +340,13 @@ const FriendRequests = () => {
                     onClick={(e) => {e.stopPropagation();handleAddUserFromChat(friend._id)}}
                     className="flex items-center gap-1.5 rounded-lg bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-green-400 hover:text-white transition-colors"
                   >
-                    <MessageCircle className="h-4 w-4" /> Message
+                  {messageLoading === friend?._id ? <Loader2 className='animate-spin' /> :  <span className='flex items-center gap-1'><MessageCircle className="h-4 w-4" /> Message</span>} 
                   </button>
                    <button
                     onClick={(e) => {e.stopPropagation();handleCancelRequest(friend._id)}}
                     className="flex items-center gap-1.5 rounded-lg bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                   >
-                    <X className="h-4 w-4" /> Remove
+                    {cancelLoading === friend?._id ? <Loader2 className='animate-spin' /> :<span className='flex items-center gap-1'><X className="h-4 w-4" /> Remove</span>}
                   </button>
                 </div>
               ))

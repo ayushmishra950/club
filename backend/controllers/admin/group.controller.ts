@@ -63,6 +63,8 @@ export const createGroup = async (req: Request, res: Response) => {
       await Chat.create({ members: finalMembers, isGroup: true, groupId: group._id, });
     }
 
+    console.log("chatssssin Group:-", Chat);
+
     let latestGroup = await Group.findById(group._id)
       .populate({
         path: "createdBy",

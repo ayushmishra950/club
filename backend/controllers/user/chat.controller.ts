@@ -113,15 +113,16 @@ export const createOrGetChat = async (req: Request, res: Response) => {
     // Check existing chat
     let chat = await Chat.findOne({
       members: { $all: [senderId, receiverId], $size: 2 },
+      isGroup:false
     });
 
     // If not exist → create new
     if (!chat) {
       chat = await Chat.create({
         members: [senderId, receiverId],
+        isGroup: false,
       });
     }
-
     res.status(200).json({ chat, message: "user add successfully from chat." });
   } catch (err: any) {
     res.status(500).json({ message: err.message });

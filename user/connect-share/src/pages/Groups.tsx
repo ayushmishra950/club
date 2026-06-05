@@ -204,7 +204,7 @@ const Groups = () => {
                             </span>
 
                             <span className="text-xs text-muted-foreground">
-                              CreatedBy:- {group?.createdBy?.fullName ? isCreatedBy ? "You" : group.createdBy.fullName : "Admin"}
+                              CreatedBy:- CreatedBy: { isCreatedBy ? (group?.createdBy?.isDeleted ? "Deleted User" : "You") : (group?.createdBy?.fullName || "Admin")}
                             </span>
                           </div>
 

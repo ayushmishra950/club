@@ -1,11 +1,16 @@
 
 import { useEffect, useRef, useState } from "react";
-import { Eye, EyeOff, Loader2, ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, ChevronDown, ChevronUp, Plus, Trash2, ArrowLeft  } from "lucide-react";
 import { getSingleUser, updateUser } from "@/service/auth";
 import { useToast } from "@/hooks/use-toast";
+import { setUserData } from "@/redux-toolkit/slice/userSlice";
+import { useAppDispatch } from "@/redux-toolkit/customHook/hook";
+import { useNavigate } from "react-router-dom";
 
 export default function UserPage() {
     const { toast } = useToast();
+    const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const dateRef = useRef<HTMLInputElement>(null);
 
@@ -188,8 +193,9 @@ export default function UserPage() {
                 const updatedUser = res.data.user;
                 if (updatedUser) {
                     localStorage.setItem("user", JSON.stringify(updatedUser));
+                    dispatch(setUserData(updatedUser));
                 }
-
+               
                 toast({ title: "Profile Updated Successfully", description: res.data.message });
                 handleGetUser();
             }
@@ -239,10 +245,26 @@ export default function UserPage() {
         <div className="w-full min-h-screen bg-gray-50 py-8 px-4 md:px-8">
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-semibold text-gray-900">Profile Settings</h1>
-                    <p className="text-gray-600 mt-1">Update your personal and business information</p>
-                </div>
+
+<div className="mb-8">
+  <div className="flex items-center gap-3">
+    <button
+      onClick={() => navigate(-1)} // ya apna back function
+      className="text-gray-700 hover:text-black"
+    >
+      <ArrowLeft  size={24} />
+    </button>
+
+    <div>
+      <h1 className="text-3xl font-semibold text-gray-900">
+        Profile Settings
+      </h1>
+      <p className="text-gray-600 mt-1">
+        Update your personal and business information
+      </p>
+    </div>
+  </div>
+</div>
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Cover + Profile Image Section - Unchanged */}
@@ -490,7 +512,6 @@ export default function UserPage() {
                                     onChange={handleChange}
                                     className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="your@email.com"
-                                    disabled
                                 />
                             </div>
                             <div>

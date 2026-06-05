@@ -6,120 +6,20 @@ import { NotificationType } from "../../models/notification.model.js";
 import { getIO } from "../../utils/socketHelper.js";
 import Chat from "../../models/chat.model.js";
 
-
-// export const getSuggestedUsers = async (req: Request, res: Response) => {
-//   try {
-//     const { userId } = req.params;
-
-//     if (!userId) return res.status(400).json({ message: "userId is required." });
-
-//     const currentUser = await User.findById(userId).select("+friends");
-//     if (!currentUser) return res.status(404).json({ message: "User not found" });
-
-//     const currentFriends = currentUser.friends?.map((f: any) => f.toString()) || [];
-
-//     const users = await User.find({ _id: { $ne: currentUser._id }, isVerified: true, blocked: false }).select("+friends");
-
-//     const friendRequests = await FriendRequest.find({
-//       $or: [{ from: currentUser._id }, { to: currentUser._id }],
-//     });
-
-//     const requestMap: Record<string, any> = {};
-//     friendRequests.forEach((fr) => {
-//       const otherUserId = fr.from.toString() === userId ? fr.to.toString() : fr.from.toString();
-//       requestMap[otherUserId] = fr;
-//     });
-
-//     const suggestions: any[] = [];
-
-//     const now = new Date();
-//     const cooldownDays = 30;
-
-//     for (let u of users) {
-//       const userIdStr = u._id.toString();
-
-//       if (currentFriends.includes(userIdStr)) continue;
-
-//       const fr = requestMap[userIdStr];
-
-//       if (fr) {
-//         if (fr.status === "accepted" || fr.status === "pending") {
-//           continue;
-//         } else if (fr.status === "rejected") {
-//           const rejectedAt = fr.updatedAt || fr.createdAt;
-//           const diffDays = (now.getTime() - rejectedAt.getTime()) / (1000 * 60 * 60 * 24);
-
-//           if (diffDays < cooldownDays) {
-//             continue;
-//           }
-//         }
-//       }
-//       let score = 0;
-
-//       if (u.city && u.city === currentUser.city) score += 3;
-//       if (u.state && u.state === currentUser.state) score += 2;
-//       if (u.hobbies?.some((h: string) => currentUser.hobbies?.includes(h))) score += 2;
-//       if (u.skills?.some((s: string) => currentUser.skills?.includes(s))) score += 3;
-//       if (u.occupation && u.occupation === currentUser.occupation) score += 1;
-
-//       const userFriends = u.friends?.map((f: any) => f.toString()) || [];
-//       const mutualFriends = userFriends.filter((f: string) => currentFriends.includes(f));
-//       if (mutualFriends.length > 0) score += mutualFriends.length * 2;
-
-//       if (fr && fr.status === "rejected") {
-//         score = Math.max(1, score * 0.5);
-//       }
-//       if (score > 0) {
-//         suggestions.push({
-//           ...u.toObject(),
-//           score,
-//           mutualFriendsCount: mutualFriends.length,
-//           mutualFriends: mutualFriends.slice(0, 3),
-//         });
-//       }
-//     }
-
-//     suggestions.sort((a, b) => b.score - a.score);
-
-//     res.status(200).json(suggestions);
-//   } catch (err: any) {
-//     res.status(500).json({ message: err?.message });
-//   }
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 export const getSuggestedUsers = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    if (!userId) {
-      return res.status(400).json({ message: "userId is required." });
-    }
+    if (!userId) return res.status(400).json({ message: "userId is required." });
 
     const currentUser = await User.findById(userId).select("+friends");
-    if (!currentUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!currentUser) return res.status(404).json({ message: "User not found" });
 
-    const currentFriends =
-      currentUser.friends?.map((f: any) => f.toString()) || [];
+    if (currentUser.isDeleted) return res.status(403).json({ message: "Account is scheduled for deletion" });
 
-    const users = await User.find({ _id: { $ne: currentUser._id }, isVerified: true, blocked: false });
+    const currentFriends = currentUser.friends?.map((f: any) => f.toString()) || [];
 
+    const users = await User.find({ _id: { $ne: currentUser._id }, isVerified: true, blocked: false, isDeleted: false });
     const friendRequests = await FriendRequest.find({ $or: [{ from: currentUser._id }, { to: currentUser._id }] });
 
     const requestMap: Record<string, any> = {};
@@ -146,16 +46,13 @@ export const getSuggestedUsers = async (req: Request, res: Response) => {
 
         if (fr.status === "rejected") {
           const rejectedAt = fr.updatedAt || fr.createdAt;
-          const diffDays =
-            (now.getTime() - rejectedAt.getTime()) /
-            (1000 * 60 * 60 * 24);
+          const diffDays = (now.getTime() - rejectedAt.getTime()) /(1000 * 60 * 60 * 24);
 
           if (diffDays < cooldownDays) {
             continue;
           }
-        }
+        } 
       }
-
       suggestions.push(u);
     }
 
@@ -180,10 +77,11 @@ export const sendFriendRequest = async (req: Request, res: Response) => {
     ]);
 
     if (!fromUser || !toUser) return res.status(404).json({ message: "User not found." });
+    if (fromUser.isDeleted) return res.status(403).json({ message: "Your account is scheduled for deletion." });
 
-    if (fromUser.friends?.includes(toUser._id)) {
-      return res.status(400).json({ message: "You are already friends." });
-    }
+    if (toUser.isDeleted) return res.status(400).json({ message: "This user is not available." });
+
+    if (fromUser.friends?.includes(toUser._id)) return res.status(400).json({ message: "You are already friends." });
 
     const existingRequest = await FriendRequest.findOne({ from: fromId, to: toId });
     if (existingRequest) return res.status(400).json({ message: "Friend request already sent." });
@@ -206,6 +104,16 @@ export const acceptFriendRequest = async (req: Request, res: Response) => {
     if (!request) return res.status(404).json({ message: "Friend request not found." });
     if (request.status !== "pending") return res.status(400).json({ message: `Cannot accept a ${request.status} request.` });
 
+    // 👇 YAHAN ADD KARO
+    const [fromUserData, toUserData] = await Promise.all([
+      User.findById(request.from),
+      User.findById(request.to),
+    ]);
+
+    if (!fromUserData || !toUserData) return res.status(404).json({ message: "User not found." });
+
+    if (fromUserData.isDeleted || toUserData.isDeleted) return res.status(400).json({ message: "Friend request is no longer valid." });
+
     request.status = "accepted";
     await request.save();
 
@@ -214,8 +122,7 @@ export const acceptFriendRequest = async (req: Request, res: Response) => {
       User.findByIdAndUpdate(request.to, { $addToSet: { friends: request.from } }),
     ]);
 
-    const fromUser = await User.findById(request.to);
-    await createNotificationInternal(request.from, request.to, NotificationType.FRIEND_ACCEPT, undefined, `${fromUser?.fullName} friend request accepted.`);
+    await createNotificationInternal(request.from, request.to, NotificationType.FRIEND_ACCEPT, undefined, `${toUserData?.fullName} friend request accepted.`);
     io.to(request.from.toString()).emit("friendRequestAccepted");
     io.to(request.to.toString()).emit("friendRequestAccepted");
     res.status(200).json({ message: "Friend request accepted." });
@@ -242,9 +149,7 @@ export const cancelFriendRequest = async (req: Request, res: Response) => {
     await FriendRequest.findByIdAndDelete(requestId);
 
     // Delete chat between the two users if exists
-    await Chat.findOneAndDelete({
-      members: { $all: [request.from, request.to] }
-    });
+    await Chat.findOneAndDelete({ members: { $all: [request.from, request.to] } });
 
     // Notification to the sender
     const fromUser = await User.findById(request.to);
@@ -263,10 +168,14 @@ export const cancelFriendRequest = async (req: Request, res: Response) => {
   }
 };
 
+
 export const getFromAnToPendingRequests = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     if (!userId) return res.status(400).json({ message: "userId is required." });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.isDeleted) return res.status(403).json({ message: "Account is scheduled for deletion" })
 
     const requests = await FriendRequest.find({
       $or: [
@@ -280,10 +189,7 @@ export const getFromAnToPendingRequests = async (req: Request, res: Response) =>
     const sentRequests = requests.filter(r => r.from._id.toString() === userId);
     const receivedRequests = requests.filter(r => r.to._id.toString() === userId);
 
-    res.status(200).json({
-      sent: sentRequests,
-      received: receivedRequests,
-    });
+    res.status(200).json({ sent: sentRequests, received: receivedRequests,});
   } catch (err: any) {
     res.status(500).json({ message: err.message });
   }
@@ -296,79 +202,53 @@ export const getFriendUsers = async (req: Request, res: Response) => {
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "You are not logged in." });
+    if (user.isDeleted) return res.status(403).json({ message: "Account is scheduled for deletion" });
 
-   const friendRequests = await FriendRequest.find({
-      status: "accepted",
-      $or: [
-        { from: userId },
-        { to: userId }
-      ]
-    })
-      .populate("from", "fullName profileImage")
-      .populate("to", "fullName profileImage");
+    const friendRequests = await FriendRequest.find({ status: "accepted", $or: [ { from: userId }, { to: userId } ]})
+      .populate({ path: "from", select: "fullName profileImage", match: { isDeleted: false } })
+      .populate({ path: "to", select: "fullName profileImage", match: { isDeleted: false } })
 
-    const friends = friendRequests.map((fr: any) => {
+    const validRequests = friendRequests.filter( (fr: any) => fr.from && fr.to);
 
-      // agar current user sender hai
-      if (fr.from._id.toString() === userId) {  
-        return {
-          _id: fr.to._id,
-          fullName: fr.to.fullName,
-          profileImage: fr.to.profileImage,
-          friendshipCreatedAt: fr.createdAt
-        };
-      }
+   const friends = validRequests.map((fr: any) => {
+  if (fr.from._id.toString() === userId) {
+    return { _id: fr.to._id, fullName: fr.to.fullName, profileImage: fr.to.profileImage, friendshipCreatedAt: fr.createdAt };
+  }
 
-      // agar current user receiver hai
-      return {
-        _id: fr.from._id,
-        fullName: fr.from.fullName,
-        profileImage: fr.from.profileImage,
-        friendshipCreatedAt: fr.createdAt
-      };
-    });
+  return { _id: fr.from._id, fullName: fr.from.fullName, profileImage: fr.from.profileImage, friendshipCreatedAt: fr.createdAt};
+});
 
-    return res.status(200).json({ friends });
+return res.status(200).json({ friends });
+
   } catch (err: any) {
     res.status(500).json({ message: err?.message });
-  }
+ }
 };
-
 
 
 export const getMutualFriends = async (req: Request, res: Response) => {
   try {
     const { userId, otherUserId } = req.body;
 
-    if (!userId || !otherUserId) {
-      return res.status(400).json({ message: "Both userId and otherUserId are required" });
-    }
+    if (!userId || !otherUserId) return res.status(400).json({ message: "Both userId and otherUserId are required" });
 
     const currentUser = await User.findById(userId).select("+friends");
-    if (!currentUser) {
-      return res.status(404).json({ message: "Current user not found" });
-    }
+    if (!currentUser) return res.status(404).json({ message: "Current user not found" });
+    if (currentUser.isDeleted) return res.status(403).json({ message: "Account is scheduled for deletion"});
 
     const otherUser = await User.findById(otherUserId).select("+friends");
-    if (!otherUser) {
-      return res.status(404).json({ message: "Other user not found" });
-    }
+    if (!otherUser) return res.status(404).json({ message: "Other user not found" });
+    if (otherUser.isDeleted) return res.status(404).json({  message: "User not available"});
 
     const currentFriends = currentUser.friends?.map((f: any) => f.toString()) || [];
     const otherFriends = otherUser.friends?.map((f: any) => f.toString()) || [];
 
-    const mutualIds = otherFriends.filter((f: string) =>
-      currentFriends.includes(f)
-    );
+    const mutualIds = otherFriends.filter((f: string) => currentFriends.includes(f));
 
-    const mutualFriends = await User.find({
-      _id: { $in: mutualIds }
+    const mutualFriends = await User.find({ _id: { $in: mutualIds }, isDeleted: false
     }).select("fullName profileImage");
 
-    return res.status(200).json({
-      mutualFriendsCount: mutualIds.length,
-      mutualFriends
-    });
+    return res.status(200).json({ mutualFriendsCount: mutualFriends.length, mutualFriends});
 
   } catch (err: any) {
     res.status(500).json({ message: err?.message });

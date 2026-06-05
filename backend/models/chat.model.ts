@@ -13,11 +13,7 @@ export interface IChat extends Document {
 const ChatSchema = new Schema<IChat>(
   {
     members: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
+      { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
     ],
     pendingMembers: [
       {

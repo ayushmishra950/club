@@ -154,7 +154,7 @@ export function PostCard({ post }) {
         <div className={`flex items-center gap-3 ${post?.createdBy?.role !== "admin" ? "cursor-pointer" : ""}`}  onClick={() => {if (post?.createdBy?.role !== "admin") { navigate(`/profile/${post?.createdBy?._id}`)} }}>
           <div className="relative">
             <img
-              src={post?.createdBy?.profileImage || "https://via.placeholder.com/40"}
+              src={post?.createdBy?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"}
               alt={post?.createdBy?.fullName || post?.createdBy?.name || "User Avatar"}
               className="h-10 w-10 rounded-full object-cover"
             />

@@ -6,16 +6,14 @@ import User from "../../models/user.model.js";
 import { getIO } from "../../utils/socketHelper.js";
 
 
-
-
 // ========================
 // Get All Groups
 // ========================
 export const getAllGroups = async (req: Request, res: Response) => {
   try {
     const groups = await Group.find()
-      .populate("members", "fullName email profileImage")
-      .populate("createdBy", "fullName email profileImage")
+      .populate("members", "fullName email profileImage isDeleted")
+      .populate("createdBy", "fullName email profileImage isDeleted")
       .sort({ createdAt: -1 });
     return res.status(200).json({ groups });
   } catch (err: any) {
@@ -23,8 +21,6 @@ export const getAllGroups = async (req: Request, res: Response) => {
     return res.status(500).json({ message: err.message || "Server Error" });
   }
 };
-
-
 
 
 // ========================
@@ -38,18 +34,19 @@ export const toggleMember = async (req: Request, res: Response) => {
 
     // ✅ Validate IDs
     if (
-      !mongoose.Types.ObjectId.isValid(groupId) ||
-      !mongoose.Types.ObjectId.isValid(userId)
+      !mongoose.Types.ObjectId.isValid(groupId) || !mongoose.Types.ObjectId.isValid(userId)
     ) {
       return res.status(400).json({ message: "Invalid IDs" });
     }
 
+    const user = await User.findById(userId);
+
+    if (!user || user.isDeleted) return res.status(400).json({ message: "User is not available" });
+
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ message: "Group not found" });
 
-    const userIndex = group.members.findIndex(
-      (id) => id.toString() === userId
-    );
+    const userIndex = group.members.findIndex((id) => id.toString() === userId);
 
     let message = "";
 
@@ -57,18 +54,12 @@ export const toggleMember = async (req: Request, res: Response) => {
       group.members.splice(userIndex, 1);
       message = "Member removed successfully";
 
-      await Chat.findOneAndUpdate(
-        { groupId },
-        { $pull: { members: userId }, $set: { groupId: groupId }, }
-      );
+      await Chat.findOneAndUpdate({ groupId }, { $pull: { members: userId }, $set: { groupId: groupId }, });
     } else {
       group.members.push(userId);
       message = "Member added successfully";
 
-      await Chat.findOneAndUpdate(
-        { groupId },
-        { $set: { groupId: groupId }, $addToSet: { members: userId }, isGroup: true },
-        { upsert: true, new: true, });
+      await Chat.findOneAndUpdate({ groupId }, { $set: { groupId: groupId }, $addToSet: { members: userId }, isGroup: true }, { upsert: true, new: true, });
     }
 
     await group.save();
@@ -79,10 +70,7 @@ export const toggleMember = async (req: Request, res: Response) => {
     ]);
     io.emit("addMembersToGroup", populatedGroup);
 
-    return res.status(200).json({
-      message,
-      group: populatedGroup,
-    });
+    return res.status(200).json({ message, group: populatedGroup });
   } catch (err: any) {
     console.error(err);
     return res.status(500).json({
@@ -102,6 +90,11 @@ export const removeMemberFromGroup = async (req: Request, res: Response) => {
     ) {
       return res.status(400).json({ message: "Invalid IDs" });
     }
+
+    const user = await User.findById(userId);
+if (!user) {  
+  return res.status(404).json({ message: "User not found" });
+}
 
     // 🔍 Find chat first
     const chat = await Chat.findById(chatId);

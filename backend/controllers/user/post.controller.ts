@@ -11,54 +11,18 @@ import { getIO } from "../../utils/socketHelper.js";
 
 export const getAllPosts = async (req: Request, res: Response) => {
   try {
-    // Saari posts lao
-    const posts = await Post.find().sort({
-      isPinned: -1,
-      createdAt: -1,
-    });
+    const posts = await Post.find()
+      .sort({ isPinned: -1, createdAt: -1 })
+      .populate({ path: "createdBy", select: "name email fullName profileImage occupation role isDeleted" })
+      .populate({ path: "comments.user", select: "fullName name profileImage"})
+      .populate({ path: "comments.replies.user", select: "fullName name profileImage" });
 
-    const validPosts = [];
+    const validPosts = posts.filter( (post: any) => post.createdBy && !post.createdBy.isDeleted);
 
-    // Har post check karo
-    for (const post of posts) {
-      // createdBy user exist karta hai ya nahi
-      const userExists = await User.findById(post.createdBy);
-
-      // Agar user deleted hai to post skip karo
-      if (!userExists) continue;
-
-      // Proper populate karo
-      const populatedPost = await Post.findById(post._id)
-        .populate(
-          "createdBy",
-          "name email fullName profileImage occupation role"
-        )
-
-        // Comment user populate
-        .populate({
-          path: "comments.user",
-          select: "fullName name profileImage",
-        })
-
-        // Reply user bhi populate
-        .populate({
-          path: "comments.replies.user",
-          select: "fullName name profileImage",
-        });
-
-      validPosts.push(populatedPost);
-    }
-
-    return res.status(200).json({
-      success: true,
-      posts: validPosts,
-    });
+    return res.status(200).json({ success: true, posts: validPosts});
 
   } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    return res.status(500).json({ success: false, message: err.message});
   }
 };
 
@@ -66,20 +30,18 @@ export const addPostNotes = async (req: Request, res: Response) => {
   try {
     const { userId, notes } = req.body;
     if (!userId || !notes) return res.status(400).json({ message: "userId or notes is required." });
-
+      const user = await User.findById(userId);
+      if(!user) return res.status(404).json({message:"user not found."});
+      if(user?.isDeleted) return res.status(403).json({message:"Account is scheduled for deletion."});
     const post = await Post.create({ notes: notes, createdBy: userId, create: "User", type: "public" });
     if (!post) return res.status(404).json({ message: "Post add Failed" });
 
     res.status(201).json({ message: "Notes add successfully." })
   }
   catch (err: any) {
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({ success: false, message: err.message});
   }
 }
-
 
 
 // ✅ Like / Unlike Post (Toggle)
@@ -88,21 +50,17 @@ export const toggleLikePost = async (req: Request, res: Response) => {
   if (!userId || !postId) return res.status(400).json({ message: "userId or postId not Found." });
   try {
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: "user not authorised." })
+    if (!user) return res.status(404).json({ message: "user not authorised." });
+    if(user?.isDeleted) return res.status(403).json({message:"Account is scheduled for deletion."});
 
     const post = await Post.findById(postId);
     if (!post) {
-      return res.status(404).json({
-        success: false,
-        message: "Post not found",
-      });
+      return res.status(404).json({ success: false, message: "Post not found"});
     }
 
     const isLiked = post.likes.includes(userId);
     if (isLiked) {
-      post.likes = post.likes.filter(
-        (id) => id.toString() !== userId.toString()
-      );
+      post.likes = post.likes.filter( (id) => id.toString() !== userId.toString());
     } else {
       post.likes.push(userId);
     }
@@ -135,39 +93,23 @@ export const addComment = async (req: Request, res: Response) => {
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "user not authorised." });
+    if(user?.isDeleted) return res.status(403).json({message:"Account is scheduled for deletion."});
 
     const post = await Post.findById(postId);
 
     if (!post) {
-      return res.status(404).json({
-        success: false,
-        message: "Post not found",
-      });
+      return res.status(404).json({ success: false, message: "Post not found"});
     }
 
-    const comment = {
-      user: userId,
-      text,
-      createdAt: new Date(),
-    };
-
+    const comment = { user: userId, text, createdAt: new Date()};
     post.comments.push(comment as any);
-
     await post.save();
     if (post?.createdBy.toString() !== userId.toString()) {
       await createNotificationInternal(post?.createdBy, userId, NotificationType.COMMENT, postId, `${user?.fullName} commented on your post: ${text?.slice(0, 50)}`);
     }
-    res.status(200).json({
-      success: true,
-      message: "Comment added",
-      comments: post.comments,
-      comment: comment
-    });
+    res.status(200).json({ success: true, message: "Comment added", comments: post.comments, comment: comment});
   } catch (err: any) {
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({ success: false, message: err.message});
   }
 };
 
@@ -175,6 +117,9 @@ export const addComment = async (req: Request, res: Response) => {
 export const likeUnlikeComment = async (req: Request, res: Response) => {
   try {
     const { postId, commentId, userId } = req.body;
+    const user = await User.findById(userId);
+    if(!user) return res.status(404).json({message:"user not found."});
+    if(user?.isDeleted) return res.status(403).json({message : "Account is scheduled for deletion."})
 
     const post = await Post.findById(postId);
     if (!post)
@@ -227,6 +172,10 @@ export const replyToComment = async (req: Request, res: Response) => {
   try {
     const { postId, commentId, userId, text } = req.body;
 
+    const user = await User.findById(userId);
+    if(!user) return res.status(404).json({message:"user not found."});
+    if(user?.isDeleted) return res.status(403).json({message:"Account is scheduled for deletion."});
+
     const post = await Post.findById(postId);
     if (!post)
       return res.status(404).json({ success: false, message: "Post not found" });
@@ -242,65 +191,50 @@ export const replyToComment = async (req: Request, res: Response) => {
 
     const parentComment = findComment(post.comments);
     if (!parentComment)
-      return res
-        .status(404)
-        .json({ success: false, message: "Comment not found" });
+      return res.status(404).json({ success: false, message: "Comment not found" });
 
-    const reply = {
-      user: userId,
-      text,
-      createdAt: new Date(),
-      likes: [],
-      replies: [],
-    };
+    const reply = { user: userId, text, createdAt: new Date(), likes: [], replies: []};
 
     parentComment.replies.push(reply as any);
     await post.save();
 
-    return res.status(200).json({
-      success: true,
-      message: "Reply added",
-      reply: reply,
-      replies: parentComment.replies,
-    });
+    return res.status(200).json({ success: true, message: "Reply added", reply: reply, replies: parentComment.replies });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
-
 
 export const sharePost = async (req: Request, res: Response) => {
   try {
     let { fromId, toId, postId, activeTab } = req.body;
     const io = getIO();
 
-    if (!fromId || !toId || !postId) {
-      return res.status(400).json({
-        message: "fromId, toId, and postId are required.",
-      });
-    }
+    if (!fromId || !toId || !postId) return res.status(400).json({ message: "fromId, toId, and postId are required." });
 
-    // ensure array
-    if (!Array.isArray(toId)) {
-      toId = [toId];
-    }
+    const [fromUser, toUser] = await Promise.all([
+      User.findById(fromId),
+      User.findById(Array.isArray(toId) ? toId[0] : toId),
+    ]);
 
-    const createdMessages = [];
+    if (!fromUser) return res.status(404).json({ message: "Your account not found." });
 
-    // -------------------------------
-    // SINGLE CHAT FLOW (UNCHANGED)
-    // -------------------------------
+    if (fromUser.isDeleted) return res.status(403).json({ message: "Your account is inactive." });
+
+    if (!toUser) return res.status(404).json({ message: "Recipient not found." });
+
+    if (toUser.isDeleted) return res.status(403).json({ message: "Recipient is inactive." });
+
+    const receivers = Array.isArray(toId) ? toId : [toId];
+    const createdMessages: any[] = [];
+
+    // ================= SINGLE CHAT =================
     if (activeTab === "single") {
-      for (const receiverId of toId) {
+      for (const receiverId of receivers) {
         const chat = await Chat.findOne({
           members: { $all: [fromId, receiverId] },
         });
 
-        if (!chat) {
-          return res.status(404).json({
-            message: `Chat not found between ${fromId} and ${receiverId}`,
-          });
-        }
+        if (!chat) continue;
 
         const message = await Message.create({
           chatId: chat._id,
@@ -317,18 +251,12 @@ export const sharePost = async (req: Request, res: Response) => {
       }
     }
 
-    // -------------------------------
-    // GROUP CHAT FLOW (NEW)
-    // -------------------------------
+    // ================= GROUP CHAT =================
     else if (activeTab === "group") {
-      for (const chatId of toId) {
+      for (const chatId of receivers) {
         const chat = await Chat.findById(chatId);
 
-        if (!chat || !chat.isGroup) {
-          return res.status(404).json({
-            message: `Group chat not found for ${chatId}`,
-          });
-        }
+        if (!chat || !chat.isGroup) continue;
 
         const message = await Message.create({
           chatId: chat._id,
@@ -339,26 +267,20 @@ export const sharePost = async (req: Request, res: Response) => {
 
         const populatedMessage = await message.populate([
           { path: "postId" },
-          { path: "sender", select: "fullName profileImage email" }
+          { path: "sender", select: "fullName profileImage email" },
         ]);
 
-        // emit to entire group room
         io.emit("messageRefresh", populatedMessage);
 
         createdMessages.push(message);
       }
     }
 
-    return res.status(200).json({
-      message: "Post shared successfully.",
-      messages: createdMessages,
-    });
+    return res.status(200).json({ success: true, message: "Post shared successfully.", messages: createdMessages});
+
   } catch (err: any) {
-    console.error("Error sharing post:", err.message);
-    return res.status(500).json({
-      message: "Failed to share post.",
-      error: err.message,
-    });
+    console.error("Share Post Error:", err.message);
+    return res.status(500).json({ success: false, message: "Failed to share post.", error: err.message});
   }
 };
 
@@ -373,6 +295,7 @@ export const deletePost = async (req:Request, res: Response) => {
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "user not authorised." });
+    if(user?.isDeleted) return res.status(403).json({message:"Account is scheduled for deletion."})
 
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: "Post not found." });

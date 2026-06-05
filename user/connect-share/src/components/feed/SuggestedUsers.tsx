@@ -58,7 +58,7 @@ export function SuggestedUsers() {
         {suggestedUsers?.length >0 ?
         suggestedUsers.slice(0, 4).map(user => (
           <div key={user._id} className="flex items-center gap-3">
-            <img src={user?.profileImage} alt="" className="h-10 w-10 rounded-full object-cover" />
+            <img src={user?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"} alt="" className="h-10 w-10 rounded-full object-cover" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground truncate">{user?.fullName}</p>
               <p className="text-xs text-muted-foreground truncate flex items-center gap-1">

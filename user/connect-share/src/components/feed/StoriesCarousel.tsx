@@ -57,11 +57,10 @@ export function StoriesCarousel() {
     {/* YOUR STORY */}
     <button className="flex flex-col items-center gap-1.5 shrink-0">
       <img
-        src={user?.profileImage} 
+        src={user?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"} 
         alt="You"
         className="h-14 w-14 md:h-16 md:w-16 rounded-full object-cover"
       />
-
       <span className="text-[11px] md:text-xs font-medium text-foreground">
         You
       </span>
@@ -84,7 +83,7 @@ export function StoriesCarousel() {
             onClick={() => navigate(`/profile/${story?._id}`)}
           >
             <img
-              src={story?.profileImage}
+              src={story?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"}
               alt={story.fullName}
               className="h-14 w-14 md:h-16 md:w-16 rounded-full object-cover ring-2 ring-card hover:scale-105 transition-transform"
             />
@@ -138,10 +137,9 @@ export function StoriesCarousel() {
                     onClick={() => {
                       setOpenView(false);
                       navigate(`/profile/${story?._id}`);
-                    }}
-                  >
+                    }} >
                     <img
-                      src={story?.profileImage}
+                      src={story?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"}
                       className="h-10 w-10 rounded-full object-cover shrink-0"
                       alt=""
                     />

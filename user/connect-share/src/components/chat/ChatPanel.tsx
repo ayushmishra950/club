@@ -281,7 +281,7 @@ export function ChatPanel({ open, onClose }: Props) {
                   <button className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity flex-1 text-left min-w-0">
                     <div className="relative shrink-0">
                       <img
-                        src={chatType === "single" ? activeChat?.friend?.profileImage : activeChat?.group?.images?.[0]}
+                        src={chatType === "single" ? (activeChat?.friend?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2") : (activeChat?.group?.images?.[0] || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2") }
                         alt=""
                         className="h-8 w-8 rounded-full object-cover"
                       />
@@ -313,7 +313,7 @@ export function ChatPanel({ open, onClose }: Props) {
                     <div className="flex justify-center mb-4">
                       <div className="relative">
                         <img
-                          src={chatType === "single" ? activeChat?.friend?.profileImage : activeChat?.group?.images?.[0]}
+                          src={chatType === "single" ? (activeChat?.friend?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2") : (activeChat?.group?.images?.[0] || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2")}
                           alt=""
                           className="h-24 w-24 rounded-full object-cover border-4 border-card"
                         />
@@ -366,7 +366,7 @@ export function ChatPanel({ open, onClose }: Props) {
                           <div className="space-y-2 max-h-32 overflow-y-auto">
                             {activeChat?.group?.members?.slice(0, 5).map((member: any, idx: number) => (
                               <div key={idx} className="flex items-center gap-2 text-sm">
-                                <img src={member?.profileImage} alt="" className="h-6 w-6 rounded-full object-cover" />
+                                <img src={member?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"} alt="" className="h-6 w-6 rounded-full object-cover" />
                                 <span className="text-foreground truncate">{member?.fullName}</span>
                                 {member?._id === activeChat?.group?.admin?._id && (
                                   <span className="text-[10px] px-2 py-1 bg-primary/20 text-primary rounded-full">Admin</span>
@@ -712,7 +712,7 @@ export function ChatPanel({ open, onClose }: Props) {
                           src={
                             chat.isGroup
                               ? chat?.group?.images?.[0] || "/group.png"
-                              : chat?.friend?.profileImage
+                              : chat?.friend?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"
                           }
                           alt=""
                           className="h-12 w-12 rounded-full object-cover"

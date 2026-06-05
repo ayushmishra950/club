@@ -9,6 +9,7 @@ import { getIO } from "../../utils/socketHelper.js";
 import Group from "../../models/group.model.js";
 import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
 
+
 export const getChatUsers = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
@@ -16,6 +17,10 @@ export const getChatUsers = async (req: Request, res: Response) => {
     if (!userId || Array.isArray(userId)) {
       return res.status(400).json({ message: "Invalid userId" });
     }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "user not found." });
+    if (user?.isDeleted) return res.status(403).json({ message: "Account is scheduled for deletion." })
 
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
@@ -25,18 +30,8 @@ export const getChatUsers = async (req: Request, res: Response) => {
         { pendingMembers: { $in: [userObjectId] } }
       ]
     }).sort({ updatedAt: -1 }).populate([
-      {
-        path: "lastMessage",
-        populate: {
-          path: "sender",
-          select: "fullName profileImage isOnline lastSeen",
-        },
-      },
-      {
-        path: "groupId",
-        select: "title description images members",
-      },
-    ]);
+      { path: "lastMessage", populate: { path: "sender", select: "fullName profileImage isOnline lastSeen" }, },
+      { path: "groupId", select: "title description images members" }]);
 
     const friendsData = await Promise.all(
       chats.map(async (chat) => {
@@ -46,14 +41,18 @@ export const getChatUsers = async (req: Request, res: Response) => {
 
           // ✅ GROUP POPULATE ADDED HERE
           const group = await Group.findById(chat.groupId)
-            .populate("members", "fullName profileImage isOnline lastSeen")
+            .populate({
+              path: "members",
+              match: { isDeleted: false },
+              select: "fullName profileImage isOnline lastSeen"
+            })
             .select("name image members");
 
           return {
             chatId: chat._id,
             isGroup: true,
-            group: chat.groupId,
-            members: chat.members,
+            group: group,
+            members: group?.members || [],
             pendingMembers: chat.pendingMembers,
             friend: null,
             lastMessage: chat.lastMessage || null,
@@ -69,7 +68,7 @@ export const getChatUsers = async (req: Request, res: Response) => {
 
         if (!friendId) return null;
 
-        const friend = await User.findById(friendId).select(
+        const friend = await User.findOne({ _id: friendId, isDeleted: false }).select(
           "fullName email profileImage isOnline lastSeen"
         );
 
@@ -102,27 +101,26 @@ export const getChatUsers = async (req: Request, res: Response) => {
 };
 
 
+
+
 export const createOrGetChat = async (req: Request, res: Response) => {
   try {
     const { senderId, receiverId } = req.body;
 
-    if (!senderId || !receiverId) {
-      return res.status(400).json({ message: "Both user IDs are required." });
-    }
+    if (!senderId || !receiverId) return res.status(400).json({ message: "Both user IDs are required." });
+
+    const [sender, receiver] = await Promise.all([User.findById(senderId), User.findById(receiverId)]);
+
+    if (!sender || sender.isDeleted) return res.status(403).json({ message: "Your Account is scheduled for deletion." });
+
+    if (!receiver || receiver.isDeleted) return res.status(403).json({ message: "Receiver Account not available." });
 
     // Check existing chat
-    let chat = await Chat.findOne({
-      members: { $all: [senderId, receiverId], $size: 2 },
-      isGroup:false
-    });
+    let chat = await Chat.findOne({ members: { $all: [senderId, receiverId], $size: 2 }, isGroup: false });
 
     // If not exist → create new
-    if (!chat) {
-      chat = await Chat.create({
-        members: [senderId, receiverId],
-        isGroup: false,
-      });
-    }
+    if (!chat) chat = await Chat.create({ members: [senderId, receiverId], isGroup: false });
+
     res.status(200).json({ chat, message: "user add successfully from chat." });
   } catch (err: any) {
     res.status(500).json({ message: err.message });
@@ -183,9 +181,7 @@ export const getMessages = async (req: Request, res: Response) => {
   try {
     const { chatId } = req.params;
 
-    if (!chatId) {
-      return res.status(400).json({ message: "chatId is required." });
-    }
+    if (!chatId) return res.status(400).json({ message: "chatId is required." });
 
     const messages = await Message.find({ chatId })
       .populate("sender", "fullName profileImage").populate("postId")
@@ -210,13 +206,13 @@ export const sendMessage = async (req: Request, res: Response) => {
     const files = (req as any).files;
     const file = files?.image?.[0];
 
-    if (!chatId || !senderId) {
-      return res.status(400).json({ message: "chatId and senderId are required." });
-    }
+    if (!chatId || !senderId) return res.status(400).json({ message: "chatId and senderId are required." });
 
-    if (!text && !file) {
-      return res.status(400).json({ message: "Message or media required." });
-    }
+    if (!text && !file) return res.status(400).json({ message: "Message or media required." });
+
+    const sender = await User.findById(senderId);
+
+    if (!sender || sender.isDeleted) return res.status(403).json({ message: "Account is scheduled for deletion." });
 
     let imageUrl = null;
 
@@ -259,21 +255,25 @@ export const getUserChats = async (req: Request, res: Response) => {
     if (!userId) {
       return res.status(400).json({ message: "userId is required." });
     }
+    const user = await User.findById(userId);
+    if(!user) return res.status(404).json({message:"user not found."});
+    if(user?.isDeleted) return res.status(403).json({message:"Your Account is scheduled for deletion."})
 
     const chats = await Chat.find({
       members: userId,
     })
-      .populate("members", "fullName profileImage")
-      .populate({
-        path: "lastMessage",
-        populate: {
-          path: "sender",
-          select: "fullName",
-        },
-      })
+      .populate({ path: "members", match: { isDeleted: false }, select: "fullName profileImage"})
+      .populate({ path: "lastMessage", populate: { path: "sender", match:{isDeleted:false}, select: "fullName" } })
       .sort({ updatedAt: -1 });
 
-    res.status(200).json({ chats });
+      const validChats = chats.filter((chat) => {
+  if (!chat.isGroup) {
+    return chat.members.length >= 2;
+  }
+  return chat.members.length >= 2;
+});
+
+    res.status(200).json({ chats: validChats });
   } catch (err: any) {
     res.status(500).json({ message: err.message });
   }
@@ -289,6 +289,16 @@ export const markAsSeen = async (req: Request, res: Response) => {
     if (!chatId || !userId) {
       return res.status(400).json({ message: "chatId and userId required." });
     }
+
+    const user = await User.findById(userId);
+
+if (!user) {
+  return res.status(404).json({ message: "User not found" });
+}
+
+if (user.isDeleted) {
+  return res.status(403).json({ message: "Account is scheduled for deletion." });
+}
 
     await Message.updateMany(
       { chatId, seenBy: { $ne: userId } },
@@ -311,6 +321,17 @@ export const acceptGroupInvite = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "chatId and userId required." });
     }
 
+    const user = await User.findById(userId);
+
+if (!user) {
+  return res.status(404).json({ message: "User not found" });
+}
+
+if (user.isDeleted) {
+  return res.status(403).json({
+    message: "Account is scheduled for deletion."
+  });
+}
 
     const chat = await Chat.findById(chatId);
     if (!chat) return res.status(404).json({ message: "Chat not found" });
@@ -328,7 +349,7 @@ export const acceptGroupInvite = async (req: Request, res: Response) => {
       const group = await Group.findByIdAndUpdate(chat.groupId, { $addToSet: { members: userId }, }, { new: true });
       if (group) {
         await group.populate([
-          { path: "createdBy", select: "fullName email profileImage" },
+          { path: "createdBy", select: "fullName email profileImage isDeleted" },
           { path: "members", select: "fullName email profileImage" }
         ]);
 
@@ -356,6 +377,18 @@ export const rejectGroupInvite = async (req: Request, res: Response) => {
     if (!chatId || !userId) {
       return res.status(400).json({ message: "chatId and userId required." });
     }
+
+    const user = await User.findById(userId);
+
+if (!user) {
+  return res.status(404).json({ message: "User not found" });
+}
+
+if (user.isDeleted) {
+  return res.status(403).json({
+    message: "Account is scheduled for deletion."
+  });
+}
 
     const chat = await Chat.findById(chatId);
     if (!chat) return res.status(404).json({ message: "Chat not found" });

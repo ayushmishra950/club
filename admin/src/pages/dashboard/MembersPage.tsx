@@ -62,9 +62,19 @@ export default function MembersPage() {
     socket.on("premiumStatusUpdated", (data: any) => {
       dispatch(setUpdateUser(data));
     });
+    socket.on("deleteRequest", (data: any) => {
+      dispatch(setUpdateUser(data));
+    });
+
+    socket.on("cancelDeleteRequest", (data: any) => {
+      dispatch(setUpdateUser(data));
+    });
+
     return () => {
       socket.off("newUser");
       socket.off("premiumStatusUpdated");
+      socket.off("deleteRequest");
+      socket.off("cancelDeleteRequest");
     }
   }, [])
 
@@ -420,20 +430,31 @@ export default function MembersPage() {
                             </Button>
                           )}
 
-                          {(m?.isVerified && m?.paymentImage) && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 px-2 text-[10px] sm:text-sm"
-                              onClick={() => {
-                                setSelectedPayment(m);
-                                setPaymentDialog(true);
-                              }}
-                            >
-                              {m?.premiumUser === "premium"
-                                ? "View Payment"
-                                : "Payment Verify"}
-                            </Button>
+                          {m?.deleteStatus === "pending" ? (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                className="h-7 px-2 text-[10px] sm:text-sm bg-green-600 hover:bg-green-700 text-white"
+                                onClick={() => {
+                                  // accept logic
+                                  setSelectedPayment(m);
+                                  // handle accept
+                                }}
+                              >
+                                Accept
+                              </Button>
+                            </div>
+                          ) : (
+                            (m?.isVerified && m?.paymentImage) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-[10px] sm:text-sm"
+                                onClick={() => { setSelectedPayment(m); setPaymentDialog(true); }}
+                              >
+                                {m?.premiumUser === "premium" ? "View Payment" : "Payment Verify"}
+                              </Button>
+                            )
                           )}
 
                           {/* DROPDOWN */}

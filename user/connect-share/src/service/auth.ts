@@ -49,3 +49,16 @@ export const convertPremiumUser = async (obj: any) => {
     );
     return res;
 };
+
+
+
+export const deleteUserRequest = async(id:string) => {
+    const res = await api.delete(`${base_url}/user/auth/delete/user/${id}`);
+    return res;
+};
+
+
+export const recoverAccount = async(id:string) => {
+    const res = await api.patch(`${base_url}/user/auth/recover/account/${id}`);
+    return res;
+}

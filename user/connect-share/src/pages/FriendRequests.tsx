@@ -220,7 +220,7 @@ const FriendRequests = () => {
             ) : (
               receivedRequestList?.map(req => (
                 <div key={req?._id} className="bg-card rounded-xl shadow-card p-4 flex items-center gap-4 animate-fade-in">
-                  <img src={req?.from?.profileImage} alt="" className="h-16 w-16 rounded-full object-cover" />
+                  <img src={req?.from?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"} alt="" className="h-16 w-16 rounded-full object-cover" />
                   <div className="flex-1 min-w-0">
                     <p className="font-heading font-semibold text-foreground">{req?.from?.fullName}</p>
                     <p className="text-sm text-muted-foreground">{req?.from?.occupation}</p>
@@ -233,7 +233,7 @@ const FriendRequests = () => {
                       onClick={() => handleAcceptRequest(req._id)}
                       className="flex items-center gap-1.5 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
                     >
-                     {acceptLoading === req?._id ? <Loader2 className='animate-spin' /> : <span><Check className="h-4 w-4" /> Accept</span>}
+                     {acceptLoading === req?._id ? <Loader2 className='animate-spin' /> : <span className='flex items-center gap-1'><Check className="h-4 w-4" /> Accept</span>}
                     </button>
                     <button
                       onClick={() => handleCancelRequest(req._id)}
@@ -260,7 +260,7 @@ const FriendRequests = () => {
             ) : (
               sendRequestList?.map(req => (
                 <div key={req._id} className="bg-card rounded-xl shadow-card p-4 flex items-center gap-4 animate-fade-in" >
-                  <img src={req?.to?.profileImage} alt="" className="h-14 w-14 rounded-full object-cover" />
+                  <img src={req?.to?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"} alt="" className="h-14 w-14 rounded-full object-cover" />
                   <div className="flex-1 min-w-0">
                     <p className="font-heading font-semibold text-foreground">{req?.to?.fullName}</p>
                     <p className="text-sm text-muted-foreground">{req?.to?.occupation}</p>
@@ -289,7 +289,7 @@ const FriendRequests = () => {
                   className="bg-card rounded-xl shadow-card p-4 flex flex-col items-center text-center gap-3 animate-fade-in"
                 >
                   <img
-                    src={user.profileImage}
+                    src={user.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"}
                     alt=""
                     className="h-20 w-20 rounded-full object-cover"
                   />
@@ -328,7 +328,7 @@ const FriendRequests = () => {
             ) : (
               friendList?.map(friend => (
                 <div key={friend._id} className="bg-card rounded-xl shadow-card p-4 flex items-center gap-4 animate-fade-in cursor-pointer" onClick={()=>{navigate(`/profile/${friend?._id}`)}}>
-                  <img src={friend.profileImage} alt={friend.fullName} className="h-14 w-14 rounded-full object-cover" />
+                  <img src={friend.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"} alt={friend.fullName} className="h-14 w-14 rounded-full object-cover" />
                   <div className="flex-1 min-w-0">
                     <p className="font-heading font-semibold text-foreground">{friend.fullName}</p>
                     <p className="text-sm text-muted-foreground">{friend.occupation}</p>

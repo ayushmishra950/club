@@ -4,7 +4,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { PostCard } from '@/components/feed/PostCard';
 import { mockChats } from '@/data/mockData';
-import { getSingleUser } from "@/service/auth";
+import { deleteUserRequest, getSingleUser, recoverAccount } from "@/service/auth";
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { getSuggestedUsers, sendRequest, acceptRequest, cancelRequest, pendingRequest, getFriendUsers } from "@/service/friendRequest";
@@ -17,10 +17,12 @@ import { getAllPost } from "@/service/post";
 import DeleteCard from "@/components/card/DeleteCard";
 import PaymentDialog from "@/components/forms/PaymentDialog";
 import { setUserData, setUpdateUser } from "@/redux-toolkit/slice/userSlice";
+import { cn } from '@/lib/utils';
 
 const Profile = () => {
   const navigate = useNavigate();
   const { userId } = useParams();
+  const dispatch = useAppDispatch();
   const { toast } = useToast();
   const user = JSON.parse(localStorage.getItem("user"));
   const [chatOpen, setChatOpen] = useState(false);
@@ -32,8 +34,12 @@ const Profile = () => {
   const [userListRefresh, setUserListRefresh] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [recoverDialogOpen, setRecoverDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [recoverLoading, setRecoverLoading] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<any | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const dispatch = useAppDispatch();
   const postList = useAppSelector((state) => state?.post?.postList);
   const userData = useAppSelector((state) => state?.user?.userData);
   const premiumUser = userData?.premiumUser === "premium";
@@ -42,8 +48,7 @@ const Profile = () => {
   const isTrue = userId === user?._id;
   const birthday = getBirthdayInfo(userData?.dob);
   const allImages = postList?.filter((p) => p?.createdBy?._id === userId).flatMap(post =>
-    (post.images || []).filter(url => isImage(url))
-  ) || [];
+    (post.images || []).filter(url => isImage(url))) || [];
 
   const relation = allFriendRequestStatusList?.find((fr) => fr?._id === user?._id);
   const currentStatus = relation?.status;
@@ -65,7 +70,43 @@ const Profile = () => {
       socket.off("friendRequestAccepted");
       socket.off("userUpdate");
     }
-  }, [])
+  }, []);
+
+  const handleDeleteRequestUser = async () => {
+    try {
+      setDeleteLoading(true);
+      const res = await deleteUserRequest(deleteUser?._id);
+      if (res.status === 200) {
+        toast({ title: "User Account Delete Request Send Successfully.", description: res?.data?.message });
+        setDeleteDialogOpen(false);
+        setDeleteUser(null);
+        dispatch(setUserData(res?.data?.user))
+      }
+    } catch (err) {
+      toast({ title: "User Account Deletion Failed.", description: err?.response?.data?.message || err?.message });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCancelDeleteRequest = async () => {
+    if (!userData?._id) return;
+    try {
+      setRecoverLoading(true);
+      const res = await recoverAccount(userData?._id);
+      if (res.status === 200) {
+        toast({ title: "Delete Request Cancelled.", description: res?.data?.message });
+        setRecoverDialogOpen(false);
+        dispatch(setUserData(res?.data?.user));
+      }
+    }
+    catch (err) {
+      toast({ title: "Delete Request Failed.", description: err?.response?.data?.message || err?.message });
+    }
+    finally {
+      setRecoverLoading(false);
+    }
+  }
 
   const handleLogout = () => {
     try {
@@ -75,7 +116,8 @@ const Profile = () => {
       navigate("/login");
 
     } catch (err) {
-      console.log(err)
+      console.log(err);
+
     } finally {
       setLogoutLoading(false);
     }
@@ -189,9 +231,28 @@ const Profile = () => {
     }
   }, [userId, userListRefresh]);
 
+
   return (
     <>
       <PaymentDialog open={paymentDialogOpen} setOpen={setPaymentDialogOpen} />
+      <DeleteCard
+        isOpen={recoverDialogOpen}
+        onOpenChange={setRecoverDialogOpen}
+        isLoading={recoverLoading}
+        buttonName="Recover"
+        title={`Cancel  Deletion Request`}
+        description={`Are you sure you want to cancel your account deletion request and recover your account?`}
+        onConfirm={handleCancelDeleteRequest}
+      />
+      <DeleteCard
+        isOpen={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        isLoading={deleteLoading}
+        buttonName="Delete"
+        title={`Delete Your Account`}
+        description={`Are you sure you want to delete your account? This action is permanent and cannot be undone.`}
+        onConfirm={handleDeleteRequestUser}
+      />
       <DeleteCard
         isOpen={logoutDialogOpen}
         onOpenChange={setLogoutDialogOpen}
@@ -207,7 +268,7 @@ const Profile = () => {
 
         {/* Cover */}
         <div className="relative h-48 sm:h-64">
-          <img src={userData?.coverImage} alt="cover" className="w-full h-full object-cover" />
+          <img src={userData?.coverImage || "https://imgs.search.brave.com/kw_qY89Yq9zZZHGIxcrZulLXAq5h4GmQ7LtNs1KnOVk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMjIx/NDM2OTQ0Ny92ZWN0/b3IvYWJzdHJhY3Qt/YmFja2dyb3VuZC1k/ZXNpZ24tcm91Z2gt/YW5kLXNvZnQtd2F2/ZS10ZXh0dXJlLXdp/dGgtYmx1cnJlZC1w/YXN0ZWwtY29sb3Jz/LmpwZz9zPTYxMng2/MTImdz0wJms9MjAm/Yz1reW85ZmxNQVN3/c1M5eWYxR3BNRjdm/cHFFWFN5a3ZzMHhI/Zm1DRmdXVFlJPQ"} alt="cover" className={cn("w-full h-full object-cover")} />
           {/* {isTrue &&<button className="absolute bottom-3 right-3 bg-card/90 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs font-medium text-foreground flex items-center gap-1.5 hover:bg-card transition-colors">
     <Camera className="h-3.5 w-3.5" /> Edit Cover
   </button>} */}
@@ -226,27 +287,28 @@ const Profile = () => {
 
             <div className="relative group">
               <img
-                src={userData?.profileImage}
+                src={userData?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"}
                 alt=""
                 className="h-32 w-32 rounded-full object-cover ring-4 ring-background"
               />
 
-              {(premiumUser) && <div className="absolute -top-1 -right-1">
+              {
+                (premiumUser) && <div className="absolute -top-1 -right-1">
 
-                <div className="absolute inset-0 rounded-full bg-yellow-400 opacity-30 blur-md"></div>
+                  <div className="absolute inset-0 rounded-full bg-yellow-400 opacity-30 blur-md"></div>
 
-                <div className="relative flex items-center justify-center
+                  <div className="relative flex items-center justify-center
                     h-9 w-9 rounded-full
                     bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500
                     border-2 border-white
                     shadow-[0_4px_15px_rgba(255,200,0,0.6)]
                     overflow-hidden">
 
-                  <div className="absolute inset-0 bg-white opacity-10 animate-pulse"></div>
+                    <div className="absolute inset-0 bg-white opacity-10 animate-pulse"></div>
 
-                  <Crown size={18} className="text-white drop-shadow-sm" />
-                </div>
-              </div>}
+                    <Crown size={18} className="text-white drop-shadow-sm" />
+                  </div>
+                </div>}
             </div>
             <div className="flex-1 text-center sm:text-left">
               <h1 className="font-heading text-2xl font-bold text-foreground">{userData?._id === user?._id ? `${userData?.fullName} (You)` : userData?.fullName}</h1>
@@ -290,6 +352,7 @@ const Profile = () => {
               )}
               {isTrue && <>
                 <div className='flex gap-2'>
+
                   <button onClick={() => { navigate(`/userDialog/${userData?._id}`) }} className="flex items-center gap-2 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
                     <Edit2 className="h-4 w-4" /> Edit Profile
                   </button>
@@ -300,42 +363,108 @@ const Profile = () => {
                     <LogOut className="h-4 w-4" />
                     Logout
                   </button>
+                  <button
+                    onClick={() => { setDeleteUser(userData); setDeleteDialogOpen(true) }}
+                    className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-700 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Delete
+                  </button>
                 </div>
                 {/* Mobile Premium Card */}
-                {(premiumUser || (userData?.paymentImage)) ? null : (
-                  <div className="sm:hidden bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 shadow-sm w-full text-left">
-                    <h3 className="text-base font-semibold text-yellow-700">
-                      Upgrade to Premium
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-                      Unlock exclusive club features, priority access to events, and premium member benefits to enhance your experience.
-                    </p>
-                    <button onClick={() => { setPaymentDialogOpen(true) }} className="mt-3 w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-medium py-2 rounded-lg hover:opacity-90 transition">
-                      Go Premium
-                    </button>
-                  </div>
-                )}
+                {
+                  userData?.deleteStatus === "pending" ? (
+                    <div className="sm:hidden bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm w-full text-left">
+                      <h3 className="text-base font-semibold text-red-700">
+                        Account Deletion Scheduled
+                      </h3>
+
+                      <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+                        Your account is scheduled for permanent deletion within 30 days.
+                        You can cancel this request anytime before the deadline.
+                      </p>
+
+                      <div className="flex items-center justify-between mt-3">
+                        <span className="text-xs text-red-500">
+                          Remaining window: 30 days
+                        </span>
+
+                        <button
+                          onClick={() => { setRecoverDialogOpen(true); }}
+                          className="text-xs bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700 transition"
+                        >
+                          Cancel Deletion
+                        </button>
+                      </div>
+                    </div>
+                  ) :
+                    (premiumUser || (userData?.paymentImage)) ? null : (
+                      <div className="sm:hidden bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 shadow-sm w-full text-left">
+                        <h3 className="text-base font-semibold text-yellow-700">
+                          Upgrade to Premium
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+                          Unlock exclusive club features, priority access to events, and premium member benefits to enhance your experience.
+                        </p>
+                        <button onClick={() => { setPaymentDialogOpen(true) }} className="mt-3 w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-medium py-2 rounded-lg hover:opacity-90 transition">
+                          Go Premium
+                        </button>
+                      </div>
+                    )
+                }
               </>}
             </div>
           </div>
 
           {/* Desktop Premium Banner */}
-          {isTrue && !(premiumUser || (userData?.paymentImage)) && (
-            <div className="hidden sm:flex items-center justify-between bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 shadow-sm mt-4">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 shrink-0 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 flex items-center justify-center text-white shadow-inner">
-                  <Crown size={24} />
+          {
+            userData?.deleteStatus === "pending" ? (
+              <div className="hidden sm:flex items-center justify-between bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm w-full">
+
+                {/* Left Content */}
+                <div className="flex items-center gap-6 flex-1 min-w-0">
+
+                  <h3 className="text-base font-semibold text-red-700 whitespace-nowrap">
+                    Account Deletion Scheduled
+                  </h3>
+
+                  <p className="text-sm text-gray-600 whitespace-normal leading-relaxed">
+                    Your account will be permanently deleted in 30 days. You can cancel anytime before that.
+                  </p>
+
                 </div>
-                <div>
-                  <h3 className="text-base font-semibold text-yellow-700">Upgrade to Premium Membership</h3>
-                  <p className="text-sm text-gray-600 mt-0.5">Unlock exclusive club features, priority access to events, and premium member benefits.</p>
+
+                {/* Right Content */}
+                <div className="flex items-center gap-4 shrink-0 ml-4">
+
+                  <span className="text-xs text-red-500 whitespace-nowrap">
+                    Remaining: 30 days
+                  </span>
+
+                  <button onClick={() => { setRecoverDialogOpen(true); }} className="text-xs bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition whitespace-nowrap">
+                    Cancel Deletion
+                  </button>
+
                 </div>
+
               </div>
-              <button onClick={() => setPaymentDialogOpen(true)} className="shrink-0 ml-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-medium px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg hover:opacity-90 transition">
-                Go Premium
-              </button>
-            </div>
-          )}
+            ) :
+              isTrue && !(premiumUser || (userData?.paymentImage)) && (
+                <div className="hidden sm:flex items-center justify-between bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 shadow-sm mt-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 shrink-0 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 flex items-center justify-center text-white shadow-inner">
+                      <Crown size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-yellow-700">Upgrade to Premium Membership</h3>
+                      <p className="text-sm text-gray-600 mt-0.5">Unlock exclusive club features, priority access to events, and premium member benefits.</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setPaymentDialogOpen(true)} className="shrink-0 ml-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-medium px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg hover:opacity-90 transition">
+                    Go Premium
+                  </button>
+                </div>
+              )}
 
           {/* Completion bar */}
           {isTrue && <div className="mt-4 bg-card rounded-xl shadow-card p-4">

@@ -22,9 +22,13 @@ const Directory = () => {
     socket.on("businessUpdate", () => {
       handleGetAllUser();
     });
+    socket.on("updateUserList", () => {
+      handleGetAllUser();
+    })
     return () => {
       socket.off("businessVerify");
       socket.off("businessUpdate");
+      socket.off("updateUserList");
     }
   }, []);
 

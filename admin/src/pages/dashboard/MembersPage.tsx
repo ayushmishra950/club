@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Grid3X3, List, Mail, Phone, MoreVertical, Loader2 } from "lucide-react";
+import { Plus, Search, Phone, MoreVertical, Loader2 } from "lucide-react";
 import { getAllUser } from "@/service/auth";
 import { useToast } from "@/hooks/use-toast";
-import { verifyUser, deletedUser, activeAndInactiveUser, uploadExcel } from "@/service/auth";
+import { verifyUser, deletedUser, activeAndInactiveUser, uploadExcel, approveDeleteRequest, recoverAccount } from "@/service/auth";
 import RoleDialog from "@/components/forms/RoleDialog";
 import DeleteCard from "@/components/cards/DeleteCard";
 import MemberDetailCard from "@/components/cards/MemberDetailCard";
@@ -51,6 +51,10 @@ export default function MembersPage() {
   const [openAllMemberConfirmLoading, setOpenAllMemberConfirmLoading] = useState(false);
   const [addPremiumDialogOpen, setAddPremiumDialogOpen] = useState(false);
   const [addPremiumInitialData, setAddPremiumInitialData] = useState(null);
+  const [approveDeleteLoading, setApproveDeleteLoading] = useState<string | null>(null);
+  const [recoverAccountLoading, setRecoverAccountLoading] = useState(false);
+  const [recoverDialogOpen, setRecoverDialogOpen] = useState(false);
+  const [recoverData, setRecoverData] = useState<any | null>(null);
   const dispatch = useAppDispatch();
 
   const memberList = useAppSelector((state) => state?.user?.userList);
@@ -76,7 +80,43 @@ export default function MembersPage() {
       socket.off("deleteRequest");
       socket.off("cancelDeleteRequest");
     }
-  }, [])
+  }, []);
+
+  const handleApproveDeleteRequest = async(userId:string) => {
+    try{ 
+      setApproveDeleteLoading(userId);
+     const res = await approveDeleteRequest(userId);
+     if(res.status === 200){
+      toast({title:"Delete Request Approved.", description:res?.data?.message});
+      dispatch(setUpdateUser(res?.data?.user));
+     }
+    }
+    catch(err){
+      console.log(err);
+     toast({title:"Delete Request Approve Failed.", description:err?.response?.data?.message || err?.message})
+    }finally{
+      setApproveDeleteLoading(null);
+    }
+  };
+
+  const handleRecoverAccount = async() => {
+    if(!recoverData?._id) return;
+    try{ 
+      setRecoverAccountLoading(true);
+     const res = await recoverAccount(recoverData?._id);
+     if(res.status === 200){
+      toast({title:"User Account Recover Successfully.", description:res?.data?.message});
+      dispatch(setUpdateUser(res?.data?.user));
+      setRecoverDialogOpen(false);
+     }
+    }
+    catch(err){
+      console.log(err);
+     toast({title:"User Account Recover Failed.", description:err?.response?.data?.message || err?.message})
+    }finally{
+      setRecoverAccountLoading(false);
+    }
+  }
 
   const handleUploadExcel = async (e) => {
     e.preventDefault();
@@ -180,7 +220,7 @@ export default function MembersPage() {
     } finally {
       setDeleteLoading(false);
     }
-  }
+  };
 
   return (
     <>
@@ -206,6 +246,17 @@ export default function MembersPage() {
         isLoading={openConfirmLoading}
         buttonName="Verify"
       />
+
+      <ConfirmCard
+        isOpen={recoverDialogOpen}
+        onOpenChange={setRecoverDialogOpen}
+        title="Restore User Account."
+        description={`Are you sure you want to restore "${recoverData?.fullName}"'s account? This will reactivate the account and allow the user to access it again.`}
+        onConfirm={handleRecoverAccount}
+        isLoading={recoverAccountLoading}
+        buttonName="Restore Account"
+      />
+
       <MemberDetailCard member={selectedMember} detailDialogOpen={detailDialogOpen} setDetailDialogOpen={setDetailDialogOpen} />
       <MemberEditDialog
         isOpen={editDialogOpen}
@@ -343,7 +394,9 @@ export default function MembersPage() {
 
               <TableBody>
                 {memberList?.length > 0 ? (
-                  memberList.map((m, i) => (
+                  memberList.map((m, i) =>{ 
+                    console.log(m?.fullName === "Rinku jain" && m)
+                    return(
                     <TableRow key={m?._id} className="sm:px-4 px-2">
 
                       {/* CHECKBOX */}
@@ -395,7 +448,7 @@ export default function MembersPage() {
                       </TableCell>
 
                       {/* STATUS */}
-                      <TableCell className="px-2 sm:px-4">
+                      {/* <TableCell className="px-2 sm:px-4">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium ${m?.blocked
                             ? "bg-red-100 text-red-600"
@@ -410,12 +463,47 @@ export default function MembersPage() {
                               ? "Unverified"
                               : "Active"}
                         </span>
+                      </TableCell> */}
+
+                      <TableCell className="px-2 sm:px-4">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium ${m?.isDeleted && m?.deleteStatus === "approved"
+                            ? "bg-red-100 text-red-600"
+                            : !m?.isDeleted && m?.deleteStatus === "pending"
+                              ? "bg-orange-100 text-orange-600"
+                              : m?.blocked
+                                ? "bg-red-100 text-red-600"
+                                : !m?.isVerified
+                                  ? "bg-yellow-100 text-yellow-600"
+                                  : "bg-green-100 text-green-600"
+                            }`}
+                        >
+                          {m?.isDeleted && m?.deleteStatus === "approved"
+                            ? "Deleted"
+                            : !m?.isDeleted && m?.deleteStatus === "pending"
+                              ? "Delete Requested"
+                              : m?.blocked
+                                ? "Blocked"
+                                : !m?.isVerified
+                                  ? "Unverified"
+                                  : "Active"}
+                        </span>
                       </TableCell>
 
                       {/* ACTIONS */}
                       <TableCell className="text-right px-2 sm:px-4">
                         <div className="flex justify-end items-center gap-1 sm:gap-2">
 
+                          { (!m?.isDeleted && m?.deleteStatus === "pending") && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-7 px-2 text-[10px] sm:text-sm"
+                              onClick={() => {handleApproveDeleteRequest(m?._id)}}
+                            >
+                            {approveDeleteLoading === m?._id ? <Loader2 className="animate-spin" /> : "Approve"}  
+                            </Button>
+                          )}
                           {!m?.isVerified && (
                             <Button
                               size="sm"
@@ -430,21 +518,7 @@ export default function MembersPage() {
                             </Button>
                           )}
 
-                          {m?.deleteStatus === "pending" ? (
-                            <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                className="h-7 px-2 text-[10px] sm:text-sm bg-green-600 hover:bg-green-700 text-white"
-                                onClick={() => {
-                                  // accept logic
-                                  setSelectedPayment(m);
-                                  // handle accept
-                                }}
-                              >
-                                Accept
-                              </Button>
-                            </div>
-                          ) : (
+                          {
                             (m?.isVerified && m?.paymentImage) && (
                               <Button
                                 size="sm"
@@ -455,7 +529,7 @@ export default function MembersPage() {
                                 {m?.premiumUser === "premium" ? "View Payment" : "Payment Verify"}
                               </Button>
                             )
-                          )}
+                          }
 
                           {/* DROPDOWN */}
                           <DropdownMenu>
@@ -495,6 +569,16 @@ export default function MembersPage() {
                                 </DropdownMenuItem>
                               )}
 
+                             {m?.isDeleted === true && m?.deleteStatus === "approved" ? <DropdownMenuItem
+                                className="text-success cursor-pointer"
+                                onClick={() => {
+                                  setRecoverData(m);
+                                  setRecoverDialogOpen(true);
+                                }}
+                              >
+                                Revoke
+                              </DropdownMenuItem>
+                                :
                               <DropdownMenuItem
                                 className="text-destructive cursor-pointer"
                                 onClick={() => {
@@ -503,7 +587,7 @@ export default function MembersPage() {
                                 }}
                               >
                                 Delete
-                              </DropdownMenuItem>
+                              </DropdownMenuItem>}
                             </DropdownMenuContent>
                           </DropdownMenu>
 
@@ -511,7 +595,7 @@ export default function MembersPage() {
                       </TableCell>
 
                     </TableRow>
-                  ))
+                  )})
                 ) : (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center">

@@ -53,7 +53,6 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
                 });
                 onOpenChange(false);
                 setSelectedUsers([]);
-                dispatch(setUpdateGroup(res.data?.group))
             }
 
         } catch (err: any) {

@@ -40,6 +40,7 @@ export function ChatPanel({ open, onClose }: Props) {
   const filteredChats = userList?.filter((chat: any) =>
     chatType === "single" ? !chat.isGroup : chat.isGroup
   );
+  console.log(filteredChats);
 
   const handleSeenMessages = async (chat: any) => {
     socket.emit("messageSeen", { chatId: chat?.chatId, receiverUserId: user?._id, senderUserId: chat?.friend?._id });
@@ -113,7 +114,7 @@ export function ChatPanel({ open, onClose }: Props) {
       setAcceptLoading(true);
       const res = await acceptGroupInvite({ chatId, userId });
       if (res.status === 200 || res.status === 201) {
-         dispatch(setAcceptedInvite({ chatId, userId }));
+        dispatch(setAcceptedInvite({ chatId, userId }));
         toast({ title: "Group invite accepted successfully.", description: res?.data?.message || "invite accepted successfully" });
       } else {
         toast({ title: "Failed to accept group invite", description: res?.data?.message || "invite accepted failed", variant: "destructive" });
@@ -194,7 +195,6 @@ export function ChatPanel({ open, onClose }: Props) {
     try {
       const res = await getMessages(activeChat?.chatId);
       if (res.status === 200) {
-        // setMessageList(res?.data?.messages);
         dispatch(setMessageList(res?.data?.messages));
       }
     }
@@ -230,7 +230,7 @@ export function ChatPanel({ open, onClose }: Props) {
 
 
   const handleExitGroup = async () => {
-    try { 
+    try {
       setDeleteLoading(true);
       const res = await exitMemberFromGroup({ chatId: activeChat?.chatId, userId: user?._id });
       if (res.status === 200 || res.status === 201) {
@@ -281,7 +281,7 @@ export function ChatPanel({ open, onClose }: Props) {
                   <button className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity flex-1 text-left min-w-0">
                     <div className="relative shrink-0">
                       <img
-                        src={chatType === "single" ? (activeChat?.friend?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2") : (activeChat?.group?.images?.[0] || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2") }
+                        src={chatType === "single" ? (activeChat?.friend?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2") : (activeChat?.group?.images?.[0] || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2")}
                         alt=""
                         className="h-8 w-8 rounded-full object-cover"
                       />
@@ -450,7 +450,7 @@ export function ChatPanel({ open, onClose }: Props) {
                             }`}
                         >
                           {/* ------------------- Message or Post ------------------- */}
-                          { m.postId?._id ? (
+                          {m.postId?._id ? (
                             <div className="flex flex-col gap-1 border rounded-lg p-2 bg-white shadow-sm max-h-48 overflow-hidden">
                               {m.postId.images?.length > 0 && (
                                 <img
@@ -476,7 +476,7 @@ export function ChatPanel({ open, onClose }: Props) {
                           )}
 
 
-                        
+
                           {/* ------------------- Time + Status ------------------- */}
                           <div className="flex items-center justify-end mt-1 text-[10px] gap-1">
                             <span className={isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}>
@@ -528,7 +528,7 @@ export function ChatPanel({ open, onClose }: Props) {
                     )}
 
                     {/* Message Row */}
-                    <div className={`flex items-end gap-2 mb-2 ${isMe ? "justify-end" : "justify-start" }`} >
+                    <div className={`flex items-end gap-2 mb-2 ${isMe ? "justify-end" : "justify-start"}`} >
                       {/* NAME ONLY */}
                       {!isMe && (
                         <div className="flex flex-col items-start w-10">
@@ -727,12 +727,20 @@ export function ChatPanel({ open, onClose }: Props) {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="font-semibold text-sm text-foreground truncate">
-                            {chat.isGroup
-                              ? chat?.group?.title
-                              : chat?.friend?.fullName}
-                          </p>
 
+                          <div>
+                            <p className="font-semibold text-sm text-foreground truncate">
+                              {chat.isGroup
+                                ? chat?.group?.title
+                                : chat?.friend?.fullName}
+                            </p>
+
+                            {isPending && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Are you interested in joining this group?
+                              </p>
+                            )}
+                          </div>
                           {chat?.lastMessage?.createdAt && (
                             <span className="text-xs text-muted-foreground shrink-0">
                               {formatMessageTimestamp(chat.lastMessage.createdAt)}

@@ -16,6 +16,18 @@ export function SuggestedUsers() {
   const [suggestedUsers, setSuggestedUsers] = useState([]);
    const [userListRefresh, setUserListRefresh] = useState(false);
 
+   useEffect(() => {
+  socket.on("updateUserList", (data) => {
+    setSuggestedUsers((prev: any) =>
+      prev.filter((user: any) => user._id !== data._id)
+    );
+  });
+
+  return () => {
+    socket.off("updateUserList");
+  };
+}, []);
+
    const handleSendRequest = async (userId: string) => {
         if(!user?._id || !userId) return;
        let obj = { fromId: user?._id, toId: userId };

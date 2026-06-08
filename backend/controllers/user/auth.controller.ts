@@ -71,8 +71,11 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    if (user?.isDeleted) return res.status(403).json({ success: false, message: "Account is scheduled for deletion." })
+const blockedDeleteStatuses = ["pending", "approved", "rejected"];
 
+if ( user?.isDeleted && blockedDeleteStatuses.includes(user.deleteStatus)) {
+  return res.status(403).json({ success: false, message:"Your account has been deleted. To recover your account, please contact the administrator at support@example.com or +91XXXXXXXXXX."});
+}     
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
@@ -533,11 +536,12 @@ export const requestDeleteAccount = async (req: Request, res: Response) => {
 
     user.deleteStatus = "pending";
     user.deleteDate = new Date();
-
+    user.deleteReason = "user personal reason for account deleted.";
+    user.isOnline = false;
     await user.save();
     io.emit("deleteRequest", user);
 
-    return res.status(200).json({ message: "Delete request sent successfully",user, deleteStatus: user.deleteStatus });
+    return res.status(200).json({ message: "User Account Delete Successfully.",user, deleteStatus: user.deleteStatus });
 
   } catch (error: any) {
     console.log(error);

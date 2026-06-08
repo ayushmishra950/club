@@ -134,6 +134,7 @@ const Groups = () => {
                 groupList.map(group => {
                   const isMember = group.members?.some((member) => member._id === user?._id);
                   const isCreatedBy = group?.createdBy?._id === user?._id;
+                  const isAdminManaged = group?.managedByAdmin;
                   return (
                     <div key={group._id} className="relative group bg-card cursor-pointer rounded-xl shadow-card overflow-hidden" onClick={() => navigate(`/groups/${group._id}`)}>
                       {isCreatedBy && (
@@ -203,8 +204,20 @@ const Groups = () => {
                               {group.members?.length} members
                             </span>
 
-                            <span className="text-xs text-muted-foreground">
+                            {/* <span className="text-xs text-muted-foreground">
                               CreatedBy:- CreatedBy: { isCreatedBy ? (group?.createdBy?.isDeleted ? "Deleted User" : "You") : (group?.createdBy?.fullName || "Admin")}
+                            </span> */}
+
+                            <span className="text-xs text-muted-foreground">
+                              Created By: {
+                                !group?.createdBy
+                                  ? "Admin"
+                                  : group?.createdBy?.isDeleted && group?.managedByAdmin
+                                    ? "(Former Owner • Managed by Admin)"
+                                    : isCreatedBy
+                                      ? "You"
+                                      : group?.createdBy?.fullName
+                              }
                             </span>
                           </div>
 

@@ -120,3 +120,15 @@ export const adminConvertPremiumUser = async (obj: any) => {
     const res = await api.patch(`${base_url}/admin/user/convert/premium`, obj);
     return res;
 }; 
+
+
+export const approveDeleteRequest = async(id:string) => {
+    const res = await api.patch(`${base_url}/admin/user/delete/request/approve/${id}`);
+    return res;
+};
+
+
+export const recoverAccount = async(id:string) => {
+    const res = await api.patch(`${base_url}/admin/user/delete/request/cancel/${id}`);
+    return res;
+}

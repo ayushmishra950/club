@@ -3,14 +3,24 @@ import { getAllUser } from "@/service/auth";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
-import { setUserList } from "@/redux-toolkit/slice/userSlice";
+import { setRemoveUser, setUserList } from "@/redux-toolkit/slice/userSlice";
 import { X } from "lucide-react";
+import socket from "@/socket/socket";
 
 export function StoriesCarousel() {
   const dispatch = useAppDispatch();
   const users = useAppSelector((state) => state?.user?.userList);
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
+
+   useEffect(() => {
+    socket.on("updateUserList", (data:any) => {
+     dispatch(setRemoveUser(data))
+    });
+    return () => {
+      socket.off("updateUserList");
+    }
+   },[])
 
   const [openView, setOpenView] = useState(false);
 

@@ -31,11 +31,11 @@ export const getChatUsers = async (req: Request, res: Response) => {
       ]
     }).sort({ updatedAt: -1 }).populate([
       { path: "lastMessage", populate: { path: "sender", select: "fullName profileImage isOnline lastSeen" }, },
-      { path: "groupId", select: "title description images members" }]);
+      { path: "groupId", select: "title description images members"}
+      ]);
 
     const friendsData = await Promise.all(
       chats.map(async (chat) => {
-
         // 🔥 GROUP CHAT
         if (chat.isGroup && chat.groupId) {
 
@@ -46,7 +46,7 @@ export const getChatUsers = async (req: Request, res: Response) => {
               match: { isDeleted: false },
               select: "fullName profileImage isOnline lastSeen"
             })
-            .select("name image members");
+            .select("title description images members");
 
           return {
             chatId: chat._id,
@@ -92,6 +92,7 @@ export const getChatUsers = async (req: Request, res: Response) => {
     );
 
     const friends = friendsData.filter(Boolean);
+    console.log("friends:-", friends);
 
     return res.status(200).json({ friends });
 
@@ -248,36 +249,36 @@ export const sendMessage = async (req: Request, res: Response) => {
 
 
 // ✅ 4. Get All Chats of User (Chat List - Instagram style)
-export const getUserChats = async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
+// export const getUserChats = async (req: Request, res: Response) => {
+//   try {
+//     const { userId } = req.params;
 
-    if (!userId) {
-      return res.status(400).json({ message: "userId is required." });
-    }
-    const user = await User.findById(userId);
-    if(!user) return res.status(404).json({message:"user not found."});
-    if(user?.isDeleted) return res.status(403).json({message:"Your Account is scheduled for deletion."})
+//     if (!userId) {
+//       return res.status(400).json({ message: "userId is required." });
+//     }
+//     const user = await User.findById(userId);
+//     if(!user) return res.status(404).json({message:"user not found."});
+//     if(user?.isDeleted) return res.status(403).json({message:"Your Account is scheduled for deletion."})
 
-    const chats = await Chat.find({
-      members: userId,
-    })
-      .populate({ path: "members", match: { isDeleted: false }, select: "fullName profileImage"})
-      .populate({ path: "lastMessage", populate: { path: "sender", match:{isDeleted:false}, select: "fullName" } })
-      .sort({ updatedAt: -1 });
+//     const chats = await Chat.find({
+//       members: userId,
+//     })
+//       .populate({ path: "members", match: { isDeleted: false }, select: "fullName profileImage"})
+//       .populate({ path: "lastMessage", populate: { path: "sender", match:{isDeleted:false}, select: "fullName" } })
+//       .sort({ updatedAt: -1 });
 
-      const validChats = chats.filter((chat) => {
-  if (!chat.isGroup) {
-    return chat.members.length >= 2;
-  }
-  return chat.members.length >= 2;
-});
+//       const validChats = chats.filter((chat) => {
+//   if (!chat.isGroup) {
+//     return chat.members.length >= 2;
+//   }
+//   return chat.members.length >= 2;
+// });
 
-    res.status(200).json({ chats: validChats });
-  } catch (err: any) {
-    res.status(500).json({ message: err.message });
-  }
-};
+//     res.status(200).json({ chats: validChats });
+//   } catch (err: any) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 
 
 

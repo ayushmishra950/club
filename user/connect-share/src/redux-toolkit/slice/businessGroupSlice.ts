@@ -54,6 +54,7 @@ const groupSlice = createSlice({
       }
     },
     setUpdateGroup: (state, action: PayloadAction<any>) => {
+      console.log(action.payload)
       const group = state.groupList.find(
         g => g._id === action.payload._id
       );

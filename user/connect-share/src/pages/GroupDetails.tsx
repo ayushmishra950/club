@@ -71,7 +71,7 @@ const GroupDetails = () => {
                     description: res?.data?.message || "Member removed successfully",
                     variant: "default",
                 });
-                
+
                 // Dispatch immediate update if backend returns updated group
                 if (res.data.group) {
                     dispatch(setUpdateGroupDetail(res.data.group));
@@ -123,7 +123,8 @@ const GroupDetails = () => {
                 Group not found
             </div>
         );
-    }
+    };
+
 
     return (
         <>
@@ -196,8 +197,15 @@ const GroupDetails = () => {
                                 </p>
 
                                 <p className="text-gray-600 mb-2">
-                                    <span className="font-semibold text-black">Type: </span>
-                                    {group.type}
+                                    <span className="font-semibold text-black">Created By: </span>
+                                    {
+                                        !group?.createdBy
+                                            ? "Admin"
+                                            : group?.createdBy?.isDeleted &&
+                                                group?.managedByAdmin
+                                                ? "(Former Owner • Managed by Admin)"
+                                                : group?.createdBy?.fullName
+                                    }
                                 </p>
 
                                 <p className="text-gray-600">
@@ -227,13 +235,13 @@ const GroupDetails = () => {
                             <h2 className="text-2xl font-semibold">
                                 Members ({group.members?.length})
                             </h2>
-                            <button
+                            {group?.createdBy?._id === user?._id && <button
                                 onClick={() => setShareOpenCard(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition font-medium text-sm"
                             >
                                 <UserPlus size={18} />
                                 Add Member
-                            </button>
+                            </button>}
                         </div>
 
                         {/* SCROLLABLE CONTAINER */}
@@ -245,13 +253,18 @@ const GroupDetails = () => {
                                         className="bg-gray-50 rounded-xl p-3 text-center shadow-sm hover:shadow-md transition"
                                     >
                                         <img
-                                            src={member.profileImage}
+                                            src={member.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"}
                                             alt={member.fullName}
                                             className="w-20 h-20 mx-auto rounded-full object-cover mb-2"
                                         />
 
                                         <h4 className="font-semibold text-sm">
-                                            {member.fullName}
+                                            {member.fullName}{" "}
+                                            {group?.createdBy?._id === member?._id && (
+                                                (group?.managedByAdmin && group?.isDeleted)
+                                                    ? "(Former Owner • Managed by Admin)"
+                                                    : "(Owner)"
+                                            )}
                                         </h4>
 
                                         <p className="text-xs text-gray-500 break-words">
@@ -259,7 +272,7 @@ const GroupDetails = () => {
                                         </p>
 
                                         {/* ✅ REMOVE BUTTON */}
-                                        <button
+                                        {group?.createdBy?._id !== member?._id && <button
                                             onClick={() => {
                                                 setDeleteUser(member);
                                                 setDeleteDialogOpen(true);
@@ -267,7 +280,7 @@ const GroupDetails = () => {
                                             className="mt-2 px-3 py-1 text-xs bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition"
                                         >
                                             Remove
-                                        </button>
+                                        </button>}
                                     </div>
                                 ))}
                             </div>

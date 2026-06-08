@@ -77,10 +77,14 @@ const Profile = () => {
       setDeleteLoading(true);
       const res = await deleteUserRequest(deleteUser?._id);
       if (res.status === 200) {
-        toast({ title: "User Account Delete Request Send Successfully.", description: res?.data?.message });
+        toast({ title: "User Account Delete Successfully.", description: res?.data?.message });
         setDeleteDialogOpen(false);
         setDeleteUser(null);
-        dispatch(setUserData(res?.data?.user))
+        dispatch(setUserData(null));
+        socket.disconnect();
+        localStorage.removeItem("user");
+        localStorage.removeItem("accessToken");
+        navigate("/login");
       }
     } catch (err) {
       toast({ title: "User Account Deletion Failed.", description: err?.response?.data?.message || err?.message });

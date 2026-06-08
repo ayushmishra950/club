@@ -75,8 +75,8 @@ export interface IUser extends Document {
   refreshTokens?: string[];
   isDeleted: boolean;
   deleteStatus: "pending" | "approved" | "rejected" | "cancelled" | "active";
-  deleteDate?: Date;
-  recoverUntil: string | null;
+  deleteDate?: Date | null;
+  deleteReason: string | null;
   comparePassword(password: string): Promise<boolean>;
 }
 
@@ -179,7 +179,7 @@ const UserSchema = new Schema<IUser>(
       type:Date,
       default:null
     },
-    recoverUntil:{
+    deleteReason:{
       type:String,
       default:null
     }

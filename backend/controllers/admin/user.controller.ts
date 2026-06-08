@@ -5,6 +5,7 @@ import { getIO } from "../../utils/socketHelper.js";
 import bcrypt from "bcryptjs";
 import { sendWelcomeSMS } from "../../utils/twilio.service.js";
 import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
+import Group from "../../models/group.model.js";
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -713,3 +714,64 @@ export const uploadExcel = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+
+
+
+
+
+
+
+export const adminApproveDeleteRequest = async(req:Request, res:Response) => {
+  try{
+     const userId = req.params.userId;
+     const io = getIO();
+     if(!userId) return res.status(400).json({message:"userId is Required."});
+     
+     const user = await User.findById(userId);
+     if(!user) return res.status(404).json({message:"user not found."});
+
+     if(user.isDeleted && user?.deleteStatus === "approved") return res.status(403).json({message:"User Account Already Deleted."});
+
+     user.isDeleted = true;
+     user.deleteStatus = "approved";
+
+     await user.save();
+
+     await Group.updateMany( { createdBy: user._id }, { $set: { managedByAdmin: true } });
+    io.emit("updateUserList", user);
+
+     res.status(200).json({message:"Delete Request Approved.", user, success:true})
+  }catch(err:any){
+    console.log(err);
+    res.status(500).json({success:false, message : err?.message || "Server Error", error:err});
+  }
+};
+
+
+export const recoverAccount = async(req:Request, res:Response) => {
+  try{
+     const userId = req.params.userId;
+     if(!userId) return res.status(400).json({message:"userId is Required."});
+
+     const user = await User.findById(userId);
+     if(!user) return res.status(404).json({message:"user not found."});
+
+     if(user.isDeleted === false && user.deleteStatus === "active") return res.status(200).json({message:"User Account Already Active."});
+
+     user.isDeleted = false;
+     user.deleteStatus = "active";
+     user.deleteDate = null;
+     user.deleteReason = null;
+
+      await user.save();
+
+      const group = await Group.findOneAndUpdate({createdBy:user?._id}, {$set:{managedByAdmin:false}})
+     res.status(200).json({message:"user account revoke successfully.", user});
+  }
+  catch(err:any){
+    console.log(err);
+    res.status(500).json({success:false, message : err?.message || "Server Error", error:err});
+  }
+}

@@ -63,7 +63,6 @@ export const createGroup = async (req: Request, res: Response) => {
       await Chat.create({ members: finalMembers, isGroup: true, groupId: group._id, });
     }
 
-    console.log("chatssssin Group:-", Chat);
 
     let latestGroup = await Group.findById(group._id)
       .populate({
@@ -143,7 +142,7 @@ export const getAllGroupsByAdmin = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Admin not found" });
     }
 
-    const groups = await Group.find({ createdBy: admin._id }).populate("members", "fullName email profileImage").sort({ createdAt: -1 });
+    const groups = await Group.find({ $or:[{createdBy: admin._id}, {managedByAdmin:true}] }).populate("members", "fullName email profileImage").sort({ createdAt: -1 });
 
     const groupsWithMessages = await Promise.all(
       groups.map(async (group) => {

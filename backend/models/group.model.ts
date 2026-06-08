@@ -9,6 +9,8 @@ export interface IGroup extends Document {
   createdAt: Date;
   updatedAt: Date;
   createdBy: mongoose.Types.ObjectId;
+
+  managedByAdmin: boolean;
 }
 
 const GroupSchema = new Schema<IGroup>(
@@ -31,16 +33,17 @@ const GroupSchema = new Schema<IGroup>(
     ],
 
     members: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
+      { type: mongoose.Schema.Types.ObjectId, ref: "User"},
     ],
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-    }
+    },
+    managedByAdmin: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

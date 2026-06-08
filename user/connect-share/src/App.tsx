@@ -78,7 +78,6 @@ const App = () => {
 
   useEffect(() => {
     const user = getUser();
-
     if (user?._id) {
       socket.emit("joinRoom", user._id);
     }

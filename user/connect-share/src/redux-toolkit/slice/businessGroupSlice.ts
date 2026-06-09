@@ -95,10 +95,66 @@ const groupSlice = createSlice({
         group.members.push({ _id: userId });
       }
     },
+
+    setDeleteUser: (state, action) => {
+      const userId = action.payload?._id;
+
+      state.groupList = state.groupList.map((group) => {
+        let updatedMembers = group.members;
+
+        // 🔹 members check + update
+        if (Array.isArray(group.members)) {
+          updatedMembers = group.members.map((member) =>
+            member?._id === userId
+              ? {
+                ...member,
+                isDeleted: true,
+                deleteStatus: "approved",
+              }
+              : member
+          );
+        }
+
+        return group?.createdBy?._id === userId
+          ? {
+            ...group,
+            managedByAdmin: true,
+            createdBy: {
+              ...group.createdBy,
+              isDeleted: true,
+              deleteStatus: "approved",
+            },
+            members: updatedMembers,
+          }
+          : {
+            ...group,
+            members: updatedMembers,
+          };
+      });
+    },
+
+    setRecoverUser: (state, action) => {
+      const userId = action.payload?._id;
+
+      state.groupList = state.groupList.map((group) => {
+        let updatedMembers = group.members;
+
+        // 🔹 members check + update
+        if (Array.isArray(group.members)) {
+          updatedMembers = group.members.map((member) =>
+            member?._id === userId ? { ...member, isDeleted: false, deleteStatus: "active", } : member
+          );
+        }
+
+        return group?.createdBy?._id === userId
+          ? { ...group, managedByAdmin: false, createdBy: { ...group.createdBy, isDeleted: false, deleteStatus: "active" }, members: updatedMembers}
+          : { ...group, members: updatedMembers };
+      });
+    }
   }
 });
 
-export const { setGroupList, setGroupJoinAnUnJoin, setUpdateGroup, setAddAnRemoveUserGroup, setNewGroup, setDeleteGroup, setUpdateGroupDetail } = groupSlice.actions;
+export const { setGroupList, setDeleteUser, setRecoverUser, setGroupJoinAnUnJoin, setUpdateGroup, setAddAnRemoveUserGroup, setNewGroup, setDeleteGroup, setUpdateGroupDetail } = groupSlice.actions;
 
 export default groupSlice.reducer;
 

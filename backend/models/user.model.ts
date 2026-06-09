@@ -74,7 +74,7 @@ export interface IUser extends Document {
   premiumUser?: null | "premium";
   refreshTokens?: string[];
   isDeleted: boolean;
-  deleteStatus: "pending" | "approved" | "rejected" | "cancelled" | "active";
+  deleteStatus: "pending" | "approved" | "active";
   deleteDate?: Date | null;
   deleteReason: string | null;
   comparePassword(password: string): Promise<boolean>;

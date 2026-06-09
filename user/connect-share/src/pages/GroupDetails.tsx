@@ -90,25 +90,6 @@ const GroupDetails = () => {
     };
 
 
-    const handleGetGroups = async () => {
-        try {
-            const res = await getAllGroups();
-            if (res.status === 200) {
-                dispatch(setGroupList(res?.data?.groups));
-                setGroupListRefresh(false);
-            }
-        } catch (err) {
-            console.log(err);
-
-        }
-    };
-
-    useEffect(() => {
-        if (groupListRefresh || groupList.length === 0) {
-            handleGetGroups();
-        }
-    }, [groupListRefresh]);
-
     if (!groupList || groupList.length === 0) {
         return (
             <div className="flex justify-center items-center h-[60vh] text-xl font-semibold">
@@ -259,9 +240,9 @@ const GroupDetails = () => {
                                         />
 
                                         <h4 className="font-semibold text-sm">
-                                            {member.fullName}{" "}
+                                            {group?.createdBy?._id !== member?._id && member.fullName}{" "}
                                             {group?.createdBy?._id === member?._id && (
-                                                (group?.managedByAdmin && group?.isDeleted)
+                                                (group?.managedByAdmin && group?.createdBy?.isDeleted)
                                                     ? "(Former Owner • Managed by Admin)"
                                                     : "(Owner)"
                                             )}

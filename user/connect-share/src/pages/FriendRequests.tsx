@@ -9,9 +9,9 @@ import { getSuggestedUsers, sendRequest, acceptRequest, cancelRequest, pendingRe
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import {addUserFromChat} from "@/service/chat";
+import { addUserFromChat } from "@/service/chat";
 import socket from '@/socket/socket';
-import {getMutualFriends} from "@/service/friendRequest";
+import { getMutualFriends } from "@/service/friendRequest";
 
 
 const FriendRequests = () => {
@@ -31,78 +31,105 @@ const FriendRequests = () => {
   const [acceptLoading, setAcceptLoading] = useState<string | null>(null);
   const [sendLoading, setSendLoading] = useState<string | null>(null);
 
-  useEffect(()=>{
-    socket.on("unSeenFriendRequest",()=>{
-     handleGetFromAnToPendingRequest();
+  useEffect(() => {
+    socket.on("unSeenFriendRequest", () => {
+      handleGetFromAnToPendingRequest();
     })
-    socket.on("updateUserList", (data) => {
-  const userId = typeof data === "object" ? data?._id : data;
+    socket.on("deleteUser", (data) => {
+      const userId = typeof data === "object" ? data?._id : data;
 
-  setFriendList((prev) =>
-    prev.filter((u) => u._id !== userId)
-  );
+      setFriendList((prev) =>
+        prev.filter((u) => u._id !== userId)
+      );
 
-  setSuggestedUsers((prev) =>
-    prev.filter((u) => u._id !== userId)
-  );
+      setSuggestedUsers((prev) =>
+        prev.filter((u) => u._id !== userId)
+      );
 
-  setSendRequestList((prev) =>
-    prev.filter((u) => u._id !== userId)
-  );
+      setSendRequestList((prev) =>
+        prev.filter((u) => u._id !== userId)
+      );
 
-  setReceivedRequestList((prev) =>
-    prev.filter((u) => u._id !== userId)
-  );
-});
-    return ()=>{
+      setReceivedRequestList((prev) =>
+        prev.filter((u) => u._id !== userId)
+      );
+    });
+
+    socket.on("recoverUser", (user) => {
+      setFriendList((prev) =>
+        prev.some((u) => u._id === user._id)
+          ? prev
+          : [...prev, user]
+      );
+
+      setSuggestedUsers((prev) =>
+        prev.some((u) => u._id === user._id)
+          ? prev
+          : [...prev, user]
+      );
+
+      setSendRequestList((prev) =>
+        prev.some((u) => u._id === user._id)
+          ? prev
+          : [...prev, user]
+      );
+
+      setReceivedRequestList((prev) =>
+        prev.some((u) => u._id === user._id)
+          ? prev
+          : [...prev, user]
+      );
+    });
+    return () => {
       socket.off("unSeenFriendRequest");
-      socket.off("updateUserList");
+      socket.off("deleteUser");
+      socket.off("recoverUser");
     }
-  },[]);
+  }, []);
 
 
-  const handleAddUserFromChat = async(userId:string) => {
-    if(!user?._id || !userId) return;
-    let obj = {senderId:user?._id, receiverId:userId};
-    try{
+  const handleAddUserFromChat = async (userId: string) => {
+    if (!user?._id || !userId) return;
+    let obj = { senderId: user?._id, receiverId: userId };
+    try {
       setMessageLoading(userId);
       const res = await addUserFromChat(obj);
-    
-      if(res.status===200){
-        toast({title:"Add User From Chat Successfully.", description:res?.data?.message});
+
+      if (res.status === 200) {
+        toast({ title: "Add User From Chat Successfully.", description: res?.data?.message });
         setChatOpen(true);
       }
     }
-    catch(err){
+    catch (err) {
       console.log(err);
-      toast({title:"Add User From Chat Failed.", description:err?.response?.data?.message || err?.message, variant:"destructive"});
-    }finally{
+      toast({ title: "Add User From Chat Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" });
+    } finally {
       setMessageLoading(null);
     }
   }
 
   const handleSendRequest = async (userId: string) => {
-     if(!user?._id || !userId) return;
+    if (!user?._id || !userId) return;
     let obj = { fromId: user?._id, toId: userId };
     try {
       setSendLoading(userId);
       const res = await sendRequest(obj);
       if (res.status === 201) {
         toast({ title: "Request Send Successfully.", description: res?.data?.message });
-        socket.emit("unSeenFriendRequest", {from:user?._id, to:userId});
+        socket.emit("unSeenFriendRequest", { from: user?._id, to: userId });
         setUserListRefresh(true);
       }
     }
     catch (err) {
       console.log(err);
       toast({ title: "Send Request Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
-    }finally{
+    } finally {
       setSendLoading(null);
     }
   };
 
   const handleAcceptRequest = async (userId: string) => {
-  if(!userId) return;
+    if (!userId) return;
     try {
       setAcceptLoading(userId);
       const res = await acceptRequest(userId);
@@ -114,13 +141,13 @@ const FriendRequests = () => {
     catch (err) {
       console.log(err);
       toast({ title: "Request Accept Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
-    }finally{
+    } finally {
       setAcceptLoading(null);
     }
   };
 
   const handleCancelRequest = async (userId: string) => {
-    if(!userId) return;
+    if (!userId) return;
     try {
       setCancelLoading(userId);
       const res = await cancelRequest(userId);
@@ -132,7 +159,7 @@ const FriendRequests = () => {
     catch (err) {
       console.log(err);
       toast({ title: "Request Cancel Failed.", description: err?.response?.data?.message || err?.message, variant: "destructive" })
-    }finally{
+    } finally {
       setCancelLoading(null);
     }
   };
@@ -253,13 +280,13 @@ const FriendRequests = () => {
                       onClick={() => handleAcceptRequest(req._id)}
                       className="flex items-center gap-1.5 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
                     >
-                     {acceptLoading === req?._id ? <Loader2 className='animate-spin' /> : <span className='flex items-center gap-1'><Check className="h-4 w-4" /> Accept</span>}
+                      {acceptLoading === req?._id ? <Loader2 className='animate-spin' /> : <span className='flex items-center gap-1'><Check className="h-4 w-4" /> Accept</span>}
                     </button>
                     <button
                       onClick={() => handleCancelRequest(req._id)}
                       className="flex items-center gap-1.5 rounded-lg bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     >
-                      {cancelLoading === req?._id ? <Loader2 className='animate-spin' /> :<span className='flex items-center gap-1'><X className="h-4 w-4" /> Decline</span>}
+                      {cancelLoading === req?._id ? <Loader2 className='animate-spin' /> : <span className='flex items-center gap-1'><X className="h-4 w-4" /> Decline</span>}
                     </button>
                   </div>
                 </div>
@@ -291,7 +318,7 @@ const FriendRequests = () => {
                     onClick={() => handleCancelRequest(req?._id)}
                     className="flex items-center gap-1.5 rounded-lg bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                   >
-                   {cancelLoading === req?._id ? <Loader2 className='animate-spin' /> : <span className='flex items-center gap-1'><X className="h-4 w-4" /> Cancel</span>}
+                    {cancelLoading === req?._id ? <Loader2 className='animate-spin' /> : <span className='flex items-center gap-1'><X className="h-4 w-4" /> Cancel</span>}
                   </button>
                 </div>
               ))
@@ -321,7 +348,7 @@ const FriendRequests = () => {
                     </p>
                   </div>
                   <Button className='h-7.2' onClick={() => handleSendRequest(user?._id)}>
-                  {sendLoading === user?._id ? <Loader2 className='animate-spin'/> : <span className='flex items-center gap-1'> <UserPlus /> Add friend</span>}
+                    {sendLoading === user?._id ? <Loader2 className='animate-spin' /> : <span className='flex items-center gap-1'> <UserPlus /> Add friend</span>}
                   </Button>
                 </div>
               ))
@@ -347,7 +374,7 @@ const FriendRequests = () => {
               </div>
             ) : (
               friendList?.map(friend => (
-                <div key={friend._id} className="bg-card rounded-xl shadow-card p-4 flex items-center gap-4 animate-fade-in cursor-pointer" onClick={()=>{navigate(`/profile/${friend?._id}`)}}>
+                <div key={friend._id} className="bg-card rounded-xl shadow-card p-4 flex items-center gap-4 animate-fade-in cursor-pointer" onClick={() => { navigate(`/profile/${friend?._id}`) }}>
                   <img src={friend.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"} alt={friend.fullName} className="h-14 w-14 rounded-full object-cover" />
                   <div className="flex-1 min-w-0">
                     <p className="font-heading font-semibold text-foreground">{friend.fullName}</p>
@@ -357,16 +384,16 @@ const FriendRequests = () => {
                     </p>
                   </div>
                   <button
-                    onClick={(e) => {e.stopPropagation();handleAddUserFromChat(friend._id)}}
+                    onClick={(e) => { e.stopPropagation(); handleAddUserFromChat(friend._id) }}
                     className="flex items-center gap-1.5 rounded-lg bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-green-400 hover:text-white transition-colors"
                   >
-                  {messageLoading === friend?._id ? <Loader2 className='animate-spin' /> :  <span className='flex items-center gap-1'><MessageCircle className="h-4 w-4" /> Message</span>} 
+                    {messageLoading === friend?._id ? <Loader2 className='animate-spin' /> : <span className='flex items-center gap-1'><MessageCircle className="h-4 w-4" /> Message</span>}
                   </button>
-                   <button
-                    onClick={(e) => {e.stopPropagation();handleCancelRequest(friend._id)}}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleCancelRequest(friend._id) }}
                     className="flex items-center gap-1.5 rounded-lg bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                   >
-                    {cancelLoading === friend?._id ? <Loader2 className='animate-spin' /> :<span className='flex items-center gap-1'><X className="h-4 w-4" /> Remove</span>}
+                    {cancelLoading === friend?._id ? <Loader2 className='animate-spin' /> : <span className='flex items-center gap-1'><X className="h-4 w-4" /> Remove</span>}
                   </button>
                 </div>
               ))

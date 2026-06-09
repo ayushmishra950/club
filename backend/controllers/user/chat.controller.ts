@@ -30,8 +30,8 @@ export const getChatUsers = async (req: Request, res: Response) => {
         { pendingMembers: { $in: [userObjectId] } }
       ]
     }).sort({ updatedAt: -1 }).populate([
-      { path: "lastMessage", populate: { path: "sender", select: "fullName profileImage isOnline lastSeen" }, },
-      { path: "groupId", select: "title description images members"}
+      { path: "lastMessage", populate: { path: "sender", select: "fullName profileImage isOnline lastSeen isDeleted deleteStatus" }, },
+      { path: "groupId", select: "title description images members managedByAdmin"}
       ]);
 
     const friendsData = await Promise.all(
@@ -43,10 +43,9 @@ export const getChatUsers = async (req: Request, res: Response) => {
           const group = await Group.findById(chat.groupId)
             .populate({
               path: "members",
-              match: { isDeleted: false },
-              select: "fullName profileImage isOnline lastSeen"
+              select: "fullName profileImage isOnline lastSeen isDeleted deleteStatus"
             })
-            .select("title description images members");
+            .select("title description images members managedByAdmin");
 
           return {
             chatId: chat._id,
@@ -68,8 +67,8 @@ export const getChatUsers = async (req: Request, res: Response) => {
 
         if (!friendId) return null;
 
-        const friend = await User.findOne({ _id: friendId, isDeleted: false }).select(
-          "fullName email profileImage isOnline lastSeen"
+        const friend = await User.findOne({ _id: friendId }).select(
+          "fullName email profileImage isOnline lastSeen isDeleted deleteStatus"
         );
 
         if (!friend) return null;
@@ -92,7 +91,6 @@ export const getChatUsers = async (req: Request, res: Response) => {
     );
 
     const friends = friendsData.filter(Boolean);
-    console.log("friends:-", friends);
 
     return res.status(200).json({ friends });
 

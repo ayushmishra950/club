@@ -73,7 +73,7 @@ export const loginUser = async (req: Request, res: Response) => {
 
 const blockedDeleteStatuses = ["pending", "approved", "rejected"];
 
-if ( user?.isDeleted && blockedDeleteStatuses.includes(user.deleteStatus)) {
+if ( user?.isDeleted || blockedDeleteStatuses.includes(user.deleteStatus)) {
   return res.status(403).json({ success: false, message:"Your account has been deleted. To recover your account, please contact the administrator at support@example.com or +91XXXXXXXXXX."});
 }     
     const isMatch = await user.comparePassword(password);

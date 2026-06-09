@@ -740,7 +740,7 @@ export const adminApproveDeleteRequest = async(req:Request, res:Response) => {
      await user.save();
 
      await Group.updateMany( { createdBy: user._id }, { $set: { managedByAdmin: true } });
-    io.emit("updateUserList", user);
+    io.emit("deleteUser", user);
 
      res.status(200).json({message:"Delete Request Approved.", user, success:true})
   }catch(err:any){
@@ -753,6 +753,7 @@ export const adminApproveDeleteRequest = async(req:Request, res:Response) => {
 export const recoverAccount = async(req:Request, res:Response) => {
   try{
      const userId = req.params.userId;
+     const io = getIO();
      if(!userId) return res.status(400).json({message:"userId is Required."});
 
      const user = await User.findById(userId);
@@ -766,8 +767,9 @@ export const recoverAccount = async(req:Request, res:Response) => {
      user.deleteReason = null;
 
       await user.save();
-
-      const group = await Group.findOneAndUpdate({createdBy:user?._id}, {$set:{managedByAdmin:false}})
+      io.emit("recoverUser", user);
+ 
+      const group = await Group.updateMany({createdBy:user?._id}, {$set:{managedByAdmin:false}})
      res.status(200).json({message:"user account revoke successfully.", user});
   }
   catch(err:any){

@@ -3,7 +3,7 @@ import { getAllUser } from "@/service/auth";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
-import { setRemoveUser, setUserList } from "@/redux-toolkit/slice/userSlice";
+import { setRecoverUser, setRemoveUser, setUserList } from "@/redux-toolkit/slice/userSlice";
 import { X } from "lucide-react";
 import socket from "@/socket/socket";
 
@@ -14,11 +14,16 @@ export function StoriesCarousel() {
   const navigate = useNavigate();
 
    useEffect(() => {
-    socket.on("updateUserList", (data:any) => {
+    socket.on("deleteUser", (data:any) => {
      dispatch(setRemoveUser(data))
     });
+
+    socket.on("recoverUser", (data:any) => {
+     dispatch(setRecoverUser(data));
+    })
     return () => {
-      socket.off("updateUserList");
+      socket.off("deleteUser");
+      socket.off("recoverUser");
     }
    },[])
 

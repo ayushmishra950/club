@@ -118,16 +118,68 @@ const chatSlice = createSlice({
       }
     },
     setExitUserFromGroup: (state, action) => {
-  const { chatId } = action.payload;
+      const { chatId } = action.payload;
 
-  state.userChatList = state.userChatList.filter(
-    (chat) => chat.chatId?.toString() !== chatId?.toString()
-  );
-}
+      state.userChatList = state.userChatList.filter(
+        (chat) => chat.chatId?.toString() !== chatId?.toString()
+      );
+    },
+
+    setDeleteUserChat: (state, action) => {
+      const userId = action.payload?._id;
+
+      state.userChatList.forEach((chat) => {
+
+        // 🔹 SINGLE CHAT
+        if (!chat?.isGroup) {
+          if (chat?.friend?._id === userId) {
+            chat.friend.isDeleted = true;
+            chat.friend.deleteStatus = "approved";
+          }
+        }
+
+        // 🔹 GROUP CHAT
+        if (chat?.isGroup) {
+          chat.members?.forEach((member) => {
+            if (member?._id === userId) {
+              member.isDeleted = true;
+              member.deleteStatus = "approved";
+            }
+          });
+        }
+
+      });
+    },
+
+    setRecoverUserChat: (state, action) => {
+      const userId = action.payload?._id;
+
+      state.userChatList.forEach((chat) => {
+
+        // 🔹 SINGLE CHAT
+        if (!chat?.isGroup) {
+          if (chat?.friend?._id === userId) {
+            chat.friend.isDeleted = false;
+            chat.friend.deleteStatus = "active";
+          }
+        }
+
+        // 🔹 GROUP CHAT
+        if (chat?.isGroup) {
+          chat.members?.forEach((member) => {
+            if (member?._id === userId) {
+              member.isDeleted = false;
+              member.deleteStatus = "active";
+            }
+          });
+        }
+
+      });
+    }
   }
 });
 
-export const { setUserChatList,setExitUserFromGroup, setAcceptedInvite, setMessageRefresh, setRejectGroupInvite, setGroupInvited, setUnreadCountRemove, setMessageList, setNewMessageAdd } = chatSlice.actions;
+export const { setUserChatList,setDeleteUserChat, setRecoverUserChat, setExitUserFromGroup, setAcceptedInvite, setMessageRefresh, setRejectGroupInvite, setGroupInvited, setUnreadCountRemove, setMessageList, setNewMessageAdd } = chatSlice.actions;
 
 export default chatSlice.reducer;
 

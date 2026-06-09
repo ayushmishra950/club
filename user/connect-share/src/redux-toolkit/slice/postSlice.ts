@@ -23,7 +23,7 @@ const postSlice = createSlice({
         item.likes.push(userId);
       }
     },
- 
+
     setPostComment: (state, action) => {
       const { postId, text, userId, fullName } = action.payload;
       const post = state.postList.find(p => p._id === postId);
@@ -87,13 +87,18 @@ const postSlice = createSlice({
       if (postIndex !== -1) {
         state.postList.splice(postIndex, 1);
       }
-    }
+    },
 
+    setRemoveUserPosts: (state, action) => {
+      const userId = action.payload?._id;
+      if (!userId) return;
+      state.postList = state.postList.filter((post) => post?.createdBy?._id !== userId);
+    }
   }
 
 });
 
-export const { setPostList, setPostLikeAnUnLike, setPostComment, setDeletePostFromList, setPostLikeAnUnLikeComment, setPostReplyComment } = postSlice.actions;
+export const { setPostList,setRemoveUserPosts, setPostLikeAnUnLike, setPostComment, setDeletePostFromList, setPostLikeAnUnLikeComment, setPostReplyComment } = postSlice.actions;
 
 export default postSlice.reducer;
 

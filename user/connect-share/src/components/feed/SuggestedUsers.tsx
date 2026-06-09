@@ -11,20 +11,30 @@ import { useToast } from '@/hooks/use-toast';
 export function SuggestedUsers() {
   const {toast} = useToast();
    const user = JSON.parse(localStorage.getItem("user"));
-  const { getStatus, getMutualCount } = useConnections();
-  const suggestions = users.filter(u => getStatus(u.id) !== 'friends');
   const [suggestedUsers, setSuggestedUsers] = useState([]);
    const [userListRefresh, setUserListRefresh] = useState(false);
 
    useEffect(() => {
-  socket.on("updateUserList", (data) => {
+  socket.on("deleteUser", (data) => {
     setSuggestedUsers((prev: any) =>
       prev.filter((user: any) => user._id !== data._id)
     );
   });
+  socket.on("recoverUser", (data) => {
+    setSuggestedUsers((prev) => {
+      const exists = prev.some((u) => u._id === user._id);
+
+      if (exists) {
+        return prev;
+      }
+
+      return [...prev, data];
+    });
+  })
 
   return () => {
-    socket.off("updateUserList");
+    socket.off("deleteUser");
+    socket.off("recoverUser");
   };
 }, []);
 

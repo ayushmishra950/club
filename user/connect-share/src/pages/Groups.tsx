@@ -6,12 +6,13 @@ import { mockChats } from '@/data/mockData';
 import { getAllGroups, toggleMember, deleteGroup } from "@/service/group";
 import { useToast } from '@/hooks/use-toast';
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
-import { setGroupList, setGroupJoinAnUnJoin, setAddAnRemoveUserGroup, setNewGroup, setDeleteGroup, setUpdateGroupDetail } from '@/redux-toolkit/slice/businessGroupSlice';
+import { setGroupList, setGroupJoinAnUnJoin, setAddAnRemoveUserGroup, setNewGroup, setDeleteGroup, setUpdateGroupDetail, setDeleteUser } from '@/redux-toolkit/slice/businessGroupSlice';
 import { useNavigate } from 'react-router-dom';
 import socket from '@/socket/socket';
 import GroupDialog from "@/components/forms/GroupDialog";
 import DeleteCard from "@/components/card/DeleteCard";
 import AddMemberCard from "@/components/card/AddMemberCard";
+import { setRecoverUser } from '@/redux-toolkit/slice/userSlice';
 
 
 const Groups = () => {
@@ -50,6 +51,13 @@ const Groups = () => {
 
     socket.on("addAnRemoveUserFromGroup", (data) => {
       dispatch(setAddAnRemoveUserGroup(data));
+    });
+    socket.on("deleteUser", (user) => {
+    dispatch(setDeleteUser(user));
+    });
+    
+    socket.on("recoverUser", (user) => {
+      dispatch(setRecoverUser(user));
     })
 
     return () => {
@@ -57,6 +65,8 @@ const Groups = () => {
       socket.off("deleteGroup");
       socket.off("addAnRemoveUserFromGroup");
       socket.off("groupInviteAccepted");
+      socket.off("deleteUser");
+      socket.off("recoverUser");
     }
   }, [])
 
@@ -134,7 +144,6 @@ const Groups = () => {
                 groupList.map(group => {
                   const isMember = group.members?.some((member) => member._id === user?._id);
                   const isCreatedBy = group?.createdBy?._id === user?._id;
-                  const isAdminManaged = group?.managedByAdmin;
                   return (
                     <div key={group._id} className="relative group bg-card cursor-pointer rounded-xl shadow-card overflow-hidden" onClick={() => navigate(`/groups/${group._id}`)}>
                       {isCreatedBy && (

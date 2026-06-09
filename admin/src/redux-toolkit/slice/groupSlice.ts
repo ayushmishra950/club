@@ -98,9 +98,7 @@ const groupSlice = createSlice({
       }
     },
     setDeleteGroup: (state, action: PayloadAction<string>) => {
-      state.groupList = state.groupList.filter(
-        (group) => group._id !== action.payload
-      );
+      state.groupList = state.groupList.filter( (group) => group._id !== action.payload);
     },
     setUpdateGroupDetail: (state, action: PayloadAction<any>) => {
       const index = state.groupList.findIndex(g => g._id === action.payload?._id);
@@ -109,6 +107,8 @@ const groupSlice = createSlice({
         state.groupList[index] = action.payload;
       }
     },
+
+   
   }
 });
 

@@ -15,7 +15,6 @@ export default function SuggestionPage() {
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);

@@ -89,10 +89,13 @@ export default function GroupsPage() {
     });
     socket.on("groupInviteAccepted", (data) => {
       dispatch(setUpdateGroupDetail(data?.group));
-    })
+    });
 
     socket.on("addMembersToGroup", (data) => {
       dispatch(setUpdateGroupDetail(data));
+    });
+    socket.on("updateUserList", () => {
+      handleGetGroups();
     })
 
     return () => {
@@ -104,6 +107,7 @@ export default function GroupsPage() {
       socket.off("updateGroupDetail");
       socket.off("addMembersToGroup");
       socket.off("groupInviteAccepted");
+      socket.off("updateUserList");
     }
   }, [selectedGroup])
 

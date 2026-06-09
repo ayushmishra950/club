@@ -5,7 +5,7 @@ import { getChatUsers, sendMessage, getMessages, rejectGroupInvite, acceptGroupI
 import { formatChatDate, formatMessageTimestamp, formatMongoDate } from "@/service/global";
 import socket from '@/socket/socket';
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
-import { setMessageList, setMessageRefresh, setNewMessageAdd, setAcceptedInvite, setGroupInvited, setRejectGroupInvite, setUnreadCountRemove, setUserChatList, setExitUserFromGroup } from '@/redux-toolkit/slice/chatSlice';
+import { setMessageList, setMessageRefresh, setNewMessageAdd, setAcceptedInvite, setGroupInvited, setRejectGroupInvite, setUnreadCountRemove, setUserChatList, setExitUserFromGroup, setDeleteUserChat, setRecoverUserChat } from '@/redux-toolkit/slice/chatSlice';
 import { exitMemberFromGroup } from "@/service/group";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import DeleteCard from "@/components/card/DeleteCard";
@@ -40,7 +40,7 @@ export function ChatPanel({ open, onClose }: Props) {
   const filteredChats = userList?.filter((chat: any) =>
     chatType === "single" ? !chat.isGroup : chat.isGroup
   );
-  console.log(filteredChats);
+  console.log(userList)
 
   const handleSeenMessages = async (chat: any) => {
     socket.emit("messageSeen", { chatId: chat?.chatId, receiverUserId: user?._id, senderUserId: chat?.friend?._id });
@@ -95,6 +95,14 @@ export function ChatPanel({ open, onClose }: Props) {
         return { ...prev, friend: { ...prev.friend, lastSeen: new Date() } };
       });
     });
+    socket.on("deleteUser", (user) => {
+      dispatch(setDeleteUserChat(user));
+    })
+
+    socket.on("recoverUser", (user) => {
+      dispatch(setRecoverUserChat(user));
+    })
+
     return () => {
       socket.off("messageRefresh");
       socket.off("typingChat");
@@ -106,6 +114,8 @@ export function ChatPanel({ open, onClose }: Props) {
       socket.off("userListUnReadChatCount");
       socket.off("groupInvite");
       socket.off("groupInviteAccepted");
+      socket.off("deleteUser");
+      socket.off("recoverUser");
     }
   }, [activeChat])
 
@@ -291,7 +301,9 @@ export function ChatPanel({ open, onClose }: Props) {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-heading font-semibold text-sm text-left truncate">{chatType === "single" ? activeChat?.friend?.fullName : activeChat?.group?.title}</p>
+                      <p className="font-heading font-semibold text-sm text-left truncate">{chatType === "single"
+                        ? (activeChat?.friend?.isDeleted ? "Deleted User" : activeChat?.friend?.fullName)
+                        : activeChat?.group?.title}</p>
                       {/* Online / Offline text */}
                       <p className="text-xs text-muted-foreground text-left truncate">
                         {chatType === "group"
@@ -326,7 +338,7 @@ export function ChatPanel({ open, onClose }: Props) {
                     {/* Name & Status */}
                     <div className="text-center mb-6">
                       <h3 className="font-heading font-bold text-lg text-foreground">
-                        {chatType === "single" ? activeChat?.friend?.fullName : activeChat?.group?.title}
+                        {chatType === "single" ? activeChat?.friend?.isDeleted ? "Deleted User" : activeChat?.friend?.fullName : activeChat?.group?.title}
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         {chatType === "group"
@@ -533,7 +545,7 @@ export function ChatPanel({ open, onClose }: Props) {
                       {!isMe && (
                         <div className="flex flex-col items-start w-10">
                           <span className="text-[11px] font-semibold text-primary">
-                            {isAdmin ? "Admin" : sender?.fullName}
+                            {isAdmin ? "Admin" : sender?.fullName} {sender?.isDeleted && "(Deleted User)"}
                           </span>
                         </div>
                       )}
@@ -622,7 +634,7 @@ export function ChatPanel({ open, onClose }: Props) {
               </div>
             )}
 
-            {activeChat && (
+            {/* { activeChat && (
               <div className="p-3 border-t border-border mb-[60px] md:mb-0">
 
                 <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-1.5">
@@ -670,6 +682,62 @@ export function ChatPanel({ open, onClose }: Props) {
 
                 </div>
 
+              </div>
+            )} */}
+
+            {activeChat && (
+              <div className="p-3 border-t border-border mb-[60px] md:mb-0">
+
+                {chatType === "single" && activeChat?.friend?.isDeleted ? (
+                  <div className="flex items-center justify-center py-3 text-sm text-muted-foreground">
+                    This user is no longer available on ChatApp
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-1.5">
+
+                    <button className="text-muted-foreground hover:text-foreground transition-colors">
+                      <Smile className="h-5 w-5" />
+                    </button>
+
+                    <label className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                      <Image className="h-5 w-5" />
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        hidden
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+
+                          setSelectedFile(file);
+                          setPreviewUrl(URL.createObjectURL(file));
+                        }}
+                      />
+                    </label>
+
+                    <input
+                      type="text"
+                      placeholder="Type a message..."
+                      value={message}
+                      onChange={handleTyping}
+                      className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground"
+                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                    />
+
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={sendLoading || (!message && !selectedFile)}
+                      className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-primary-foreground hover:opacity-90 transition-opacity"
+                    >
+                      {sendLoading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </button>
+
+                  </div>
+                )}
               </div>
             )}
           </>

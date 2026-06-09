@@ -96,21 +96,39 @@ const postSlice = createSlice({
     },
 
     setNewPost: (state, action) => {
-    const newPost = action.payload;
+      const newPost = action.payload;
 
-    const exists = state.postList.some( (post) => post?._id === newPost?._id);
+      const exists = state.postList.some((post) => post?._id === newPost?._id);
 
-    if (!exists) {
+      if (!exists) {
         state.postList.unshift(newPost);
+      }
+    },
+    addOrUpdatePost: (state, action) => {
+      const newPost = action.payload;
+
+      const index = state.postList.findIndex(
+        (post) => post._id === newPost._id
+      );
+
+      if (index !== -1) {
+        // ✅ UPDATE existing post
+        state.postList[index] = {
+          ...state.postList[index],
+          ...newPost,
+        };
+      } else {
+        // ✅ ADD new post
+        state.postList.unshift(newPost); // top pe add (feed style)
+      }
     }
-},
 
 
   }
 
 });
 
-export const { setPostList,setNewPost, setRemoveUserPosts, setPostLikeAnUnLike, setPostComment, setDeletePostFromList, setPostLikeAnUnLikeComment, setPostReplyComment } = postSlice.actions;
+export const { setPostList, setNewPost,addOrUpdatePost, setRemoveUserPosts, setPostLikeAnUnLike, setPostComment, setDeletePostFromList, setPostLikeAnUnLikeComment, setPostReplyComment } = postSlice.actions;
 
 export default postSlice.reducer;
 

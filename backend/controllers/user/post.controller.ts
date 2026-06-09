@@ -36,7 +36,7 @@ export const addPostNotes = async (req: Request, res: Response) => {
     const post = await Post.create({ notes: notes, createdBy: userId, create: "User", type: "public" });
     if (!post) return res.status(404).json({ message: "Post add Failed" });
 
-    res.status(201).json({ message: "Notes add successfully." })
+    res.status(201).json({ message: "Notes add successfully.", post })
   }
   catch (err: any) {
     res.status(500).json({ success: false, message: err.message});

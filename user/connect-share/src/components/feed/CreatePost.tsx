@@ -16,6 +16,7 @@ export function CreatePost({ setPostListRefresh }) {
     try {
       const obj = { userId: user?._id, notes: newMessage };
       const res = await addNotes(obj);
+      
       if (res.status === 201) {
         toast({ title: "Notes Added Successfully.", description: res?.data?.message });
         setPostListRefresh(true);

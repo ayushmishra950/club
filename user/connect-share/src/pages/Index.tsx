@@ -8,7 +8,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { mockPosts, mockChats } from '@/data/mockData';
 import { useAppDispatch, useAppSelector } from "@/redux-toolkit/customHook/hook";
-import { setPostList, setRemoveUserPosts } from "@/redux-toolkit/slice/postSlice";
+import { setNewPost, setPostList, setRemoveUserPosts } from "@/redux-toolkit/slice/postSlice";
 import { getAllPost } from "@/service/post";
 import { useToast } from '@/hooks/use-toast';
 import socket from '@/socket/socket';
@@ -60,11 +60,15 @@ const Index = () => {
     });
     socket.on("deleteUser", (user) => {
     dispatch(setRemoveUserPosts(user));
+    });
+    socket.on("postRefresh", (post) => {
+     dispatch(setNewPost(post));
     })
     return () => {
       socket.off("paymentRequestAccepted");
       socket.off("userUpdate");
       socket.off("deleteUser");
+      socket.off("postRefresh");
     };
   }, [dispatch]);
 

@@ -93,12 +93,24 @@ const postSlice = createSlice({
       const userId = action.payload?._id;
       if (!userId) return;
       state.postList = state.postList.filter((post) => post?.createdBy?._id !== userId);
+    },
+
+    setNewPost: (state, action) => {
+    const newPost = action.payload;
+
+    const exists = state.postList.some( (post) => post?._id === newPost?._id);
+
+    if (!exists) {
+        state.postList.unshift(newPost);
     }
+},
+
+
   }
 
 });
 
-export const { setPostList,setRemoveUserPosts, setPostLikeAnUnLike, setPostComment, setDeletePostFromList, setPostLikeAnUnLikeComment, setPostReplyComment } = postSlice.actions;
+export const { setPostList,setNewPost, setRemoveUserPosts, setPostLikeAnUnLike, setPostComment, setDeletePostFromList, setPostLikeAnUnLikeComment, setPostReplyComment } = postSlice.actions;
 
 export default postSlice.reducer;
 

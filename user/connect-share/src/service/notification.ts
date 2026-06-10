@@ -10,6 +10,12 @@ export const getAllNotifications = async(userId:string) =>{
 };
 
 
+export const UpdateNotifications = async(userId:string) =>{
+            const res = await api.patch(`/user/notification/updateNotification/${userId}`);
+            return res;
+};
+
+
 
 export const getDeleteNotifications = async(userId:string) =>{
             const res = await api.delete(`${base_url}/user/notification/delete/${userId}`);

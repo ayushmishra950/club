@@ -162,10 +162,7 @@ export const initSocket = (server: HTTPServer) => {
           { $addToSet: { seenBy: receiverUserId }, $set: { status: "seen" } }
         );
 
-        const messages = await Message.find({ chatId })
-          .populate("sender")
-          .populate("postId")
-          .sort({ createdAt: 1 });
+        const messages = await Message.find({ chatId }).populate("sender").populate("postId").sort({ createdAt: 1 });
 
         io.to(receiverUserId).emit("messageSeen", { chatId, messages });
         io.to(senderUserId).emit("messageSeen", { chatId, messages });

@@ -3,6 +3,7 @@ import Notification, { NotificationType } from "../../models/notification.model.
 import mongoose from "mongoose";
 import { getIO } from "../../utils/socketHelper.js";
 import Admin from "../../models/admin.model.js";
+import User from "../../models/user.model.js";
 
 
 export const createNotificationInternal = async (
@@ -57,6 +58,15 @@ if (type === "announcement" || type === "event") {
 
 return notification;
 };
+
+
+
+
+
+
+
+
+
 
 
 
@@ -239,3 +249,21 @@ export const deleteNotification = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+export const updateAllNotifications = async(req:Request, res:Response) => {
+  try{
+      const userId = req.params.userId;
+      if(!userId) return res.status(400).json({message : "userId is required."});
+
+      const user = await User.findById(userId);
+      if(!user) return res.status(404).json({message:"user not found."});
+
+      const notifications = await Notification.updateMany({receiver : userId},{ $set:{isRead : true}});
+
+      res.status(200).json({notifications})
+  }
+  catch(err:any){
+    res.status(500).json({message:err?.message || "server error."});
+  }
+}

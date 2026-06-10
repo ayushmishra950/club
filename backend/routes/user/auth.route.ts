@@ -1,5 +1,5 @@
 import express from "express";
-import { registerUser, loginUser,cancelDeleteRequest, getSingleUserDetail,requestDeleteAccount,  updateUser, convertPremiumUser, refreshAccessToken, getAllUsers, getSingleUser, deleteUser } from "../../controllers/user/auth.controller.js";
+import { registerUser, loginUser,cancelDeleteRequest,addPushNotifications, getSingleUserDetail,requestDeleteAccount,  updateUser, convertPremiumUser, refreshAccessToken, getAllUsers, getSingleUser, deleteUser } from "../../controllers/user/auth.controller.js";
 import upload from "../../middlewares/upload.js";
 import rateLimit from "express-rate-limit";  
 
@@ -24,6 +24,7 @@ router.get("/get-by-id/:id", getSingleUserDetail);
 
 router.delete("/delete/user/:userId", requestDeleteAccount);
 router.patch("/recover/account/:userId", cancelDeleteRequest);
+router.patch("/notification/pushToken", addPushNotifications);
 
 export default router;
 

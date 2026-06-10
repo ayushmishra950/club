@@ -114,6 +114,23 @@ if ( user?.isDeleted || blockedDeleteStatuses.includes(user.deleteStatus)) {
   }
 
 };
+export const addPushNotifications = async ( req: Request, res: Response) => {
+  try {
+    const { userId, pushToken } = req.body;
+
+    if (!userId || !pushToken)  return res.status(400).json({ message: "userId or pushToken is required.",  });
+  
+    const user = await User.findByIdAndUpdate( userId, { pushToken }, { new: true });
+
+    if (!user) return res.status(404).json({ message: "user not found.", });
+
+    return res.status(200).json({ success: true, message: "pushToken saved.", user });
+
+  } catch (error: any) {
+    console.log(error?.message);
+    return res.status(500).json({ success: false, message: error?.message || "server error", });
+  }
+};
 
 
 export const refreshAccessToken = async (req: Request, res: Response) => {

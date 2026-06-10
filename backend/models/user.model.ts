@@ -78,6 +78,7 @@ export interface IUser extends Document {
   deleteDate?: Date | null;
   deleteReason: string | null;
   comparePassword(password: string): Promise<boolean>;
+  pushToken:string;
 }
 
 /* ---------------- CHILD SCHEMA ---------------- */
@@ -182,7 +183,8 @@ const UserSchema = new Schema<IUser>(
     deleteReason:{
       type:String,
       default:null
-    }
+    },
+    pushToken:String,
   },
   { timestamps: true }
 );

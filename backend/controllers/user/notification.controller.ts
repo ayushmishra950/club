@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import { getIO } from "../../utils/socketHelper.js";
 import Admin from "../../models/admin.model.js";
 import User from "../../models/user.model.js";
-
+import { sendPushNotification } from "../../utils/pushNotification.js";
 
 export const createNotificationInternal = async (
   senderId: string | mongoose.Types.ObjectId,
@@ -54,6 +54,14 @@ if (type === "announcement" || type === "event") {
 }
  else {
   io.to(targetUserId).emit("notification", notification);
+}
+
+const pushTargetUserId = ["friend_accept","friend_cancel","like","comment"].includes(type) ? senderId : receiverId;
+const pushUser = await User.findById(pushTargetUserId);
+
+if (pushUser?.pushToken) {
+    await sendPushNotification( pushUser.pushToken, "New Notification 🔔", message || "You have a new activity",
+   { type, senderId, postId });
 }
 
 return notification;

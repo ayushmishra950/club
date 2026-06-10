@@ -259,9 +259,9 @@ export const updateAllNotifications = async(req:Request, res:Response) => {
       const user = await User.findById(userId);
       if(!user) return res.status(404).json({message:"user not found."});
 
-      const notifications = await Notification.updateMany({receiver : userId},{ $set:{isRead : true}});
-
-      res.status(200).json({notifications})
+      const notificationUpdated = await Notification.updateMany({receiver : userId},{ $set:{isRead : true}});
+     
+      res.status(200).json({notificationUpdated})
   }
   catch(err:any){
     res.status(500).json({message:err?.message || "server error."});

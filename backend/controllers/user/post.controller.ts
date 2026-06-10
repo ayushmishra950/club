@@ -28,14 +28,16 @@ export const getAllPosts = async (req: Request, res: Response) => {
 
 export const addPostNotes = async (req: Request, res: Response) => {
   try {
+
     const { userId, notes } = req.body;
+    const io = getIO();
     if (!userId || !notes) return res.status(400).json({ message: "userId or notes is required." });
       const user = await User.findById(userId);
       if(!user) return res.status(404).json({message:"user not found."});
       if(user?.isDeleted) return res.status(403).json({message:"Account is scheduled for deletion."});
     const post = await Post.create({ notes: notes, createdBy: userId, create: "User", type: "public" });
     if (!post) return res.status(404).json({ message: "Post add Failed" });
-
+     io.emit("postNote", post);
     res.status(201).json({ message: "Notes add successfully.", post })
   }
   catch (err: any) {

@@ -33,6 +33,7 @@ import PublicEventDetail from "@/components/home/PublicEventDetail.tsx";
 import EventDetail from "@/pages/EventDetail.tsx";
 import SuggestionPage from "@/pages/SuggestionPage.tsx";
 import ReviewPage from "@/pages/ReviewPage.tsx";
+import PrivacyPolicy from "@/pages/PrivacyPolicy.tsx";
 
 const queryClient = new QueryClient();
 
@@ -84,14 +85,14 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const handleStatusUpdate = (data: any) => {
+    const handleStatusUpdate = (data) => {
       if (data?._id) {
         dispatch(setUpdateSuggestion(data));
         dispatch(incrementUnreadCount());
       }
     };
 
-    const handleReplyUpdate = (data: any) => {
+    const handleReplyUpdate = (data) => {
       if (data?._id) {
         dispatch(setUpdateSuggestion(data));
         dispatch(incrementUnreadCount());
@@ -126,11 +127,13 @@ const App = () => {
                 <Route path="public/events/:id" element={<PublicEventDetail />} />
                 <Route path="public/announcements" element={<PublicAnnouncements />} />
                 <Route path="public/contact" element={<Contact />} />
+               
               </Route>
 
               {/* default route */}
               {/* <Route path="/" element={ getToken() ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />} /> */}
 
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               {/* PUBLIC ROUTES */}
               <Route path="/login" element={<PublicRoute>
                 <Login />

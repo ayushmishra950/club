@@ -34,6 +34,7 @@ import EventDetail from "@/pages/EventDetail.tsx";
 import SuggestionPage from "@/pages/SuggestionPage.tsx";
 import ReviewPage from "@/pages/ReviewPage.tsx";
 import PrivacyPolicy from "@/pages/PrivacyPolicy.tsx";
+import DeleteAccount from "@/pages/DeleteAccount.tsx";
 
 const queryClient = new QueryClient();
 
@@ -128,6 +129,7 @@ const App = () => {
                 <Route path="public/announcements" element={<PublicAnnouncements />} />
                 <Route path="public/contact" element={<Contact />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/delete-account" element={<DeleteAccount />} />
               </Route>
 
               {/* default route */}

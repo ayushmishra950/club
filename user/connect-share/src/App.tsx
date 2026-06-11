@@ -127,13 +127,13 @@ const App = () => {
                 <Route path="public/events/:id" element={<PublicEventDetail />} />
                 <Route path="public/announcements" element={<PublicAnnouncements />} />
                 <Route path="public/contact" element={<Contact />} />
-               
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               </Route>
 
               {/* default route */}
               {/* <Route path="/" element={ getToken() ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />} /> */}
 
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+             
               {/* PUBLIC ROUTES */}
               <Route path="/login" element={<PublicRoute>
                 <Login />

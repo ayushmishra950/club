@@ -35,6 +35,7 @@ import SuggestionPage from "@/pages/SuggestionPage.tsx";
 import ReviewPage from "@/pages/ReviewPage.tsx";
 import PrivacyPolicy from "@/pages/PrivacyPolicy.tsx";
 import DeleteAccount from "@/pages/DeleteAccount.tsx";
+import ChildSafety from "@/pages/ChildSafety.tsx";
 
 const queryClient = new QueryClient();
 
@@ -130,6 +131,7 @@ const App = () => {
                 <Route path="public/contact" element={<Contact />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/delete-account" element={<DeleteAccount />} />
+                 <Route path="/child-safety" element={<ChildSafety />} />
               </Route>
 
               {/* default route */}

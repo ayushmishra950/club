@@ -16,15 +16,16 @@ const GroupSchema = new Schema({
         },
     ],
     members: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-        },
+        { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     ],
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-    }
+    },
+    managedByAdmin: {
+        type: Boolean,
+        default: false,
+    },
 }, {
     timestamps: true,
 });

@@ -34,13 +34,13 @@ export const createPost = async (req, res) => {
             isPinned: isPinned === "true" || isPinned === true ? true : false,
         });
         await post.populate("createdBy", "fullName profileImage email occupation");
+        const io = getIO();
+        io.emit("postRefresh", post);
         res.status(201).json({
             success: true,
             message: "Post created successfully",
             post,
         });
-        const io = getIO();
-        io.emit("postRefresh");
     }
     catch (err) {
         res.status(500).json({

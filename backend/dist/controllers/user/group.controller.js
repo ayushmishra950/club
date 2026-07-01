@@ -1,6 +1,7 @@
 import Group from "../../models/group.model.js";
 import mongoose from "mongoose";
 import Chat from "../../models/chat.model.js";
+import User from "../../models/user.model.js";
 import { getIO } from "../../utils/socketHelper.js";
 // ========================
 // Get All Groups
@@ -8,8 +9,8 @@ import { getIO } from "../../utils/socketHelper.js";
 export const getAllGroups = async (req, res) => {
     try {
         const groups = await Group.find()
-            .populate("members", "fullName email profileImage")
-            .populate("createdBy", "fullName email profileImage")
+            .populate("members", "fullName email profileImage isDeleted")
+            .populate("createdBy", "fullName email profileImage isDeleted")
             .sort({ createdAt: -1 });
         return res.status(200).json({ groups });
     }
@@ -26,10 +27,12 @@ export const toggleMember = async (req, res) => {
         const { groupId, userId } = req.body;
         const io = getIO();
         // ✅ Validate IDs
-        if (!mongoose.Types.ObjectId.isValid(groupId) ||
-            !mongoose.Types.ObjectId.isValid(userId)) {
+        if (!mongoose.Types.ObjectId.isValid(groupId) || !mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ message: "Invalid IDs" });
         }
+        const user = await User.findById(userId);
+        if (!user || user.isDeleted)
+            return res.status(400).json({ message: "User is not available" });
         const group = await Group.findById(groupId);
         if (!group)
             return res.status(404).json({ message: "Group not found" });
@@ -51,10 +54,7 @@ export const toggleMember = async (req, res) => {
             { path: "members", select: "fullName email profileImage" }
         ]);
         io.emit("addMembersToGroup", populatedGroup);
-        return res.status(200).json({
-            message,
-            group: populatedGroup,
-        });
+        return res.status(200).json({ message, group: populatedGroup });
     }
     catch (err) {
         console.error(err);
@@ -70,6 +70,10 @@ export const removeMemberFromGroup = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(chatId) ||
             !mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ message: "Invalid IDs" });
+        }
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
         }
         // 🔍 Find chat first
         const chat = await Chat.findById(chatId);

@@ -123,10 +123,7 @@ export const initSocket = (server) => {
                 return;
             try {
                 await Message.updateMany({ chatId, sender: { $ne: receiverUserId } }, { $addToSet: { seenBy: receiverUserId }, $set: { status: "seen" } });
-                const messages = await Message.find({ chatId })
-                    .populate("sender")
-                    .populate("postId")
-                    .sort({ createdAt: 1 });
+                const messages = await Message.find({ chatId }).populate("sender").populate("postId").sort({ createdAt: 1 });
                 io.to(receiverUserId).emit("messageSeen", { chatId, messages });
                 io.to(senderUserId).emit("messageSeen", { chatId, messages });
             }

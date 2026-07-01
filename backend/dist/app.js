@@ -34,13 +34,14 @@ import userNotificationRoutes from "./routes/user/notification.route.js";
 import userAnnouncementRoutes from "./routes/user/announcement.route.js";
 import userSuggestionRoutes from "./routes/user/suggestion.route.js";
 import userReviewRoutes from "./routes/user/review.route.js";
+import userBlockRoutes from "./routes/user/block.route.js";
 const app = express();
 const globalRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 1000
 });
 connectDb();
-app.use(globalRateLimit);
+// app.use(globalRateLimit);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: ["http://localhost:3000", "http://localhost:8080", "http://localhost:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"], credentials: true }));
@@ -71,6 +72,7 @@ app.use("/api/user/notification", userNotificationRoutes);
 app.use("/api/user/announcement", userAnnouncementRoutes);
 app.use("/api/user/suggestion", userSuggestionRoutes);
 app.use("/api/user/review", userReviewRoutes);
+app.use("/api/user/block", userBlockRoutes);
 app.get("/", (req, res) => {
     res.send("server is running.");
 });

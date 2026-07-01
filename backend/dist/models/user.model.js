@@ -1,10 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 /* ---------------- CHILD SCHEMA ---------------- */
-const ChildSchema = new Schema({
-    name: { type: String, trim: true },
-    age: { type: Number }
-}, { _id: false });
+const ChildSchema = new Schema({ name: { type: String, trim: true }, age: { type: Number } }, { _id: false });
 /* ---------------- BUSINESS SCHEMA ---------------- */
 const BusinessSchema = new Schema({
     businessId: { type: String, unique: true, sparse: true },
@@ -58,25 +55,40 @@ const UserSchema = new Schema({
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     password: { type: String, required: true, select: false, minlength: 6 },
     isVerified: { type: Boolean, default: false },
-    accountType: {
-        type: String,
-        enum: ["user", "business"],
-        default: "user"
-    },
+    accountType: { type: String, enum: ["user", "business"], default: "user" },
     isOnline: { type: Boolean, default: false },
     lastSeen: { type: String, default: null },
-    businesses: {
-        type: [BusinessSchema],
-        default: []
-    },
+    businesses: { type: [BusinessSchema], default: [] },
     paymentImage: String,
     amount: String,
     transitionNumber: String,
+    refreshTokens: {
+        type: [String],
+        default: []
+    },
     premiumUser: {
         type: String,
         enum: [null, "premium"],
         default: null
-    }
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
+    },
+    deleteStatus: {
+        type: String,
+        enum: ["active", "pending", "approved", "rejected", "cancelled"],
+        default: "active"
+    },
+    deleteDate: {
+        type: Date,
+        default: null
+    },
+    deleteReason: {
+        type: String,
+        default: null
+    },
+    pushToken: String,
 }, { timestamps: true });
 /* ---------------- INDEX ---------------- */
 UserSchema.index({ email: 1 }, { unique: true, sparse: true, partialFilterExpression: { email: { $type: "string" } } });

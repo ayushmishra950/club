@@ -176,33 +176,49 @@ const chatSlice = createSlice({
 
       });
     },
-    setBlockUser: (state, action) => {
-  const { chatId, toId, fromId } = action.payload;
+   setBlockUser: (state, action) => {
+  const { chatId, toId, fromId, userId } = action.payload;
+  const targetUserId = toId ?? userId;
+  const blockerId = fromId;
 
-  const chatData = state.userChatList.find((chat) => chat.chatId?.toString() === chatId?.toString());
-  
+  const chatData = state.userChatList.find(
+    (chat) => chat.chatId?.toString() === chatId?.toString()
+  );
+
   if (chatData) {
     if (!chatData.blockedMembers) {
       chatData.blockedMembers = [];
     }
 
-    const isAlreadyBlocked = chatData.blockedMembers.some((id) => id?.toString() === toId?.toString());
+    const isAlreadyBlocked = chatData.blockedMembers.some(
+      (block) =>
+        block.user?.toString() === targetUserId?.toString() &&
+        block.blockedBy?.toString() === blockerId?.toString()
+    );
 
     if (!isAlreadyBlocked) {
-      chatData.blockedMembers.push(toId);
+      chatData.blockedMembers.push({
+        user: targetUserId,
+        blockedBy: blockerId,
+        blockedAt: new Date().toISOString(),
+      });
     }
   }
 },
 
 setUnblockUser: (state, action) => {
-  const { chatId, toId, fromId } = action.payload;
-  
-  const chatData = state.userChatList.find((chat) => chat.chatId?.toString() === chatId?.toString());
+  const { chatId, toId, fromId, userId } = action.payload;
+  const targetUserId = toId ?? userId;
+  const blockerId = fromId;
+
+  const chatData = state.userChatList.find( (chat) => chat.chatId?.toString() === chatId?.toString());
 
   if (chatData && chatData.blockedMembers) {
-    chatData.blockedMembers = chatData.blockedMembers.filter((id) => id?.toString() !== toId?.toString());
+    chatData.blockedMembers = chatData.blockedMembers.filter( (block) =>
+        !( block.user?.toString() === targetUserId?.toString() && block.blockedBy?.toString() === blockerId?.toString())
+    );
   }
-}
+},
 
   }
 });

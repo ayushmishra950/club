@@ -3,6 +3,7 @@ import xlsx from "xlsx";
 import { getIO } from "../../utils/socketHelper.js";
 import bcrypt from "bcryptjs";
 import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
+import Group from "../../models/group.model.js";
 export const getAllUsers = async (req, res) => {
     try {
         const pageParam = req.query.page;
@@ -553,6 +554,54 @@ export const uploadExcel = async (req, res) => {
         return res.status(500).json({
             message: err.message || "Upload failed"
         });
+    }
+};
+export const adminApproveDeleteRequest = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const io = getIO();
+        if (!userId)
+            return res.status(400).json({ message: "userId is Required." });
+        const user = await User.findById(userId);
+        if (!user)
+            return res.status(404).json({ message: "user not found." });
+        if (user.isDeleted && user?.deleteStatus === "approved")
+            return res.status(403).json({ message: "User Account Already Deleted." });
+        user.isDeleted = true;
+        user.deleteStatus = "approved";
+        await user.save();
+        await Group.updateMany({ createdBy: user._id }, { $set: { managedByAdmin: true } });
+        io.emit("deleteUser", user);
+        res.status(200).json({ message: "Delete Request Approved.", user, success: true });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).json({ success: false, message: err?.message || "Server Error", error: err });
+    }
+};
+export const recoverAccount = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const io = getIO();
+        if (!userId)
+            return res.status(400).json({ message: "userId is Required." });
+        const user = await User.findById(userId);
+        if (!user)
+            return res.status(404).json({ message: "user not found." });
+        if (user.isDeleted === false && user.deleteStatus === "active")
+            return res.status(200).json({ message: "User Account Already Active." });
+        user.isDeleted = false;
+        user.deleteStatus = "active";
+        user.deleteDate = null;
+        user.deleteReason = null;
+        await user.save();
+        io.emit("recoverUser", user);
+        const group = await Group.updateMany({ createdBy: user?._id }, { $set: { managedByAdmin: false } });
+        res.status(200).json({ message: "user account revoke successfully.", user });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).json({ success: false, message: err?.message || "Server Error", error: err });
     }
 };
 //# sourceMappingURL=user.controller.js.map

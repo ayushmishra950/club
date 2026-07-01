@@ -5,12 +5,18 @@ import mongoose from "mongoose";
 import { getIO } from "../../utils/socketHelper.js";
 import Group from "../../models/group.model.js";
 import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
+import Block from "../../models/block.model.js";
 export const getChatUsers = async (req, res) => {
     try {
         const { userId } = req.params;
         if (!userId || Array.isArray(userId)) {
             return res.status(400).json({ message: "Invalid userId" });
         }
+        const user = await User.findById(userId);
+        if (!user)
+            return res.status(404).json({ message: "user not found." });
+        if (user?.isDeleted)
+            return res.status(403).json({ message: "Account is scheduled for deletion." });
         const userObjectId = new mongoose.Types.ObjectId(userId);
         const chats = await Chat.find({
             $or: [
@@ -18,30 +24,24 @@ export const getChatUsers = async (req, res) => {
                 { pendingMembers: { $in: [userObjectId] } }
             ]
         }).sort({ updatedAt: -1 }).populate([
-            {
-                path: "lastMessage",
-                populate: {
-                    path: "sender",
-                    select: "fullName profileImage isOnline lastSeen",
-                },
-            },
-            {
-                path: "groupId",
-                select: "title description images members",
-            },
+            { path: "lastMessage", populate: { path: "sender", select: "fullName profileImage isOnline lastSeen isDeleted deleteStatus" }, },
+            { path: "groupId", select: "title description images members managedByAdmin" }
         ]);
         const friendsData = await Promise.all(chats.map(async (chat) => {
             // 🔥 GROUP CHAT
             if (chat.isGroup && chat.groupId) {
                 // ✅ GROUP POPULATE ADDED HERE
                 const group = await Group.findById(chat.groupId)
-                    .populate("members", "fullName profileImage isOnline lastSeen")
-                    .select("name image members");
+                    .populate({
+                    path: "members",
+                    select: "fullName profileImage isOnline lastSeen isDeleted deleteStatus"
+                })
+                    .select("title description images members managedByAdmin");
                 return {
                     chatId: chat._id,
                     isGroup: true,
-                    group: chat.groupId,
-                    members: chat.members,
+                    group: group,
+                    members: group?.members || [],
                     pendingMembers: chat.pendingMembers,
                     friend: null,
                     lastMessage: chat.lastMessage || null,
@@ -53,7 +53,7 @@ export const getChatUsers = async (req, res) => {
             const friendId = chat.members.find((id) => !id.equals(userObjectId));
             if (!friendId)
                 return null;
-            const friend = await User.findById(friendId).select("fullName email profileImage isOnline lastSeen");
+            const friend = await User.findOne({ _id: friendId }).select("fullName email profileImage isOnline lastSeen isDeleted deleteStatus");
             if (!friend)
                 return null;
             const deliveredMessages = await Message.find({
@@ -62,6 +62,7 @@ export const getChatUsers = async (req, res) => {
             }).select("_id sender text createdAt status");
             return {
                 chatId: chat._id,
+                blockedMembers: chat.blockedMembers || [],
                 isGroup: false,
                 friend,
                 group: null,
@@ -80,19 +81,18 @@ export const getChatUsers = async (req, res) => {
 export const createOrGetChat = async (req, res) => {
     try {
         const { senderId, receiverId } = req.body;
-        if (!senderId || !receiverId) {
+        if (!senderId || !receiverId)
             return res.status(400).json({ message: "Both user IDs are required." });
-        }
+        const [sender, receiver] = await Promise.all([User.findById(senderId), User.findById(receiverId)]);
+        if (!sender || sender.isDeleted)
+            return res.status(403).json({ message: "Your Account is scheduled for deletion." });
+        if (!receiver || receiver.isDeleted)
+            return res.status(403).json({ message: "Receiver Account not available." });
         // Check existing chat
-        let chat = await Chat.findOne({
-            members: { $all: [senderId, receiverId], $size: 2 },
-        });
+        let chat = await Chat.findOne({ members: { $all: [senderId, receiverId], $size: 2 }, isGroup: false });
         // If not exist → create new
-        if (!chat) {
-            chat = await Chat.create({
-                members: [senderId, receiverId],
-            });
-        }
+        if (!chat)
+            chat = await Chat.create({ members: [senderId, receiverId], isGroup: false });
         res.status(200).json({ chat, message: "user add successfully from chat." });
     }
     catch (err) {
@@ -137,9 +137,8 @@ export const createOrGetChat = async (req, res) => {
 export const getMessages = async (req, res) => {
     try {
         const { chatId } = req.params;
-        if (!chatId) {
+        if (!chatId)
             return res.status(400).json({ message: "chatId is required." });
-        }
         const messages = await Message.find({ chatId })
             .populate("sender", "fullName profileImage").populate("postId")
             .sort({ createdAt: 1 });
@@ -155,12 +154,13 @@ export const sendMessage = async (req, res) => {
         const io = getIO();
         const files = req.files;
         const file = files?.image?.[0];
-        if (!chatId || !senderId) {
+        if (!chatId || !senderId)
             return res.status(400).json({ message: "chatId and senderId are required." });
-        }
-        if (!text && !file) {
+        if (!text && !file)
             return res.status(400).json({ message: "Message or media required." });
-        }
+        const sender = await User.findById(senderId);
+        if (!sender || sender.isDeleted)
+            return res.status(403).json({ message: "Account is scheduled for deletion." });
         let imageUrl = null;
         if (file && file.buffer) {
             imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "gallery");
@@ -187,36 +187,45 @@ export const sendMessage = async (req, res) => {
     }
 };
 // ✅ 4. Get All Chats of User (Chat List - Instagram style)
-export const getUserChats = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        if (!userId) {
-            return res.status(400).json({ message: "userId is required." });
-        }
-        const chats = await Chat.find({
-            members: userId,
-        })
-            .populate("members", "fullName profileImage")
-            .populate({
-            path: "lastMessage",
-            populate: {
-                path: "sender",
-                select: "fullName",
-            },
-        })
-            .sort({ updatedAt: -1 });
-        res.status(200).json({ chats });
-    }
-    catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
+// export const getUserChats = async (req: Request, res: Response) => {
+//   try {
+//     const { userId } = req.params;
+//     if (!userId) {
+//       return res.status(400).json({ message: "userId is required." });
+//     }
+//     const user = await User.findById(userId);
+//     if(!user) return res.status(404).json({message:"user not found."});
+//     if(user?.isDeleted) return res.status(403).json({message:"Your Account is scheduled for deletion."})
+//     const chats = await Chat.find({
+//       members: userId,
+//     })
+//       .populate({ path: "members", match: { isDeleted: false }, select: "fullName profileImage"})
+//       .populate({ path: "lastMessage", populate: { path: "sender", match:{isDeleted:false}, select: "fullName" } })
+//       .sort({ updatedAt: -1 });
+//       const validChats = chats.filter((chat) => {
+//   if (!chat.isGroup) {
+//     return chat.members.length >= 2;
+//   }
+//   return chat.members.length >= 2;
+// });
+//     res.status(200).json({ chats: validChats });
+//   } catch (err: any) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 // ✅ 5. Mark Messages as Seen
 export const markAsSeen = async (req, res) => {
     try {
         const { chatId, userId } = req.body;
         if (!chatId || !userId) {
             return res.status(400).json({ message: "chatId and userId required." });
+        }
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        if (user.isDeleted) {
+            return res.status(403).json({ message: "Account is scheduled for deletion." });
         }
         await Message.updateMany({ chatId, seenBy: { $ne: userId } }, { $addToSet: { seenBy: userId } });
         res.status(200).json({ message: "Messages marked as seen." });
@@ -232,6 +241,15 @@ export const acceptGroupInvite = async (req, res) => {
         if (!chatId || !userId) {
             return res.status(400).json({ message: "chatId and userId required." });
         }
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        if (user.isDeleted) {
+            return res.status(403).json({
+                message: "Account is scheduled for deletion."
+            });
+        }
         const chat = await Chat.findById(chatId);
         if (!chat)
             return res.status(404).json({ message: "Chat not found" });
@@ -244,7 +262,7 @@ export const acceptGroupInvite = async (req, res) => {
             const group = await Group.findByIdAndUpdate(chat.groupId, { $addToSet: { members: userId }, }, { new: true });
             if (group) {
                 await group.populate([
-                    { path: "createdBy", select: "fullName email profileImage" },
+                    { path: "createdBy", select: "fullName email profileImage isDeleted" },
                     { path: "members", select: "fullName email profileImage" }
                 ]);
                 io.emit("groupInviteAccepted", { chatId, userId, group });
@@ -265,6 +283,15 @@ export const rejectGroupInvite = async (req, res) => {
         if (!chatId || !userId) {
             return res.status(400).json({ message: "chatId and userId required." });
         }
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        if (user.isDeleted) {
+            return res.status(403).json({
+                message: "Account is scheduled for deletion."
+            });
+        }
         const chat = await Chat.findById(chatId);
         if (!chat)
             return res.status(404).json({ message: "Chat not found" });
@@ -275,6 +302,101 @@ export const rejectGroupInvite = async (req, res) => {
     }
     catch (err) {
         res.status(500).json({ message: err.message });
+    }
+};
+export const blockUserInChat = async (req, res) => {
+    try {
+        const { chatId, toId, fromId } = req.body;
+        const io = getIO();
+        if (!chatId || !toId || !fromId) {
+            return res.status(400).json({ message: "chatId, toId, and fromId required." });
+        }
+        const user = await User.findById(fromId);
+        if (!user)
+            return res.status(404).json({ message: "User not found" });
+        if (user.isDeleted)
+            return res.status(403).json({ message: "Account is scheduled for deletion." });
+        const chat = await Chat.findById(chatId);
+        if (!chat)
+            return res.status(404).json({ message: "Chat not found" });
+        // if(!chat.blockedMembers) chat.blockedMembers = [];
+        // if(!chat.blockedMembers.includes(toId)) chat.blockedMembers.push(toId);
+        if (!chat.blockedMembers) {
+            chat.blockedMembers = [];
+        }
+        const alreadyBlocked = chat.blockedMembers.some((block) => block.user.toString() === toId &&
+            block.blockedBy.toString() === fromId);
+        if (!alreadyBlocked) {
+            chat.blockedMembers.push({
+                user: new mongoose.Types.ObjectId(toId),
+                blockedBy: new mongoose.Types.ObjectId(fromId),
+                blockedAt: new Date(),
+            });
+        }
+        await chat.save();
+        await Block.findOneAndUpdate({ blockerId: fromId, blockedId: toId }, { blockerId: fromId, blockedId: toId, chatId: chatId }, { upsert: true, new: true });
+        const blockPayload = {
+            chatId,
+            toId,
+            fromId,
+            userId: toId,
+            user: {
+                _id: user._id,
+                fullName: user.fullName,
+                profileImage: user.profileImage,
+            },
+        };
+        io.to(fromId).emit("blockUser", blockPayload);
+        io.to(toId).emit("blockUser", blockPayload);
+        res.status(200).json({ message: "User blocked in chat successfully." });
+    }
+    catch (err) {
+        res.status(500).json({ message: err.message, success: false, error: err });
+    }
+};
+export const unBlockUserInChat = async (req, res) => {
+    try {
+        const { chatId, toId, fromId } = req.body;
+        const io = getIO();
+        if (!chatId || !toId || !fromId) {
+            return res.status(400).json({ message: "chatId, toId, and fromId required." });
+        }
+        const user = await User.findById(toId);
+        if (!user)
+            return res.status(404).json({ message: "User not found" });
+        if (user.isDeleted)
+            return res.status(403).json({ message: "Account is scheduled for deletion." });
+        const chat = await Chat.findById(chatId);
+        if (!chat)
+            return res.status(404).json({ message: "Chat not found" });
+        // if(chat.blockedMembers && chat.blockedMembers.includes(toId)){
+        //   chat.blockedMembers = chat.blockedMembers.filter((id:mongoose.Types.ObjectId) => !id.equals(toId));
+        //   await chat.save();   
+        //   // Remove the block record matching the blocker (userId) and blocked target (targetId)
+        // await Block.deleteOne({ blockerId: fromId, blockedId: toId, chatId: chatId });
+        // } 
+        if (chat.blockedMembers) {
+            chat.blockedMembers = chat.blockedMembers.filter((block) => !(block.user.toString() === toId && block.blockedBy.toString() === fromId));
+            await chat.save();
+            await Block.deleteOne({ blockerId: fromId, blockedId: toId, chatId: chatId });
+        }
+        const unblockPayload = {
+            chatId,
+            toId,
+            fromId,
+            userId: toId,
+            user: {
+                _id: user._id,
+                fullName: user.fullName,
+                profileImage: user.profileImage,
+            },
+        };
+        io.to(fromId).emit("unblockUser", unblockPayload);
+        io.to(toId).emit("unblockUser", unblockPayload);
+        res.status(200).json({ message: "User unblocked in chat successfully." });
+    }
+    catch (err) {
+        res.status(500).json({ message: err.message, success: false, error: err });
     }
 };
 //# sourceMappingURL=chat.controller.js.map

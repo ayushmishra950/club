@@ -1,5 +1,7 @@
 import Notification from "../../models/notification.model.js";
 import { getIO } from "../../utils/socketHelper.js";
+import User from "../../models/user.model.js";
+import { sendPushNotification } from "../../utils/pushNotification.js";
 export const createNotificationInternal = async (senderId, receiverId, type, postId, message) => {
     if (!senderId || !receiverId || !type) {
         throw new Error("senderId, receiverId and type are required");
@@ -39,6 +41,11 @@ export const createNotificationInternal = async (senderId, receiverId, type, pos
     }
     else {
         io.to(targetUserId).emit("notification", notification);
+    }
+    const pushTargetUserId = ["friend_accept", "friend_cancel", "like", "comment"].includes(type) ? senderId : receiverId;
+    const pushUser = await User.findById(pushTargetUserId);
+    if (pushUser?.pushToken) {
+        await sendPushNotification(pushUser.pushToken, "New Notification 🔔", message || "You have a new activity", { type, senderId, postId });
     }
     return notification;
 };
@@ -183,6 +190,21 @@ export const deleteNotification = async (req, res) => {
             success: false,
             message: error.message
         });
+    }
+};
+export const updateAllNotifications = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        if (!userId)
+            return res.status(400).json({ message: "userId is required." });
+        const user = await User.findById(userId);
+        if (!user)
+            return res.status(404).json({ message: "user not found." });
+        const notificationUpdated = await Notification.updateMany({ receiver: userId }, { $set: { isRead: true } });
+        res.status(200).json({ notificationUpdated });
+    }
+    catch (err) {
+        res.status(500).json({ message: err?.message || "server error." });
     }
 };
 //# sourceMappingURL=notification.controller.js.map

@@ -9,6 +9,8 @@ import { createNotificationInternal } from "./notification.controller.js";
 import { NotificationType } from "../../models/notification.model.js";
 import { nanoid } from "nanoid";
 import Post from "../../models/post.model.js";
+import Admin from "../../models/admin.model.js";
+import Block from "../../models/block.model.js";
 export const registerUser = async (req, res) => {
     try {
         const { fullName, email, mobile, dob, gender, maritalStatus, occupation, address, city, state, password, confirmPassword } = req.body;
@@ -45,6 +47,10 @@ export const loginUser = async (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
+        const blockedDeleteStatuses = ["pending", "approved", "rejected"];
+        if (user?.isDeleted || blockedDeleteStatuses.includes(user.deleteStatus)) {
+            return res.status(403).json({ success: false, message: "Your account has been deleted. To recover your account, please contact the administrator at support@example.com or +91XXXXXXXXXX." });
+        }
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             return res.status(401).json({ success: false, message: "Invalid credentials" });
@@ -54,6 +60,14 @@ export const loginUser = async (req, res) => {
         }
         const accessToken = generateAccessToken(user._id.toString());
         const refreshToken = generateRefreshToken(user._id.toString());
+        if (user && user.refreshTokens) {
+            user.refreshTokens.push(refreshToken);
+        }
+        await user.save();
+        const platform = req?.body?.platform;
+        if (platform === "mobile") {
+            return res.status(200).json({ success: true, message: "Login successful", data: user, accessToken, refreshToken });
+        }
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: false,
@@ -67,23 +81,78 @@ export const loginUser = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+export const addPushNotifications = async (req, res) => {
+    try {
+        const { userId, pushToken } = req.body;
+        if (!userId || !pushToken)
+            return res.status(400).json({ message: "userId or pushToken is required.", });
+        const user = await User.findByIdAndUpdate(userId, { pushToken }, { new: true });
+        if (!user)
+            return res.status(404).json({ message: "user not found.", });
+        return res.status(200).json({ success: true, message: "pushToken saved.", user });
+    }
+    catch (error) {
+        console.log(error?.message);
+        return res.status(500).json({ success: false, message: error?.message || "server error", });
+    }
+};
 export const refreshAccessToken = async (req, res) => {
     try {
-        const refreshToken = req.cookies.refreshToken;
+        const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
         if (!refreshToken) {
             return res.status(401).json({ success: false, message: "Refresh token not found" });
         }
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-        const newAccessToken = jwt.sign({ id: decoded.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
-        res.status(200).json({ success: true, accessToken: newAccessToken });
+        // First check User
+        let account = await User.findOne({ _id: decoded.id, refreshTokens: refreshToken });
+        if (account?.isDeleted)
+            return res.status(403).json({ message: "Account is scheduled for deletion." });
+        // If not found then check Admin
+        if (!account) {
+            account = await Admin.findOne({ _id: decoded.id, refreshToken: refreshToken });
+        }
+        if (!account) {
+            return res.status(403).json({ success: false, message: "Invalid refresh token" });
+        }
+        const newAccessToken = generateAccessToken(account._id.toString());
+        return res.status(200).json({ success: true, accessToken: newAccessToken });
     }
     catch (error) {
-        res.status(403).json({ success: false, message: "Invalid refresh token", error: error.message });
+        console.error("Refresh Token Error:", error?.message);
+        return res.status(403).json({ success: false, message: "Invalid or expired refresh token" });
     }
 };
+// export const getAllUsers = async (req: Request, res: Response) => {
+//   const userId = req.params.userId;
+//   if(!userId) return res.status(400).json({success:false, message:"userId is required"});
+//   try {
+//     const users = await User.find({ isVerified: true, blocked: false, isDeleted: false }).select("-password");
+//     res.status(200).json({ success: true, count: users.length, data: users });
+//   } catch (error: any) {
+//     res.status(500).json({ success: false, message: "Server error", error: error.message });
+//   }
+// };
 export const getAllUsers = async (req, res) => {
+    const userId = req.params.userId;
+    if (!userId)
+        return res.status(400).json({ success: false, message: "userId is required" });
     try {
-        const users = await User.find({ isVerified: true, blocked: false }).select("-password");
+        const blockRecords = await Block.find({
+            $or: [
+                { blockerId: userId },
+                { blockedId: userId }
+            ]
+        });
+        const restrictedUserIds = blockRecords.map(record => record.blockerId.toString() === userId.toString()
+            ? record.blockedId.toString()
+            : record.blockerId.toString());
+        restrictedUserIds.push(userId);
+        const users = await User.find({
+            _id: { $nin: restrictedUserIds },
+            isVerified: true,
+            blocked: false,
+            isDeleted: false
+        }).select("-password");
         res.status(200).json({ success: true, count: users.length, data: users });
     }
     catch (error) {
@@ -94,27 +163,29 @@ export const getSingleUser = async (req, res) => {
     try {
         const { id } = req.params;
         if (!id)
-            return res.status(400).json({ message: "userId not Found." });
+            return res.status(400).json({ message: "User ID not found" });
         const user = await User.findById(id).select("-password");
-        if (!user) {
+        if (!user)
             return res.status(404).json({ success: false, message: "User not found" });
-        }
+        if (user.isDeleted)
+            return res.status(403).json({ success: false, message: "Account is deactivated" });
         const friends = await FriendRequest.find({ $or: [{ from: id }, { to: id }] })
-            .populate("from", "fullName profileImage occupation isOnline friends")
-            .populate("to", "fullName profileImage occupation isOnline friends")
+            .populate({ path: "from", match: { isDeleted: false }, select: "fullName profileImage occupation isOnline friends" })
+            .populate({ path: "to", match: { isDeleted: false }, select: "fullName profileImage occupation isOnline friends" })
             .lean();
-        const friendList = friends.map(f => {
+        const friendList = friends.map((f) => {
+            if (!f.from || !f.to)
+                return null;
             const friend = f.from._id.toString() === id ? f.to : f.from;
-            return {
-                ...friend,
-                status: f.status,
-                requestId: f._id
-            };
-        });
-        res.status(200).json({ success: true, data: user, friends: friendList });
+            if (!friend)
+                return null;
+            return { ...friend, status: f.status, requestId: f._id };
+        })
+            .filter(Boolean); // ✅ remove nulls
+        return res.status(200).json({ success: true, data: user, friends: friendList });
     }
     catch (error) {
-        res.status(500).json({ success: false, message: "Server error", error: error.message });
+        return res.status(500).json({ success: false, message: "Server error", error: error.message });
     }
 };
 export const deleteUser = async (req, res) => {
@@ -141,6 +212,8 @@ export const updateUser = async (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
+        if (user?.isDeleted)
+            return res.status(403).json({ message: "Account is scheduled for deletion." });
         const files = req.files;
         const getFile = (fieldname) => files?.find((f) => f.fieldname === fieldname);
         // ================= SAFE JSON PARSE =================
@@ -269,6 +342,8 @@ export const convertPremiumUser = async (req, res) => {
             return res.status(404).json({ success: false, message: "User not found" });
         }
         ;
+        if (user?.isDeleted)
+            return res.status(403).json({ message: "Account is scheduled for deletion." });
         let imageUrl = null;
         if (file.buffer) {
             imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "payment");
@@ -297,6 +372,8 @@ export const getSingleUserDetail = async (req, res) => {
         const user = await User.findById(userId);
         if (!user)
             return res.status(404).json({ message: "user not found." });
+        if (user?.isDeleted)
+            return res.status(403).json({ message: "Account is scheduled for deletion." });
         // 2. POSTS
         const posts = await Post.find({ createdBy: userId })
             .populate("createdBy", "fullName profileImage email isOnline isVerified");
@@ -344,6 +421,56 @@ export const getSingleUserDetail = async (req, res) => {
         return res.status(500).json({
             message: err?.message || "Server Error.",
         });
+    }
+};
+export const requestDeleteAccount = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const io = getIO();
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        if (user.deleteStatus === "pending") {
+            return res.status(400).json({ message: "Delete request already pending" });
+        }
+        if (user.isDeleted) {
+            return res.status(400).json({ message: "Account already scheduled for deletion" });
+        }
+        user.deleteStatus = "pending";
+        user.deleteDate = new Date();
+        user.deleteReason = "user personal reason for account deleted.";
+        user.isOnline = false;
+        await user.save();
+        io.emit("deleteRequest", user);
+        return res.status(200).json({ message: "User Account Delete Successfully.", user, deleteStatus: user.deleteStatus });
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: error.message || "Server Error" });
+    }
+};
+export const cancelDeleteRequest = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const io = getIO();
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        if (user.deleteStatus !== "pending") {
+            return res.status(400).json({ message: "No pending delete request found" });
+        }
+        user.deleteStatus = "active";
+        await user.save();
+        io.emit("cancelDeleteRequest", user);
+        return res.status(200).json({ message: "Delete request cancelled successfully", user });
+    }
+    catch (error) {
+        return res.status(500).json({ message: error.message });
     }
 };
 //# sourceMappingURL=auth.controller.js.map

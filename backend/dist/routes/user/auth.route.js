@@ -1,5 +1,5 @@
 import express from "express";
-import { registerUser, loginUser, getSingleUserDetail, updateUser, convertPremiumUser, refreshAccessToken, getAllUsers, getSingleUser, deleteUser } from "../../controllers/user/auth.controller.js";
+import { registerUser, loginUser, cancelDeleteRequest, addPushNotifications, getSingleUserDetail, requestDeleteAccount, updateUser, convertPremiumUser, refreshAccessToken, getAllUsers, getSingleUser, deleteUser } from "../../controllers/user/auth.controller.js";
 import upload from "../../middlewares/upload.js";
 import rateLimit from "express-rate-limit";
 const authRateLimit = rateLimit({
@@ -11,11 +11,14 @@ const router = express.Router();
 router.post("/register", authRateLimit, registerUser);
 router.post("/login", authRateLimit, loginUser);
 router.post("/refresh", refreshAccessToken);
-router.get("/get", getAllUsers);
+router.get("/get/:userId", getAllUsers);
 router.get("/getbyid/:id", getSingleUser);
 router.delete("/delete", deleteUser);
 router.put("/update", upload.any(), updateUser);
 router.put("/convert-premium", upload.fields([{ name: "paymentImage", maxCount: 1 }]), convertPremiumUser);
 router.get("/get-by-id/:id", getSingleUserDetail);
+router.delete("/delete/user/:userId", requestDeleteAccount);
+router.patch("/recover/account/:userId", cancelDeleteRequest);
+router.patch("/notification/pushToken", addPushNotifications);
 export default router;
 //# sourceMappingURL=auth.route.js.map

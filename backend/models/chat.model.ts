@@ -1,5 +1,11 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+interface IBlockedMember {
+  user: mongoose.Types.ObjectId;
+  blockedBy: mongoose.Types.ObjectId;
+  blockedAt: Date;
+}
+
 export interface IChat extends Document {
   members: mongoose.Types.ObjectId[];
   pendingMembers: mongoose.Types.ObjectId[];
@@ -8,7 +14,7 @@ export interface IChat extends Document {
   groupId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
-  blockedMembers?: mongoose.Types.ObjectId[];
+  blockedMembers?: IBlockedMember[];
 }
 
 const ChatSchema = new Schema<IChat>(
@@ -34,12 +40,24 @@ const ChatSchema = new Schema<IChat>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Group",
     },
-    blockedMembers: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
+   blockedMembers: [
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    blockedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    blockedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+],
   },
   { timestamps: true }
 );

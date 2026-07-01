@@ -42,11 +42,12 @@ export const unblockUser = async (req: Request, res: Response) => {
     if (!chat) return res.status(404).json({ message: "Chat not found" });
    
     // Update the chat's blocked array list
-    if (chat.blockedMembers && chat.blockedMembers.includes(toId)) {
-      chat.blockedMembers = chat.blockedMembers.filter((id: mongoose.Types.ObjectId) => !id.equals(toId));
-      await chat.save();   
-    } // ✅ FIX: Safely closed the chat logic block here
+    if (chat.blockedMembers) {
 
+    chat.blockedMembers = chat.blockedMembers.filter(
+    (block: any) =>!( block.user.toString() === toId && block.blockedBy.toString() === fromId));
+     await chat.save();
+}
     // Remove the block record completely from the Block collection
     await Block.deleteOne({ blockerId: fromId, blockedId: toId });
    

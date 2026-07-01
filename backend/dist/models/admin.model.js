@@ -49,7 +49,8 @@ const AdminSchema = new Schema({
     lastSeen: {
         type: String,
         default: null,
-    }
+    },
+    refreshToken: String
 }, {
     timestamps: true
 });

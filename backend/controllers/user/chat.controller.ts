@@ -195,9 +195,6 @@ export const getMessages = async (req: Request, res: Response) => {
 
 
 
-
-
-
 export const sendMessage = async (req: Request, res: Response) => {
   try {
     const { chatId, senderId, text } = req.body;
@@ -423,8 +420,27 @@ export const blockUserInChat = async(req:Request, res:Response) => {
     const chat = await Chat.findById(chatId);
     if(!chat) return res.status(404).json({message:"Chat not found"});
 
-    if(!chat.blockedMembers) chat.blockedMembers = [];
-    if(!chat.blockedMembers.includes(toId)) chat.blockedMembers.push(toId);
+    // if(!chat.blockedMembers) chat.blockedMembers = [];
+    // if(!chat.blockedMembers.includes(toId)) chat.blockedMembers.push(toId);
+
+
+    if (!chat.blockedMembers) {
+  chat.blockedMembers = [];
+}
+
+const alreadyBlocked = chat.blockedMembers.some(
+  (block: any) =>
+    block.user.toString() === toId &&
+    block.blockedBy.toString() === fromId
+);
+
+if (!alreadyBlocked) {
+  chat.blockedMembers.push({
+    user: new mongoose.Types.ObjectId(toId),
+    blockedBy: new mongoose.Types.ObjectId(fromId),
+    blockedAt: new Date(),
+  } as any);
+}
 
     await chat.save();
 
@@ -434,7 +450,20 @@ export const blockUserInChat = async(req:Request, res:Response) => {
       { upsert: true, new: true }
     );
 
-    io.to(fromId).emit("blockUser", { chatId, userId: toId });
+    const blockPayload = {
+      chatId,
+      toId,
+      fromId,
+      userId: toId,
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        profileImage: user.profileImage,
+      },
+    };
+
+    io.to(fromId).emit("blockUser", blockPayload);
+    io.to(toId).emit("blockUser", blockPayload);
 
     res.status(200).json({message:"User blocked in chat successfully."});
   }
@@ -459,14 +488,35 @@ export const unBlockUserInChat = async(req:Request, res:Response) => {
     const chat = await Chat.findById(chatId);
     if(!chat) return res.status(404).json({message:"Chat not found"});
 
-    if(chat.blockedMembers && chat.blockedMembers.includes(toId)){
-      chat.blockedMembers = chat.blockedMembers.filter((id:mongoose.Types.ObjectId) => !id.equals(toId));
-      await chat.save();   
+    // if(chat.blockedMembers && chat.blockedMembers.includes(toId)){
+    //   chat.blockedMembers = chat.blockedMembers.filter((id:mongoose.Types.ObjectId) => !id.equals(toId));
+    //   await chat.save();   
 
-      // Remove the block record matching the blocker (userId) and blocked target (targetId)
-    await Block.deleteOne({ blockerId: fromId, blockedId: toId, chatId: chatId });
-    } 
-    io.to(fromId).emit("unblockUser", { chatId, userId: toId, user }); 
+    //   // Remove the block record matching the blocker (userId) and blocked target (targetId)
+    // await Block.deleteOne({ blockerId: fromId, blockedId: toId, chatId: chatId });
+    // } 
+
+    if (chat.blockedMembers) {
+    chat.blockedMembers = chat.blockedMembers.filter((block: any) => !( block.user.toString() === toId && block.blockedBy.toString() === fromId));
+    await chat.save();
+
+  await Block.deleteOne({ blockerId: fromId, blockedId: toId, chatId: chatId});
+}
+
+    const unblockPayload = {
+      chatId,
+      toId,
+      fromId,
+      userId: toId,
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        profileImage: user.profileImage,
+      },
+    };
+
+    io.to(fromId).emit("unblockUser", unblockPayload);
+    io.to(toId).emit("unblockUser", unblockPayload);
              
     res.status(200).json({message:"User unblocked in chat successfully."});
   }

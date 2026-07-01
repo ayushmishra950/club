@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X, Send, Smile, Image, ArrowLeft, Users, LogOut, Phone, Video, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getChatUsers, sendMessage, getMessages, rejectGroupInvite,blockUser,unblockUser, acceptGroupInvite } from "@/service/chat";
@@ -14,6 +14,12 @@ import DeleteCard from "@/components/card/DeleteCard";
 interface Props {
   open: boolean;
   onClose: () => void;
+}
+
+interface ChatBlockMember {
+  user?: string;
+  blockedBy?: string;
+  blockedAt?: string;
 }
 
 export function ChatPanel({ open, onClose }: Props) {
@@ -42,10 +48,7 @@ export function ChatPanel({ open, onClose }: Props) {
   const [unblockLoading, setUnblockLoading] = useState(false);
   const userList = useAppSelector((state) => state?.chat?.userChatList);
   const messageList = useAppSelector((state) => state?.chat?.messageList);
-  const filteredChats = userList?.filter((chat) =>
-    chatType === "single" ? !chat.isGroup : chat.isGroup
-  );
- console.log("filteredChats:- ", filteredChats);
+  const filteredChats = userList?.filter((chat) => chatType === "single" ? !chat.isGroup : chat.isGroup);
 
   const handleBlockUser = async() => {
     try{
@@ -56,10 +59,17 @@ export function ChatPanel({ open, onClose }: Props) {
         toast({title:"User Blocked Successfully", description: res?.data?.message || "User Blocked Successfully"});
         setBlockDialogOpen(false);
         dispatch(setBlockUser(obj));
-        setActiveChat(prevChat => ({
-          ...prevChat,
-          blockedMembers: [...(prevChat?.blockedMembers || []), activeChat?.friend?._id]
-        }));
+      setActiveChat(prevChat => ({
+  ...prevChat,
+  blockedMembers: [
+    ...(prevChat?.blockedMembers || []),
+    {
+      user: activeChat?.friend?._id,
+      blockedBy: user?._id, // Logged-in user
+      blockedAt: new Date().toISOString(),
+    },
+  ],
+}));
       }
     }
     catch(err){
@@ -81,7 +91,7 @@ export function ChatPanel({ open, onClose }: Props) {
         setUnblockDialogOpen(false);
         dispatch(setUnblockUser(obj));
         setActiveChat(prevChat => ({
-          ...prevChat, blockedMembers: (prevChat?.blockedMembers || []).filter(id => id?.toString() !== activeChat?.friend?._id?.toString())
+          ...prevChat, blockedMembers: (prevChat?.blockedMembers || []).filter(block => block?.user?.toString() !== activeChat?.friend?._id?.toString())
         }));
       }
     }
@@ -100,6 +110,53 @@ export function ChatPanel({ open, onClose }: Props) {
 
     dispatch(setUnreadCountRemove({ chat }));
   };
+
+  const syncChatBlockState = useCallback((data: { chatId?: string; toId?: string; userId?: string; fromId?: string }, isBlocked: boolean) => {
+    const targetUserId = data?.toId || data?.userId;
+    const blockerId = data?.fromId;
+
+    if (!targetUserId || !data?.chatId) return;
+
+    const normalizedPayload = {
+      ...data,
+      toId: targetUserId,
+      fromId: blockerId,
+    };
+
+    dispatch(isBlocked ? setBlockUser(normalizedPayload) : setUnblockUser(normalizedPayload));
+
+    setActiveChat((prevChat) => {
+      if (!prevChat || prevChat.chatId?.toString() !== data?.chatId?.toString()) return prevChat;
+
+      if (isBlocked) {
+        const alreadyBlocked = (prevChat?.blockedMembers || []).some((block: ChatBlockMember) =>
+          block?.user?.toString() === targetUserId?.toString() && block?.blockedBy?.toString() === blockerId?.toString()
+        );
+
+        if (alreadyBlocked) return prevChat;
+
+        return {
+          ...prevChat,
+          blockedMembers: [
+            ...(prevChat?.blockedMembers || []),
+            {
+              user: targetUserId,
+              blockedBy: blockerId,
+              blockedAt: new Date().toISOString(),
+            },
+          ],
+        };
+      }
+
+      return {
+        ...prevChat,
+        blockedMembers: (prevChat?.blockedMembers || []).filter((block: ChatBlockMember) =>
+          !(block?.user?.toString() === targetUserId?.toString() && block?.blockedBy?.toString() === blockerId?.toString())
+        ),
+      };
+    });
+  }, [dispatch]);
+
   useEffect(() => {
     socket.on("messageRefresh", (newMessage, updatedAt) => {
       if (newMessage.chatId?.toString() === activeChat?.chatId?.toString()) {
@@ -127,13 +184,11 @@ export function ChatPanel({ open, onClose }: Props) {
     });
 
     socket.on("blockUser", (data) => {
-      dispatch(setBlockUser(data));
-    dispatch(setUpdateUserFromList(data));
+      syncChatBlockState(data, true);
     });
 
     socket.on("unblockUser", (data) => {
-      dispatch(setUnblockUser(data));
-    dispatch(setUpdateUserFromList(data));
+      syncChatBlockState(data, false);
     });
 
     socket.on("groupInviteAccepted", (data) => {
@@ -181,7 +236,7 @@ export function ChatPanel({ open, onClose }: Props) {
       socket.off("blockUser");
       socket.off("unblockUser");
     }
-  }, [activeChat])
+  }, [activeChat?.chatId, dispatch, syncChatBlockState, user?._id])
 
   const handleAcceptGroupInvite = async (chatId: string, userId: string) => {
     try {
@@ -262,10 +317,8 @@ export function ChatPanel({ open, onClose }: Props) {
     }
   };
 
-  const handleGetMessages = async () => {
-    if (!activeChat?.chatId) {
-      return;
-    }
+  const handleGetMessages = useCallback(async () => {
+    if (!activeChat?.chatId) { return };
     try {
       const res = await getMessages(activeChat?.chatId);
       if (res.status === 200) {
@@ -275,15 +328,15 @@ export function ChatPanel({ open, onClose }: Props) {
     catch (err) {
       console.log(err);
     }
-  }
+  }, [dispatch]);
 
   useEffect(() => {
     if (activeChat?.chatId && messageList?.length === 0) {
       handleGetMessages();
     }
-  }, [activeChat?.chatId])
+  }, [activeChat?.chatId, handleGetMessages, messageList?.length])
 
-  const handleGetFriendList = async () => {
+  const handleGetFriendList = useCallback(async () => {
     if (!user?._id) return;
     try {
       const res = await getChatUsers(user?._id);
@@ -294,13 +347,13 @@ export function ChatPanel({ open, onClose }: Props) {
     catch (err) {
       console.log(err);
     }
-  };
+  }, [dispatch, user?._id]);
 
   useEffect(() => {
     if (open && (userList?.length === 0 || user?._id)) {
       handleGetFriendList();
     }
-  }, [open, user?._id]);
+  }, [handleGetFriendList, open, user?._id, userList?.length]);
 
 
   const handleExitGroup = async () => {
@@ -325,6 +378,7 @@ export function ChatPanel({ open, onClose }: Props) {
   };
 
   if (!open) return null;
+  console.log("activeChat", activeChat);
   return (
     <>
     <DeleteCard
@@ -452,7 +506,7 @@ export function ChatPanel({ open, onClose }: Props) {
                         </div> 
                         <div className= "flex flex-col gap-2"> 
                            {
-                            activeChat?.blockedMembers?.some((id) => id?.toString() === activeChat?.friend?._id?.toString()) ? (
+                            activeChat?.blockedMembers?.some((block) => block?.user?.toString() === activeChat?.friend?._id?.toString()) ? (
                               <button className="text-sm text-green-500 bg-green-100 hover:bg-green-200 h-10 rounded-lg" onClick={() => {setUnblockDialogOpen(true)}}>Unblock</button>
                             ) : (
                               <button className='text-sm text-red-500 bg-red-100 hover:bg-red-200 h-10 rounded-lg' onClick={() => {setBlockDialogOpen(true)}}>Block</button>
@@ -833,22 +887,39 @@ export function ChatPanel({ open, onClose }: Props) {
 
 
 
-                {chatType === "single" && activeChat?.friend?.isDeleted ? (
-  // 1. First Condition: User has deleted their account
+              { chatType === "single" && activeChat?.friend?.isDeleted ? (
+  // 1. पहला नियम: अगर यूजर का अकाउंट डिलीट हो गया है
   <div className="flex items-center justify-center py-3 text-sm text-muted-foreground bg-muted/30 rounded-xl">
     This user is no longer available on ChatApp
   </div>
-) : activeChat?.blockedMembers?.some((id) => id.toString() === activeChat?.friend?._id) ? (
-  <>
-  <div className="flex items-center justify-center py-3 px-3 text-sm text-red-500 bg-red-50 rounded-xl font-medium border border-red-100">
-    You have blocked this user. Unblock to resume conversation.
+) : activeChat?.blockedMembers && activeChat.blockedMembers.length > 0 ? (
+  // 2. दूसरा नियम: अगर चैट रूम में कोई भी ब्लॉक मौजूद है
+  <div className="w-full">
+    {/* चेक करें कि ब्लॉक करने वाला मैं (Current User) हूँ या नहीं */}
+    {activeChat.blockedMembers[0]?.blockedBy?.toString() === user?._id?.toString() ? (
+      // स्थिति A: अगर मैंने ब्लॉक किया है (Blocker View)
+      <div className="flex items-center justify-center py-3 px-3 text-sm text-red-500 bg-red-50 rounded-xl font-medium border border-red-100">
+        You have blocked this user. Unblock to resume conversation.
+      </div>
+    ) : (
+      // स्थिति B: अगर सामने वाले ने मुझे ब्लॉक किया है (Blocked User View)
+      <div className="flex items-center justify-center py-3 px-3 text-sm text-gray-500 bg-gray-50 rounded-xl font-medium border border-gray-200">
+        You cannot reply to this conversation anymore.
+      </div>
+    )}
+
+    {/* अनब्लॉक बटन: सिर्फ और सिर्फ ब्लॉक करने वाले (Blocker) को ही दिखेगा */}
+    {activeChat.blockedMembers[0]?.blockedBy?.toString() === user?._id?.toString() && (
+      <button 
+        className="text-sm font-medium text-green-600 bg-green-50 hover:bg-green-100 h-10 rounded-lg mt-2 w-full transition-colors border border-green-200" 
+        onClick={() => setUnblockDialogOpen(true)}
+      >
+        Unblock
+      </button>
+    )}
   </div>
-  <button className="text-sm text-green-500 bg-green-100 hover:bg-green-200 h-10 rounded-lg mt-2 w-full" onClick={() => {setUnblockDialogOpen(true)}}>
-    Unblock
-  </button>
-  </>
 ) : (
-  // 3. Fallback Condition: Normal Chat Input Field View
+  // 3. तीसरा नियम: नॉर्मल चैट इनपुट फ़ील्ड (जब कोई ब्लॉक न हो)
   <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-1.5">
     <button className="text-muted-foreground hover:text-foreground transition-colors">
       <Smile className="h-5 w-5" />

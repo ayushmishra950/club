@@ -113,7 +113,7 @@ export const getAllGroupsByAdmin = async (req, res) => {
         if (!admin) {
             return res.status(404).json({ message: "Admin not found" });
         }
-        const groups = await Group.find({ createdBy: admin._id }).populate("members", "fullName email profileImage").sort({ createdAt: -1 });
+        const groups = await Group.find({ $or: [{ createdBy: admin._id }, { managedByAdmin: true }] }).populate("members", "fullName email profileImage").sort({ createdAt: -1 });
         const groupsWithMessages = await Promise.all(groups.map(async (group) => {
             const chat = await Chat.findOne({ groupId: group._id });
             let unreadMessages = [];

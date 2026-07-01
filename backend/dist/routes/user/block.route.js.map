@@ -1,0 +1,1 @@
+{"version":3,"file":"block.route.js","sourceRoot":"","sources":["../../../routes/user/block.route.ts"],"names":[],"mappings":"AAAA,OAAO,EAAC,MAAM,EAAC,MAAM,SAAS,CAAC;AAC/B,OAAO,EAAC,eAAe,EAAC,WAAW,EAAC,MAAM,4CAA4C,CAAC;AAEvF,MAAM,MAAM,GAAG,MAAM,EAAE,CAAC;AAExB,MAAM,CAAC,GAAG,CAAC,cAAc,EAAE,eAAe,CAAC,CAAC;AAC5C,MAAM,CAAC,KAAK,CAAC,YAAY,EAAE,WAAW,CAAC,CAAC;AAExC,eAAe,MAAM,CAAC"}

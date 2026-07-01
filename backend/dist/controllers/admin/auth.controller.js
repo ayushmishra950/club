@@ -1,14 +1,10 @@
 import Admin from "../../models/admin.model.js";
-import User from "../../models/user.model.js";
 import { generateAccessToken, generateRefreshToken } from "../../utils/generateToken.js";
 // CREATE ADMIN
 export const createAdmin = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
         let existingAdmin = await Admin.findOne({ email });
-        if (!existingAdmin) {
-            existingAdmin = await User.findOne({ email });
-        }
         if (existingAdmin) {
             return res.status(400).json({
                 success: false,
@@ -55,6 +51,8 @@ export const adminLogin = async (req, res) => {
         }
         const accessToken = generateAccessToken(admin._id.toString());
         const refreshToken = generateRefreshToken(admin._id.toString());
+        admin.refreshToken = refreshToken;
+        await admin.save();
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: false,
@@ -72,7 +70,7 @@ export const adminLogin = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Server error",
-            error
+            error: error?.message
         });
     }
 };

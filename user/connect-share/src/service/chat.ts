@@ -46,8 +46,6 @@ export const blockUser = async (obj) => {
     return res;
 };
 
-
-
 export const unblockUser = async (obj) => {
     const res = await api.patch(`${base_url}/user/chat/user/unblock`, obj);
     return res;

@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Send, Smile, Image, ArrowLeft, Users, LogOut, Phone, Video, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getChatUsers, sendMessage, getMessages, rejectGroupInvite, acceptGroupInvite } from "@/service/chat";
+import { getChatUsers, sendMessage, getMessages, rejectGroupInvite,blockUser,unblockUser, acceptGroupInvite } from "@/service/chat";
 import { formatChatDate, formatMessageTimestamp, formatMongoDate } from "@/service/global";
 import socket from '@/socket/socket';
 import { useAppDispatch, useAppSelector } from '@/redux-toolkit/customHook/hook';
-import { setMessageList, setMessageRefresh, setNewMessageAdd, setAcceptedInvite, setGroupInvited, setRejectGroupInvite, setUnreadCountRemove, setUserChatList, setExitUserFromGroup, setDeleteUserChat, setRecoverUserChat } from '@/redux-toolkit/slice/chatSlice';
+import { setMessageList, setMessageRefresh, setNewMessageAdd,setBlockUser, setUnblockUser, setAcceptedInvite, setGroupInvited, setRejectGroupInvite, setUnreadCountRemove, setUserChatList, setExitUserFromGroup, setDeleteUserChat, setRecoverUserChat } from '@/redux-toolkit/slice/chatSlice';
+import {setUpdateUserFromList} from '@/redux-toolkit/slice/userSlice';
 import { exitMemberFromGroup } from "@/service/group";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import DeleteCard from "@/components/card/DeleteCard";
@@ -35,14 +36,65 @@ export function ChatPanel({ open, onClose }: Props) {
   const [rejectLoading, setRejectLoading] = useState(false);
   const [acceptLoading, setAcceptLoading] = useState(false);
   const [deleteChatData, setDeleteChatData] = useState(null);
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [unblockDialogOpen, setUnblockDialogOpen] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+  const [unblockLoading, setUnblockLoading] = useState(false);
   const userList = useAppSelector((state) => state?.chat?.userChatList);
   const messageList = useAppSelector((state) => state?.chat?.messageList);
-  const filteredChats = userList?.filter((chat: any) =>
+  const filteredChats = userList?.filter((chat) =>
     chatType === "single" ? !chat.isGroup : chat.isGroup
   );
-  console.log(userList)
+ console.log("filteredChats:- ", filteredChats);
 
-  const handleSeenMessages = async (chat: any) => {
+  const handleBlockUser = async() => {
+    try{
+      setBlockLoading(true);
+      const obj = {chatId: activeChat?.chatId, toId: activeChat?.friend?._id, fromId: user?._id};
+      const res = await blockUser(obj);
+      if(res.status === 200){
+        toast({title:"User Blocked Successfully", description: res?.data?.message || "User Blocked Successfully"});
+        setBlockDialogOpen(false);
+        dispatch(setBlockUser(obj));
+        setActiveChat(prevChat => ({
+          ...prevChat,
+          blockedMembers: [...(prevChat?.blockedMembers || []), activeChat?.friend?._id]
+        }));
+      }
+    }
+    catch(err){
+      console.log(err);
+      toast({title:"Failed to Block User", description: err?.response?.data?.message || err?.message, variant: "destructive"});
+    }
+    finally{ 
+      setBlockLoading(false);
+    }
+  };
+
+  const handleUnBlockUser = async() => {
+    try{
+      setUnblockLoading(true);
+      const obj = {chatId: activeChat?.chatId, toId: activeChat?.friend?._id, fromId: user?._id};
+      const res = await unblockUser(obj);
+      if(res.status === 200){
+        toast({title:"User Unblocked Successfully", description: res?.data?.message || "User Unblocked Successfully"});
+        setUnblockDialogOpen(false);
+        dispatch(setUnblockUser(obj));
+        setActiveChat(prevChat => ({
+          ...prevChat, blockedMembers: (prevChat?.blockedMembers || []).filter(id => id?.toString() !== activeChat?.friend?._id?.toString())
+        }));
+      }
+    }
+    catch(err){
+      console.log(err);
+      toast({title:"Failed to Unblock User", description: err?.response?.data?.message || err?.message, variant: "destructive"});
+    }
+    finally{
+      setUnblockLoading(false);
+    }
+  }
+
+  const handleSeenMessages = async (chat) => {
     socket.emit("messageSeen", { chatId: chat?.chatId, receiverUserId: user?._id, senderUserId: chat?.friend?._id });
     socket.emit("getUnreadCount", user?._id);
 
@@ -72,6 +124,16 @@ export function ChatPanel({ open, onClose }: Props) {
       if (data?.chatId === activeChat?.chatId) {
         dispatch(setMessageList(data?.messages));
       }
+    });
+
+    socket.on("blockUser", (data) => {
+      dispatch(setBlockUser(data));
+    dispatch(setUpdateUserFromList(data));
+    });
+
+    socket.on("unblockUser", (data) => {
+      dispatch(setUnblockUser(data));
+    dispatch(setUpdateUserFromList(data));
     });
 
     socket.on("groupInviteAccepted", (data) => {
@@ -116,6 +178,8 @@ export function ChatPanel({ open, onClose }: Props) {
       socket.off("groupInviteAccepted");
       socket.off("deleteUser");
       socket.off("recoverUser");
+      socket.off("blockUser");
+      socket.off("unblockUser");
     }
   }, [activeChat])
 
@@ -129,7 +193,7 @@ export function ChatPanel({ open, onClose }: Props) {
       } else {
         toast({ title: "Failed to accept group invite", description: res?.data?.message || "invite accepted failed", variant: "destructive" });
       }
-    } catch (err: any) {
+    } catch (err) {
       console.log(err);
       toast({ title: "Failed to accept group invite", description: err?.response?.data?.message || err?.message, variant: "destructive" });
     } finally {
@@ -148,7 +212,7 @@ export function ChatPanel({ open, onClose }: Props) {
       } else {
         toast({ title: "Failed to reject group invite", description: res?.data?.message || "invite rejected failed", variant: "destructive" });
       }
-    } catch (err: any) {
+    } catch (err) {
       console.log(err);
       toast({ title: "Failed to reject group invite", description: err?.response?.data?.message || err?.message, variant: "destructive" });
     } finally {
@@ -263,6 +327,24 @@ export function ChatPanel({ open, onClose }: Props) {
   if (!open) return null;
   return (
     <>
+    <DeleteCard
+        isOpen={blockDialogOpen}
+        onOpenChange={setBlockDialogOpen}
+        isLoading={blockLoading}
+        buttonName="Block"
+        title={`Block ${activeChat?.friend?.fullName || ""}`}
+        description={`Are you sure you want to block the user "${activeChat?.friend?.fullName || ""}"? They will no longer be able to message or view your profile.`}
+        onConfirm={handleBlockUser}
+      />
+      <DeleteCard
+        isOpen={unblockDialogOpen}
+        onOpenChange={setUnblockDialogOpen}
+        isLoading={unblockLoading}
+        buttonName="Unblock"
+        title={`Unblock ${activeChat?.friend?.fullName || ""}`}
+        description={`Are you sure you want to unblock the user "${activeChat?.friend?.fullName || ""}"? This will allow them to send you messages and view your profile again.`}
+        onConfirm={handleUnBlockUser}
+      />
       <DeleteCard
         isOpen={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
@@ -291,9 +373,9 @@ export function ChatPanel({ open, onClose }: Props) {
                   <button className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity flex-1 text-left min-w-0">
                     <div className="relative shrink-0">
                       <img
-                        src={chatType === "single" ? (activeChat?.friend?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2") : (activeChat?.group?.images?.[0] || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2")}
-                        alt=""
-                        className="h-8 w-8 rounded-full object-cover"
+                       src={chatType === "single" ? (activeChat?.friend?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2") : (activeChat?.group?.images?.[0] || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2")}
+                       alt=""
+                       className="h-8 w-8 rounded-full object-cover"
                       />
                       {/* Online Badge */}
                       {chatType === "single" && (activeChat?.friend?.isOnline || (activeChat?.friend?._id !== user?._id)) && onlineUsers.includes(activeChat.friend._id) && (
@@ -367,7 +449,16 @@ export function ChatPanel({ open, onClose }: Props) {
                         <div>
                           <p className="text-xs text-muted-foreground font-semibold mb-1">BIO</p>
                           <p className="text-sm text-foreground">{activeChat?.friend?.bio || "No bio added"}</p>
-                        </div>
+                        </div> 
+                        <div className= "flex flex-col gap-2"> 
+                           {
+                            activeChat?.blockedMembers?.some((id) => id?.toString() === activeChat?.friend?._id?.toString()) ? (
+                              <button className="text-sm text-green-500 bg-green-100 hover:bg-green-200 h-10 rounded-lg" onClick={() => {setUnblockDialogOpen(true)}}>Unblock</button>
+                            ) : (
+                              <button className='text-sm text-red-500 bg-red-100 hover:bg-red-200 h-10 rounded-lg' onClick={() => {setBlockDialogOpen(true)}}>Block</button>
+                            )
+                          }                         
+                          </div> 
                       </div>
                     )}
 
@@ -376,7 +467,7 @@ export function ChatPanel({ open, onClose }: Props) {
                         <div>
                           <p className="text-xs text-muted-foreground font-semibold mb-2">GROUP MEMBERS ({activeChat?.group?.members?.length || 0})</p>
                           <div className="space-y-2 max-h-32 overflow-y-auto">
-                            {activeChat?.group?.members?.slice(0, 5).map((member: any, idx: number) => (
+                            {activeChat?.group?.members?.slice(0, 5).map((member, idx: number) => (
                               <div key={idx} className="flex items-center gap-2 text-sm">
                                 <img src={member?.profileImage || "https://imgs.search.brave.com/xCedoimthG97d8n6Aqc-6LyqR2Oa5N-3B_5XNwx_Hqc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy9h/L2FjL0RlZmF1bHRf/cGZwLmpwZz9fPTIw/MjAwNDE4MDkyMTA2"} alt="" className="h-6 w-6 rounded-full object-cover" />
                                 <span className="text-foreground truncate">{member?.fullName}</span>
@@ -685,10 +776,10 @@ export function ChatPanel({ open, onClose }: Props) {
               </div>
             )} */}
 
-            {activeChat && (
+            { activeChat && (
               <div className="p-3 border-t border-border mb-[60px] md:mb-0">
 
-                {chatType === "single" && activeChat?.friend?.isDeleted ? (
+                {/* { chatType === "single" && activeChat?.friend?.isDeleted ? (
                   <div className="flex items-center justify-center py-3 text-sm text-muted-foreground">
                     This user is no longer available on ChatApp
                   </div>
@@ -737,7 +828,74 @@ export function ChatPanel({ open, onClose }: Props) {
                     </button>
 
                   </div>
-                )}
+                )} */}
+
+
+
+
+                {chatType === "single" && activeChat?.friend?.isDeleted ? (
+  // 1. First Condition: User has deleted their account
+  <div className="flex items-center justify-center py-3 text-sm text-muted-foreground bg-muted/30 rounded-xl">
+    This user is no longer available on ChatApp
+  </div>
+) : activeChat?.blockedMembers?.some((id) => id.toString() === activeChat?.friend?._id) ? (
+  <>
+  <div className="flex items-center justify-center py-3 px-3 text-sm text-red-500 bg-red-50 rounded-xl font-medium border border-red-100">
+    You have blocked this user. Unblock to resume conversation.
+  </div>
+  <button className="text-sm text-green-500 bg-green-100 hover:bg-green-200 h-10 rounded-lg mt-2 w-full" onClick={() => {setUnblockDialogOpen(true)}}>
+    Unblock
+  </button>
+  </>
+) : (
+  // 3. Fallback Condition: Normal Chat Input Field View
+  <div className="flex items-center gap-2 bg-muted rounded-full px-3 py-1.5">
+    <button className="text-muted-foreground hover:text-foreground transition-colors">
+      <Smile className="h-5 w-5" />
+    </button>
+
+    <label className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+      <Image className="h-5 w-5" />
+      <input
+        type="file"
+        accept="image/*,video/*"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+
+          setSelectedFile(file);
+          setPreviewUrl(URL.createObjectURL(file));
+        }}
+      />
+    </label>
+
+    <input
+      type="text"
+      placeholder="Type a message..."
+      value={message}
+      onChange={handleTyping}
+      className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground"
+      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+    />
+
+    <button
+      onClick={handleSendMessage}
+      disabled={sendLoading || (!message && !selectedFile)}
+      className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-primary-foreground hover:opacity-90 transition-opacity"
+    >
+      {sendLoading ? (
+        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+      ) : (
+        <Send className="w-4 h-4" />
+      )}
+    </button>
+  </div>
+)}
+
+
+
+
               </div>
             )}
           </>
@@ -758,10 +916,10 @@ export function ChatPanel({ open, onClose }: Props) {
 
             <div className="flex-1 overflow-y-auto">
               {filteredChats?.length > 0 ? (
-                filteredChats.map((chat: any) => {
+                filteredChats.map((chat) => {
 
                   const isPending = chat?.pendingMembers?.some(
-                    (id: any) => id.toString() === user?._id
+                    (id) => id.toString() === user?._id
                   );
 
                   return (
@@ -862,11 +1020,11 @@ export function ChatPanel({ open, onClose }: Props) {
                         </div>
                       ) : (
                         chat?.deliveredMessages?.filter(
-                          (msg: any) =>
+                          (msg) =>
                             (msg.sender?._id || msg.sender) !== user?._id
                         )?.length > 0 && (
                           <span className="h-5 w-5 rounded-full gradient-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center shrink-0">
-                            {chat.deliveredMessages.filter((msg: any) => (msg.sender?._id || msg.sender) !== user?._id).length}
+                            {chat.deliveredMessages.filter((msg) => (msg.sender?._id || msg.sender) !== user?._id).length}
                           </span>
                         )
                       )}

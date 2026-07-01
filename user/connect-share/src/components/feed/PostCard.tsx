@@ -43,7 +43,7 @@ export function PostCard({ post }) {
    },[])
 
    const handleDeletePost = async() => {
-    let obj = { postId: post?._id, userId: user?._id }
+    const obj = { postId: post?._id, userId: user?._id }
     try {
       setDeleteLoading(true);
       const res = await deletePostByUser(obj);
@@ -65,7 +65,7 @@ export function PostCard({ post }) {
 
   const handleLike = async (postId: string) => {
     if (!user?._id || !postId) return;
-    let obj = { userId: user?._id, postId: postId };
+    const obj = { userId: user?._id, postId: postId };
     try {
       const res = await likeAnUnLikePost(obj);
       if (res.status === 200) {
@@ -90,7 +90,7 @@ export function PostCard({ post }) {
 
 
   const handleComment = async (postId: string) => {
-    let obj = { postId: postId, text: newComment, userId: user?._id }
+    const obj = { postId: postId, text: newComment, userId: user?._id }
     try {
       const res = await addCommentPost(obj);
       if (res?.status === 200) {
@@ -106,7 +106,7 @@ export function PostCard({ post }) {
 
 
   const handleLikeAndUnLikeComment = async (postId: string, commentId: string) => {
-    let obj = { postId: postId, commentId: commentId, userId: user?._id }
+    const obj = { postId: postId, commentId: commentId, userId: user?._id }
     try {
       const res = await likeAnUnLikeComment(obj);
       if (res?.status === 200) {
@@ -121,7 +121,7 @@ export function PostCard({ post }) {
 
 
   const handleAddCommentReply = async (postId: string, commentId: string, text: string) => {
-    let obj = { postId: postId, commentId: commentId, text: text, userId: user?._id, fullName: user?.fullName };
+    const obj = { postId: postId, commentId: commentId, text: text, userId: user?._id, fullName: user?.fullName };
     try {
       const res = await replyToComment(obj);
       if (res?.status === 200) {
@@ -178,7 +178,7 @@ export function PostCard({ post }) {
         </div>
 
         {/* Edit/Delete */}
-        <div className={`flex items-center gap-1 ${post?.createdBy?._id === user?._id ? "cursor-pointer" : ""}`} onClick={() => {if(post?.createdBy?._id === user?._id){setDeletePostData(post);setDeleteDialogOpen(true)} else{};}}>
+        <div className={`flex items-center gap-1 ${post?.createdBy?._id === user?._id ? "cursor-pointer" : ""}`} onClick={() => {if(post?.createdBy?._id === user?._id){setDeletePostData(post);setDeleteDialogOpen(true)};}}>
           <button className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground">
             <MoreVertical className="h-5 w-5" />
           </button>

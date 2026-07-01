@@ -63,7 +63,7 @@ const ShareModal = ({ isOpen, onOpenChange, post }) => {
                 toast({ title: "Post Shared", description: res?.data?.message });
                 onOpenChange(false);
             }
-        } catch (err: any) {
+        } catch (err) {
             toast({
                 title: "Share Failed",
                 description: err?.response?.data?.message || err?.message,

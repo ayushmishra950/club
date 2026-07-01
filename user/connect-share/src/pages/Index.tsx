@@ -63,27 +63,33 @@ const Index = () => {
     });
     socket.on("postRefresh", (post) => {
      dispatch(setNewPost(post));
-    })
+    }) 
+    
+   socket.on("blockUser", (data) => {
+ handleGetPosts(user?._id);
+});
+
+socket.on("unblockUser", (data) => {
+  console.log("Socket fired");
+ handleGetPosts(user?._id);
+});
     return () => {
       socket.off("paymentRequestAccepted");
       socket.off("userUpdate");
       socket.off("deleteUser");
       socket.off("postRefresh");
+      socket.off("blockUser");
+      socket.off("unblockUser");
     };
   }, [dispatch]);
 
-  const pinnedAdminPosts = postList.filter(
-    (post) => post?.createdBy?.role === "admin" && post?.isPinned
-  ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const pinnedAdminPosts = postList.filter((post) => post?.createdBy?.role === "admin" && post?.isPinned).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const userPosts = postList.filter(
     (post) => post?.createdBy?.role !== "admin"
   ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const finalPosts = [
-    ...pinnedAdminPosts,
-    ...userPosts
-  ];
+  const finalPosts = [ ...pinnedAdminPosts, ...userPosts];
 
   const filteredPosts = finalPosts.filter(post => {
     const query = searchQuery.toLowerCase();
@@ -91,17 +97,17 @@ const Index = () => {
     const postTitle = post?.title?.toLowerCase() || post?.notes?.toLowerCase() || "";
     const userName = post?.createdBy?.fullName?.toLowerCase() || post?.createdBy?.email?.toLowerCase() || "";
 
-    return (
-      postTitle.includes(query) ||
-      userName.includes(query)
-    );
+    return ( postTitle.includes(query) || userName.includes(query));
+
   });
   const postsToRender = searchQuery ? filteredPosts : finalPosts;
 
-
-  const handleGetPosts = async () => {
+  const handleGetPosts = async (userId: string) => {
+      console.log("Posts fetched:", userId);
+    if(!userId) return;
     try {
-      const res = await getAllPost();
+      const res = await getAllPost(userId);
+      console.log("Posts fetched:", res?.data?.posts);
       if (res.status === 200) {
         dispatch(setPostList(res?.data?.posts));
         setPostListRefresh(false);
@@ -114,13 +120,13 @@ const Index = () => {
 
   useEffect(() => {
     if (postList?.length === 0 || postListRefresh) {
-      handleGetPosts();
+      handleGetPosts(user?._id);
     }
   }, [postList?.length, postListRefresh])
 
   useEffect(() => {
     socket.on("postRefresh", () => {
-      handleGetPosts();
+      handleGetPosts(user?._id);
     });
 
     return () => {

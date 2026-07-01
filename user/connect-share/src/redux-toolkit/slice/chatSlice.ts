@@ -10,10 +10,10 @@ const chatSlice = createSlice({
   name: "Chat",
   initialState,
   reducers: {
-    setUserChatList: (state, action: PayloadAction<any[]>) => {
+    setUserChatList: (state, action) => {
       state.userChatList = action.payload;
     },
-    setMessageRefresh: (state, action: PayloadAction<{ newMessage: any, updatedAt: string }>) => {
+    setMessageRefresh: (state, action: PayloadAction<{ newMessage, updatedAt }>) => {
       const { newMessage, updatedAt } = action.payload;
 
       if (!newMessage || !newMessage.chatId) return;
@@ -49,7 +49,7 @@ const chatSlice = createSlice({
       );
     },
 
-    setUnreadCountRemove: (state, action: PayloadAction<{ chat: any }>) => {
+    setUnreadCountRemove: (state, action) => {
       const { chat } = action.payload;
 
       state.userChatList = state.userChatList.map((c) => {
@@ -58,15 +58,15 @@ const chatSlice = createSlice({
       });
     },
 
-    setMessageList: (state, action: PayloadAction<any[]>) => {
+    setMessageList: (state, action) => {
       state.messageList = action.payload
     },
-    setNewMessageAdd: (state, action: PayloadAction<any>) => {
+    setNewMessageAdd: (state, action) => {
       state.messageList.push(action.payload);
     },
 
 
-    setGroupInvited: (state, action: PayloadAction<any>) => {
+    setGroupInvited: (state, action) => {
       const { groupId, chatId, userId } = action.payload;
       const group = state.userChatList.find((chat) => chat.chatId?.toString() === chatId?.toString());
       if (group) {
@@ -74,7 +74,7 @@ const chatSlice = createSlice({
       }
     },
 
-    setRejectGroupInvite: (state, action: PayloadAction<any>) => {
+    setRejectGroupInvite: (state, action) => {
       const { chatId, userId } = action.payload;
 
       // 🔍 find chat index
@@ -175,11 +175,39 @@ const chatSlice = createSlice({
         }
 
       });
+    },
+    setBlockUser: (state, action) => {
+  const { chatId, toId, fromId } = action.payload;
+
+  const chatData = state.userChatList.find((chat) => chat.chatId?.toString() === chatId?.toString());
+  
+  if (chatData) {
+    if (!chatData.blockedMembers) {
+      chatData.blockedMembers = [];
     }
+
+    const isAlreadyBlocked = chatData.blockedMembers.some((id) => id?.toString() === toId?.toString());
+
+    if (!isAlreadyBlocked) {
+      chatData.blockedMembers.push(toId);
+    }
+  }
+},
+
+setUnblockUser: (state, action) => {
+  const { chatId, toId, fromId } = action.payload;
+  
+  const chatData = state.userChatList.find((chat) => chat.chatId?.toString() === chatId?.toString());
+
+  if (chatData && chatData.blockedMembers) {
+    chatData.blockedMembers = chatData.blockedMembers.filter((id) => id?.toString() !== toId?.toString());
+  }
+}
+
   }
 });
 
-export const { setUserChatList,setDeleteUserChat, setRecoverUserChat, setExitUserFromGroup, setAcceptedInvite, setMessageRefresh, setRejectGroupInvite, setGroupInvited, setUnreadCountRemove, setMessageList, setNewMessageAdd } = chatSlice.actions;
+export const { setUserChatList,setBlockUser,setUnblockUser,setDeleteUserChat, setRecoverUserChat, setExitUserFromGroup, setAcceptedInvite, setMessageRefresh, setRejectGroupInvite, setGroupInvited, setUnreadCountRemove, setMessageList, setNewMessageAdd } = chatSlice.actions;
 
 export default chatSlice.reducer;
 

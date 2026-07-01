@@ -11,6 +11,7 @@ import { NotificationType } from "../../models/notification.model.js";
 import { nanoid } from "nanoid";
 import Post from "../../models/post.model.js";
 import Admin from "../../models/admin.model.js";
+import Block from "../../models/block.model.js";
 
 
 export const registerUser = async (req: Request, res: Response) => {
@@ -163,12 +164,50 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     return res.status(403).json({ success: false, message: "Invalid or expired refresh token" });
   }
 };
+
+// export const getAllUsers = async (req: Request, res: Response) => {
+//   const userId = req.params.userId;
+//   if(!userId) return res.status(400).json({success:false, message:"userId is required"});
+//   try {
+
+//     const users = await User.find({ isVerified: true, blocked: false, isDeleted: false }).select("-password");
+//     res.status(200).json({ success: true, count: users.length, data: users });
+//   } catch (error: any) {
+
+//     res.status(500).json({ success: false, message: "Server error", error: error.message });
+//   }
+// };
+
+
 export const getAllUsers = async (req: Request, res: Response) => {
+  const userId = req.params.userId; 
+  if(!userId) return res.status(400).json({success:false, message:"userId is required"});
+     
   try {
-    const users = await User.find({ isVerified: true, blocked: false, isDeleted: false }).select("-password");
+    const blockRecords = await Block.find({
+      $or: [
+        { blockerId: userId },
+        { blockedId: userId }
+      ]
+    });
+
+    const restrictedUserIds: string[] = blockRecords.map(record => 
+      record.blockerId.toString() === userId.toString() 
+        ? record.blockedId.toString() 
+        : record.blockerId.toString()
+    );
+
+    restrictedUserIds.push(userId as string);
+
+    const users = await User.find({ 
+      _id: { $nin: restrictedUserIds },
+      isVerified: true, 
+      blocked: false, 
+      isDeleted: false 
+    }).select("-password");
+
     res.status(200).json({ success: true, count: users.length, data: users });
   } catch (error: any) {
-
     res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };

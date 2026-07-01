@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 import { getIO } from "../../utils/socketHelper.js";
 import Group from "../../models/group.model.js";
 import uploadToCloudinary from "../../cloudinary/uploadToCloudinary.js";
-
+import Block from "../../models/block.model.js";
 
 export const getChatUsers = async (req: Request, res: Response) => {
   try {
@@ -79,7 +79,8 @@ export const getChatUsers = async (req: Request, res: Response) => {
         }).select("_id sender text createdAt status");
 
         return {
-          chatId: chat._id,
+          chatId: chat._id, 
+          blockedMembers: chat.blockedMembers || [],
           isGroup: false,
           friend,
           group: null,
@@ -400,5 +401,76 @@ if (user.isDeleted) {
     res.status(200).json({ message: "Group invite rejected successfully." });
   } catch (err: any) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+
+
+
+export const blockUserInChat = async(req:Request, res:Response) => {
+  try{
+    const { chatId, toId, fromId } = req.body;
+    const io = getIO();
+
+    if (!chatId || !toId || !fromId) {
+      return res.status(400).json({ message: "chatId, toId, and fromId required." });
+    }
+    
+    const user = await User.findById(fromId);
+    if(!user) return res.status(404).json({message:"User not found"});
+    if(user.isDeleted) return res.status(403).json({message:"Account is scheduled for deletion."});
+
+    const chat = await Chat.findById(chatId);
+    if(!chat) return res.status(404).json({message:"Chat not found"});
+
+    if(!chat.blockedMembers) chat.blockedMembers = [];
+    if(!chat.blockedMembers.includes(toId)) chat.blockedMembers.push(toId);
+
+    await chat.save();
+
+    await Block.findOneAndUpdate(
+      { blockerId: fromId, blockedId: toId },
+      { blockerId: fromId, blockedId: toId, chatId: chatId },
+      { upsert: true, new: true }
+    );
+
+    io.to(fromId).emit("blockUser", { chatId, userId: toId });
+
+    res.status(200).json({message:"User blocked in chat successfully."});
+  }
+  catch(err:any){
+    res.status(500).json({message:err.message, success:false, error:err})
+  }
+};
+
+export const unBlockUserInChat = async(req:Request, res:Response) => {
+  try{
+    const { chatId, toId, fromId } = req.body;
+    const io = getIO();
+
+    if (!chatId || !toId || !fromId) {
+      return res.status(400).json({ message: "chatId, toId, and fromId required." });
+    }
+    
+    const user = await User.findById(toId);
+    if(!user) return res.status(404).json({message:"User not found"});
+    if(user.isDeleted) return res.status(403).json({message:"Account is scheduled for deletion."});
+
+    const chat = await Chat.findById(chatId);
+    if(!chat) return res.status(404).json({message:"Chat not found"});
+
+    if(chat.blockedMembers && chat.blockedMembers.includes(toId)){
+      chat.blockedMembers = chat.blockedMembers.filter((id:mongoose.Types.ObjectId) => !id.equals(toId));
+      await chat.save();   
+
+      // Remove the block record matching the blocker (userId) and blocked target (targetId)
+    await Block.deleteOne({ blockerId: fromId, blockedId: toId, chatId: chatId });
+    } 
+    io.to(fromId).emit("unblockUser", { chatId, userId: toId, user }); 
+             
+    res.status(200).json({message:"User unblocked in chat successfully."});
+  }
+  catch(err:any){
+    res.status(500).json({message:err.message, success:false, error:err})
   }
 };

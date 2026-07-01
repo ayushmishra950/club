@@ -288,6 +288,15 @@ export function Navbar({ onChatToggle, chatUnread }: NavbarProps) {
                     >
                       Review
                     </button>
+                     <button 
+                      onClick={() => {
+                        navigate("/blocked");
+                        setProfileDropdownOpen(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs hover:bg-muted transition-colors border-t"
+                    >
+                      Blocked Users
+                    </button>
                   </div>
                 </>
               )}

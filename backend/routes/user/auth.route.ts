@@ -15,7 +15,7 @@ const router = express.Router();
 router.post("/register", authRateLimit, registerUser);
 router.post("/login", authRateLimit, loginUser);
 router.post("/refresh", refreshAccessToken);
-router.get("/get", getAllUsers);
+router.get("/get/:userId", getAllUsers);
 router.get("/getbyid/:id", getSingleUser);
 router.delete("/delete", deleteUser);
 router.put("/update", upload.any(), updateUser);

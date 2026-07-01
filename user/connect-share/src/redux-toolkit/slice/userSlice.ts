@@ -23,6 +23,13 @@ const userSlice = createSlice({
             state.userData = action.payload;
         },
 
+       setUpdateUserFromList: (state, action) => {
+    // If user exists, remove them; otherwise, add them to the array
+    state.userList = state.userList.some(user => user._id === action.payload.userId)
+        ? state.userList.filter(user => user._id !== action.payload.userId)
+        : [...state.userList, action.payload?.user];
+},
+
         setUpdateUser: (state, action) => {
             if (state.userData?._id === action.payload?.user?._id || state?.userData?._id === action.payload?._id) {
                 state.userData = action.payload?.user || action.payload;
@@ -43,6 +50,6 @@ const userSlice = createSlice({
     }
 });
 
-export const { setUserList,setRemoveUser,setRecoverUser,   setUserCount, setUserData, setUpdateUser } = userSlice.actions;
+export const { setUserList,setUpdateUserFromList, setRemoveUser,setRecoverUser,   setUserCount, setUserData, setUpdateUser } = userSlice.actions;
 
 export default userSlice.reducer;

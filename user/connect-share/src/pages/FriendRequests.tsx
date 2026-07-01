@@ -90,7 +90,7 @@ const FriendRequests = () => {
 
   const handleAddUserFromChat = async (userId: string) => {
     if (!user?._id || !userId) return;
-    let obj = { senderId: user?._id, receiverId: userId };
+    const obj = { senderId: user?._id, receiverId: userId };
     try {
       setMessageLoading(userId);
       const res = await addUserFromChat(obj);
@@ -110,7 +110,7 @@ const FriendRequests = () => {
 
   const handleSendRequest = async (userId: string) => {
     if (!user?._id || !userId) return;
-    let obj = { fromId: user?._id, toId: userId };
+    const obj = { fromId: user?._id, toId: userId };
     try {
       setSendLoading(userId);
       const res = await sendRequest(obj);
@@ -130,7 +130,7 @@ const FriendRequests = () => {
 
   const handleAcceptRequest = async (userId: string) => {
     if (!userId) return;
-    try {
+    try { 
       setAcceptLoading(userId);
       const res = await acceptRequest(userId);
       if (res.status === 200) {

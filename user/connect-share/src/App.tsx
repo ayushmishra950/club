@@ -36,6 +36,7 @@ import ReviewPage from "@/pages/ReviewPage.tsx";
 import PrivacyPolicy from "@/pages/PrivacyPolicy.tsx";
 import DeleteAccount from "@/pages/DeleteAccount.tsx";
 import ChildSafety from "@/pages/ChildSafety.tsx";
+import BlockedUsers from "@/pages/BlockedUser.tsx";
 
 const queryClient = new QueryClient();
 
@@ -121,7 +122,6 @@ const App = () => {
           <ConnectionProvider>
 
             <Routes>
-
               <Route path="/" element={getToken() ? <Navigate to="/home" replace /> : <PublicLayout />}>
                 <Route index element={<Home />} />
                 <Route path="public/about" element={<About />} />
@@ -158,6 +158,9 @@ const App = () => {
 
               <Route path="/events" element={<ProtectedRoute>
                 <Events />
+              </ProtectedRoute>} />
+               <Route path="/blocked" element={<ProtectedRoute>
+                <BlockedUsers />
               </ProtectedRoute>} />
               <Route path="/event/detail/:id" element={<ProtectedRoute>
                 <EventDetail />

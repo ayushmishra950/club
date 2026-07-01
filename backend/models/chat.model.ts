@@ -8,6 +8,7 @@ export interface IChat extends Document {
   groupId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  blockedMembers?: mongoose.Types.ObjectId[];
 }
 
 const ChatSchema = new Schema<IChat>(
@@ -33,6 +34,12 @@ const ChatSchema = new Schema<IChat>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Group",
     },
+    blockedMembers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true }
 );

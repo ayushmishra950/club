@@ -5,6 +5,68 @@ import { createNotificationInternal } from "./notification.controller.js";
 import { NotificationType } from "../../models/notification.model.js";
 import { getIO } from "../../utils/socketHelper.js";
 import Chat from "../../models/chat.model.js";
+import Block from "../../models/block.model.js";
+
+
+// export const getSuggestedUsers = async (req: Request, res: Response) => {
+//   try {
+//     const { userId } = req.params;
+
+//     if (!userId) return res.status(400).json({ message: "userId is required." });
+
+//     const currentUser = await User.findById(userId).select("+friends");
+//     if (!currentUser) return res.status(404).json({ message: "User not found" });
+
+//     if (currentUser.isDeleted) return res.status(403).json({ message: "Account is scheduled for deletion" });
+
+//     const currentFriends = currentUser.friends?.map((f: any) => f.toString()) || [];
+
+//     const users = await User.find({ _id: { $ne: currentUser._id }, isVerified: true, blocked: false, isDeleted: false });
+
+//     console.log("Users Found:", users.length);
+//     const friendRequests = await FriendRequest.find({ $or: [{ from: currentUser._id }, { to: currentUser._id }] });
+
+//     const requestMap: Record<string, any> = {};
+//     friendRequests.forEach((fr) => {
+//       const otherUserId = fr.from.toString() === userId ? fr.to.toString() : fr.from.toString();
+//       requestMap[otherUserId] = fr;
+//     });
+
+//     const suggestions: any[] = [];
+
+//     const now = new Date();
+//     const cooldownDays = 30;
+
+//     for (let u of users) {
+//       const userIdStr = u._id.toString();
+//       if (currentFriends.includes(userIdStr)) continue;
+
+//       const fr = requestMap[userIdStr];
+
+//       if (fr) {
+//         if (fr.status === "accepted" || fr.status === "pending") {
+//           continue;
+//         }
+
+//         if (fr.status === "rejected") {
+//           const rejectedAt = fr.updatedAt || fr.createdAt;
+//           const diffDays = (now.getTime() - rejectedAt.getTime()) /(1000 * 60 * 60 * 24);
+
+//           if (diffDays < cooldownDays) {
+//             continue;
+//           }
+//         } 
+//       }
+//       suggestions.push(u);
+//     }
+ 
+//     return res.status(200).json(suggestions);
+//   } catch (err: any) {
+//     return res.status(500).json({ message: err?.message });
+//   }
+// };
+
+
 
 export const getSuggestedUsers = async (req: Request, res: Response) => {
   try {
@@ -17,9 +79,34 @@ export const getSuggestedUsers = async (req: Request, res: Response) => {
 
     if (currentUser.isDeleted) return res.status(403).json({ message: "Account is scheduled for deletion" });
 
+    // 1. Fetch all block records involving this user (both directions)
+    const blockRecords = await Block.find({
+      $or: [
+        { blockerId: userId },
+        { blockedId: userId }
+      ]
+    });
+
+    // 2. Extract unique user IDs that should be hidden from suggestions
+    const restrictedUserIds: string[] = blockRecords.map(record => 
+      record.blockerId.toString() === userId.toString() 
+        ? record.blockedId.toString() 
+        : record.blockerId.toString()
+    );
+
+    // 3. Add the current user's ID to the restricted list to prevent self-suggestion
+    restrictedUserIds.push(userId as string);
+
     const currentFriends = currentUser.friends?.map((f: any) => f.toString()) || [];
 
-    const users = await User.find({ _id: { $ne: currentUser._id }, isVerified: true, blocked: false, isDeleted: false });
+    // 4. Update the User query to exclude blocked/blocking users right from the database layer
+    const users = await User.find({ 
+      _id: { $nin: restrictedUserIds }, 
+      isVerified: true, 
+      blocked: false, 
+      isDeleted: false 
+    });
+
     const friendRequests = await FriendRequest.find({ $or: [{ from: currentUser._id }, { to: currentUser._id }] });
 
     const requestMap: Record<string, any> = {};
@@ -46,7 +133,7 @@ export const getSuggestedUsers = async (req: Request, res: Response) => {
 
         if (fr.status === "rejected") {
           const rejectedAt = fr.updatedAt || fr.createdAt;
-          const diffDays = (now.getTime() - rejectedAt.getTime()) /(1000 * 60 * 60 * 24);
+          const diffDays = (now.getTime() - rejectedAt.getTime()) / (1000 * 60 * 60 * 24);
 
           if (diffDays < cooldownDays) {
             continue;

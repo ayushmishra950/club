@@ -14,13 +14,14 @@ export function StoriesCarousel() {
   const navigate = useNavigate();
 
    useEffect(() => {
-    socket.on("deleteUser", (data:any) => {
+    socket.on("deleteUser", (data) => {
      dispatch(setRemoveUser(data))
     });
 
-    socket.on("recoverUser", (data:any) => {
+    socket.on("recoverUser", (data) => {
      dispatch(setRecoverUser(data));
-    })
+    });
+
     return () => {
       socket.off("deleteUser");
       socket.off("recoverUser");
@@ -30,8 +31,9 @@ export function StoriesCarousel() {
   const [openView, setOpenView] = useState(false);
 
   const handleGetAllUser = async () => {
+     if(!user?._id) return;
     try {
-      const res = await getAllUser();
+      const res = await getAllUser(user?._id);
 
       if (res.status === 200) {
         dispatch(setUserList(res?.data?.data));

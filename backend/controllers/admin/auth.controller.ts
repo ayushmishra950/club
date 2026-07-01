@@ -12,10 +12,6 @@ export const createAdmin = async (req: Request, res: Response) => {
 
     let existingAdmin = await Admin.findOne({ email });
 
-    if (!existingAdmin) {
-      existingAdmin = await User.findOne({ email });
-    }
-
     if (existingAdmin) {
       return res.status(400).json({
         success: false,
@@ -76,6 +72,7 @@ export const adminLogin = async (req: Request, res: Response) => {
     admin.refreshToken = refreshToken;
     await admin.save();
 
+
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: false,
@@ -89,11 +86,11 @@ export const adminLogin = async (req: Request, res: Response) => {
       accessToken
     });
 
-  } catch (error) {
+  } catch (error:any) {
     res.status(500).json({
       success: false,
       message: "Server error",
-      error
+      error : error?.message
     });
   }
 };

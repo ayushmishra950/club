@@ -8,23 +8,70 @@ import User from "../../models/user.model.js";
 import Chat from "../../models/chat.model.js";
 import Message from "../../models/message.model.js";
 import { getIO } from "../../utils/socketHelper.js";
+import Block from "../../models/block.model.js";
 
-export const getAllPosts = async (req: Request, res: Response) => {
-  try {
-    const posts = await Post.find()
+// export const getAllPosts = async (req: Request, res: Response) => { 
+//   try { 
+//     const userId = req.params.userId;
+//     if(!userId) return res.status(400).json({message:"userId is required."});
+
+//     const posts = await Post.find()
+//       .sort({ isPinned: -1, createdAt: -1 })
+//       .populate({ path: "createdBy", select: "name email fullName profileImage occupation role isDeleted" })
+//       .populate({ path: "comments.user", select: "fullName name profileImage"})
+//       .populate({ path: "comments.replies.user", select: "fullName name profileImage" });
+  
+//     const validPosts = posts.filter( (post: any) => post.createdBy && !post.createdBy.isDeleted);
+  
+//     return res.status(200).json({ success: true, posts: validPosts});
+
+//   } catch (err: any) {
+//     return res.status(500).json({ success: false, message: err.message});
+//   }
+// };
+
+
+
+
+export const getAllPosts = async (req: Request, res: Response) => { 
+  try { 
+    const userId = req.params.userId; // This is the 'fromId' / current user ID
+    if(!userId) return res.status(400).json({message:"userId is required."});
+
+    // 1. Fetch all block records involving this user (both directions)
+    const blockRecords = await Block.find({
+      $or: [
+        { blockerId: userId },
+        { blockedId: userId }
+      ]
+    });
+
+    // 2. Extract unique user IDs that should be hidden from the feed
+    const restrictedUserIds = blockRecords.map(record => 
+      record.blockerId.toString() === userId.toString() 
+        ? record.blockedId 
+        : record.blockerId
+    );
+
+    // 3. Fetch posts, filtering out creators who are in the restricted list
+    const posts = await Post.find({
+      createdBy: { $nin: restrictedUserIds } // Excludes posts from blocked/blocking users
+    })
       .sort({ isPinned: -1, createdAt: -1 })
       .populate({ path: "createdBy", select: "name email fullName profileImage occupation role isDeleted" })
       .populate({ path: "comments.user", select: "fullName name profileImage"})
       .populate({ path: "comments.replies.user", select: "fullName name profileImage" });
-
+  
+    // 4. Final filter to clean out posts from deleted accounts
     const validPosts = posts.filter( (post: any) => post.createdBy && !post.createdBy.isDeleted);
-
+  
     return res.status(200).json({ success: true, posts: validPosts});
 
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message});
   }
 };
+
 
 export const addPostNotes = async (req: Request, res: Response) => {
   try {

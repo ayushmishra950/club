@@ -16,8 +16,8 @@ export function SuggestedUsers() {
 
    useEffect(() => {
   socket.on("deleteUser", (data) => {
-    setSuggestedUsers((prev: any) =>
-      prev.filter((user: any) => user._id !== data._id)
+    setSuggestedUsers((prev) =>
+      prev.filter((user) => user._id !== data._id)
     );
   });
   socket.on("recoverUser", (data) => {
@@ -32,15 +32,32 @@ export function SuggestedUsers() {
     });
   })
 
+   socket.on("blockUser", (data) => {
+  setSuggestedUsers((prevUsers) =>
+    prevUsers.filter((user) => user._id?.toString() !== data?.userId?.toString())
+  );
+});
+
+socket.on("unblockUser", (data) => {
+  if (data?.user) {
+    setSuggestedUsers((prevUsers) => {
+      const exists = prevUsers.some((u) => u._id?.toString() === data?.user?._id?.toString());
+      return exists ? prevUsers : [...prevUsers, data.user];
+    });
+  }
+});
+
   return () => {
     socket.off("deleteUser");
     socket.off("recoverUser");
+    socket.off("blockUser");
+    socket.off("unblockUser");
   };
 }, []);
 
    const handleSendRequest = async (userId: string) => {
         if(!user?._id || !userId) return;
-       let obj = { fromId: user?._id, toId: userId };
+       const obj = { fromId: user?._id, toId: userId };
        try {
          const res = await sendRequest(obj);
          if (res.status === 201) {
@@ -60,6 +77,7 @@ export function SuggestedUsers() {
       if (!user?._id) return;
       try {
         const res = await getSuggestedUsers(user?._id);
+        console.log("Suggested Users:", res?.data);
         if (res.status === 200) {
           setSuggestedUsers(res?.data);
           setUserListRefresh(false);

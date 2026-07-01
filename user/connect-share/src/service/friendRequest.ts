@@ -16,7 +16,7 @@ export const getSuggestedUsers = async(id :string) => {
 
 
 
-export const sendRequest = async(obj:any) => {
+export const sendRequest = async(obj) => {
     const res = await api.post(`${base_url}/user/friend/request/send`, obj);
     return res;
 };
@@ -50,7 +50,7 @@ export const getFriendUsers = async(userId:string) => {
 }
 
 
-export const getMutualFriends = async(obj:any) =>{
+export const getMutualFriends = async(obj) =>{
     const res = await api.post(`${base_url}/user/mutualFriends`, obj);
     return res;
 }

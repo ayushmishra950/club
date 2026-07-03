@@ -67,14 +67,35 @@ router.get('/google/callback', (req, res, next) => {
 
             await user.save(); 
 
-            res.cookie('accessToken', accessToken, {
-                httpOnly: false, secure: false, sameSite: 'lax', domain: 'localhost',
-                maxAge: 10 * 60 * 1000
-            });
-            res.cookie("userData", JSON.stringify(user), {
-                httpOnly: false, secure: false, sameSite: 'lax', domain: 'localhost',
-                maxAge: 10 * 60 * 1000
-            });
+            // res.cookie('accessToken', accessToken, {
+            //     httpOnly: false, secure: false, sameSite: 'lax', domain: 'localhost',
+            //     maxAge: 10 * 60 * 1000
+            // });
+            // res.cookie("userData", JSON.stringify(user), {
+            //     httpOnly: false, secure: false, sameSite: 'lax', domain: 'localhost',
+            //     maxAge: 10 * 60 * 1000
+            // });
+
+
+            // 1. Dynamic check lagayein ki app local chal raha hai ya deployment par
+const isProduction = process.env.NODE_ENV === 'production';
+
+res.cookie('accessToken', accessToken, {
+    httpOnly: true,  // 🔒 Security ke liye true rakhna standard hai
+    secure: isProduction, // ✅ Local par false, Render (https) par automatically true ho jayega
+    sameSite: isProduction ? 'none' : 'lax', // ✅ Live server par cross-site traffic ke liye 'none' zaroori hai
+    domain: isProduction ? '.onrender.com' : 'localhost', // ✅ Production domain setup
+    maxAge: 10 * 60 * 1000
+});
+
+res.cookie("userData", JSON.stringify(user), {
+    httpOnly: false, 
+    secure: isProduction, // ✅ Render par true
+    sameSite: isProduction ? 'none' : 'lax', // ✅ Render par none
+    domain: isProduction ? '.onrender.com' : 'localhost', 
+    maxAge: 10 * 60 * 1000
+});
+
 
 
             console.log("🍏 Google Auth Success! Cookie set safely.");

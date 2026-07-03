@@ -40,7 +40,7 @@ router.get('/google', passport.authenticate('google', {
 router.get('/google/callback', (req, res, next) => {
     passport.authenticate('google', { session: false }, async(err, user) => {
         if (err || !user) {
-            return res.redirect('http://localhost:8080/#/login?error=auth_failed');
+            return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/#/login?error=auth_failed`);
         }
 
         try {
@@ -79,10 +79,10 @@ router.get('/google/callback', (req, res, next) => {
 
             console.log("🍏 Google Auth Success! Cookie set safely.");
             
-            return res.redirect(`http://localhost:8080/#/auth-success`);
+            return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/#/auth-success`);
         } catch (jwtError) {
             console.log("❌ JWT Generation Error:", jwtError);
-            return res.redirect('http://localhost:8080/#/login?error=token_failed');
+            return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/#/login?error=token_failed`);
         }
     })(req, res, next);
 });

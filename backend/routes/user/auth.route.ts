@@ -76,30 +76,19 @@ router.get('/google/callback', (req, res, next) => {
             //     maxAge: 10 * 60 * 1000
             // });
 
+          // Cookies ko poori tarah block karke data safely URL query parameters me pass kar rahe hain
+const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
 
-            // 1. Dynamic check lagayein ki app local chal raha hai ya deployment par
-const isProduction = process.env.NODE_ENV === 'production';
+// Stringify aur URI safety ensure karne ke liye encodeURIComponent lagaya hai
+const encodedUser = encodeURIComponent(JSON.stringify(user));
 
-res.cookie('accessToken', accessToken, {
-    httpOnly: true,  
-    secure: true,        // Production me Render par HTTPS compulsory hai, isliye TRUE rahega
-    sameSite: 'none',    // ⚠️ Isko string 'none' rakhna mandatory hai cross-site ke liye
-    maxAge: 10 * 60 * 1000
-    // Domain property completely omitted (remove kar dein)
-});
+console.log("🍏 Google Auth Success! Redirecting via secure URL parameters.");
 
-res.cookie("userData", JSON.stringify(user), {
-    httpOnly: false, 
-    secure: true,        // TRUE rahega
-    sameSite: 'none',    // 'none' rahega
-    maxAge: 10 * 60 * 1000
-});
+// 🚀 Fixed URL Redirection layout
+return res.redirect(
+  `${frontendBaseUrl}/#/auth-success?token=${accessToken}&refreshToken=${refreshToken}&user=${encodedUser}`
+);
 
-
-
-            console.log("🍏 Google Auth Success! Cookie set safely.");
-            
-            return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/#/auth-success`);
         } catch (jwtError) {
             console.log("❌ JWT Generation Error:", jwtError);
             return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/#/login?error=token_failed`);

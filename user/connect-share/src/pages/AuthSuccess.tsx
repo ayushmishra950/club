@@ -6,7 +6,6 @@ export default function AuthSuccess() {
     const navigate = useNavigate();
 
   useEffect(() => {
-    // Cookie se value nikalne ka helper function
     const getCookie = (name) => {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
@@ -14,9 +13,7 @@ export default function AuthSuccess() {
         return null;
     };
 
-    // Backend domain config ke sath cookie delete karne ka helper function
     const deleteCookie = (name) => {
-        // IMPORTANT: Backend me 'domain: localhost' hai, isliye delete karte waqt bhi exact match chahiye
         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost;`;
     };
 
@@ -25,21 +22,17 @@ export default function AuthSuccess() {
 
     if (cookieToken && cookieUserData) {
         try {
-            // 1. Token ko string format me save kiya
             localStorage.setItem("accessToken", cookieToken);
             
-            // 2. Cookie data URL-encoded ho jata hai stringify ke baad, use decode karke save kiya
             const decodedData = decodeURIComponent(cookieUserData);
             localStorage.setItem("user", decodedData);
             
             console.log("Token and User Data locked into localStorage.");
 
-            // 3. Clear both cookies from localhost domain
             deleteCookie("accessToken");
             deleteCookie("userData");
             console.log("Cookies cleared from localhost.");
 
-            // 4. Redirect to home
             navigate("/home");
 
         } catch (error) {

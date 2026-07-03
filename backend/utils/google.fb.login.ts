@@ -6,39 +6,6 @@ import { Strategy as FacebookStrategy } from 'passport-facebook';
 import User from "../models/user.model.js";
 
 
-// // Initialize Google Strategy
-// passport.use(new GoogleStrategy({
-//     clientID: process.env.GOOGLE_CLIENT_ID!,
-//     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-//     callbackURL: process.env.GOOGLE_CALLBACK_URL!
-//   },
-//   async (accessToken, refreshToken, profile, done) => {
-//     try {
-//       // Check if user already exists via social ID or primary email
-//       let user = await User.findOne({ 
-//         $or: [{ googleId: profile.id }, { email: profile.emails?.[0].value }] 
-//       });
-
-//       if (!user) {
-//         // Create new account if it's their first time logging in
-//         user = await User.create({
-//           googleId: profile.id,
-//           fullName: profile.displayName,
-//           email: profile.emails?.[0].value,
-//           isVerified: true // Social accounts are pre-verified by Google
-//         });
-//       } else if (!user.googleId) {
-//         // Link googleId if the user originally signed up via email/password
-//         user.googleId = profile.id;
-//         await user.save();
-//       }
-
-//       return done(null, user);
-//     } catch (error) {
-//       return done(error, undefined);
-//     }
-//   }
-// ));
 
 const clientID = process.env.GOOGLE_CLIENT_ID;
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET;

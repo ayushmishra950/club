@@ -325,7 +325,7 @@ export default function Login() {
 
   // Google Authentication Redirection Trigger
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5001/api/user/auth/google";
+    window.location.href = "https://club-backend-4k7y.onrender.com/api/user/auth/google";
   };
 
   return (

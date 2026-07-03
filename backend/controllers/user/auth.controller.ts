@@ -26,11 +26,7 @@ export const registerUser = async (req: Request, res: Response) => {
 
     const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
 
-    if (existingUser) {
-      return res.status(400).json({
-        success: false, message: "User already exists with this email or mobile"
-      });
-    }
+    if (existingUser) return res.status(400).json({ success: false, message: "User already exists with this email or mobile"});
 
     const userId = `USR-${nanoid(8)}`;
 
@@ -164,20 +160,6 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     return res.status(403).json({ success: false, message: "Invalid or expired refresh token" });
   }
 };
-
-// export const getAllUsers = async (req: Request, res: Response) => {
-//   const userId = req.params.userId;
-//   if(!userId) return res.status(400).json({success:false, message:"userId is required"});
-//   try {
-
-//     const users = await User.find({ isVerified: true, blocked: false, isDeleted: false }).select("-password");
-//     res.status(200).json({ success: true, count: users.length, data: users });
-//   } catch (error: any) {
-
-//     res.status(500).json({ success: false, message: "Server error", error: error.message });
-//   }
-// };
-
 
 export const getAllUsers = async (req: Request, res: Response) => {
   const userId = req.params.userId; 

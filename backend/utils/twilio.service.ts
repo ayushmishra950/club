@@ -14,17 +14,9 @@ const client = twilio(ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 
 
 /* ================= SEND SIMPLE SMS ================= */
-export const sendSMS = async (
-  to: string,   
-  message: string
-) => {
+export const sendSMS = async ( to: string,    message: string) => {
   try {
-    const sms = await client.messages.create({
-      body: message,
-      from: TWILIO_PHONE_NUMBER,
-      to
-    });
-
+    const sms = await client.messages.create({ body: message, from: TWILIO_PHONE_NUMBER, to });
     return sms;
 
   } catch (err) {
@@ -79,3 +71,11 @@ Thank you for joining ❤️
 
   return sendSMS(phone, message);
 };
+
+
+
+export const sendPasswordResetSMS = async (phone: string, resetLink: string) => {
+   const message = `You requested a password reset for your account. Please click the following link to set a new password: ${resetLink}. This link will expire soon for your security. If you did not request this, please ignore this message.`;
+   
+   return sendSMS(phone, message);
+}

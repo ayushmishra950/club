@@ -7,6 +7,8 @@ import cookieParser from "cookie-parser";
 import { initSocket } from "./utils/socketHelper.js";
 import rateLimit from "express-rate-limit";
 import http from "http";
+import passport from "./utils/google.fb.login.js"
+import session from 'express-session';
 
 // admin routes 
 import adminAuthRoutes from "./routes/admin/auth.route.js";
@@ -38,6 +40,7 @@ import userAnnouncementRoutes from "./routes/user/announcement.route.js";
 import userSuggestionRoutes from "./routes/user/suggestion.route.js";
 import userReviewRoutes from "./routes/user/review.route.js";
 import userBlockRoutes from "./routes/user/block.route.js";
+import resetPasswordRoutes from "./routes/user/resetPassword.route.js";
 
 const app = express();
 const globalRateLimit = rateLimit({
@@ -45,12 +48,23 @@ const globalRateLimit = rateLimit({
     max: 1000
 })
 
-
 connectDb();
 // app.use(globalRateLimit);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: ["http://localhost:3000","http://localhost:8080", "http://localhost:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"], credentials: true }))
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'super_secure_random_key_string',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Local dev ke liye false, production SSL over HTTPS par ise true karein
+    httpOnly: true, // Malicious scripts cookies chura na sakein (XSS Protection)
+    maxAge: 10 * 60 * 1000 // Session sirf 10 minutes tak valid rahega
+  }
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 // admin route
 app.use("/api/admin/auth", adminAuthRoutes);
@@ -81,6 +95,7 @@ app.use("/api/user/announcement", userAnnouncementRoutes);
 app.use("/api/user/suggestion", userSuggestionRoutes);
 app.use("/api/user/review", userReviewRoutes);
 app.use("/api/user/block", userBlockRoutes);
+app.use("/api/user/password", resetPasswordRoutes);
 
 
 app.get("/", (req, res) => {

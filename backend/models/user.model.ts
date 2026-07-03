@@ -28,7 +28,7 @@ interface IBusiness {
 /* ---------------- USER INTERFACE ---------------- */
 export interface IUser extends Document {
   userId: string;
-
+  
   fullName: string;
   email?: string;
   mobile?: string;
@@ -79,6 +79,8 @@ export interface IUser extends Document {
   deleteReason: string | null;
   comparePassword(password: string): Promise<boolean>;
   pushToken:string;
+  googleId?: string;
+  facebookId?: string;
 }
 
 /* ---------------- CHILD SCHEMA ---------------- */
@@ -182,9 +184,11 @@ const UserSchema = new Schema<IUser>(
     },
     deleteReason:{
       type:String,
-      default:null
+      default:null 
     },
     pushToken:String,
+    googleId: { type: String, unique: true, sparse: true },
+    facebookId: { type: String, unique: true, sparse: true }
   },
   { timestamps: true }
 );

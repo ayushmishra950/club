@@ -964,9 +964,6 @@ export function ChatPanel({ open, onClose }: Props) {
   </div>
 )}
 
-
-
-
               </div>
             )}
           </>

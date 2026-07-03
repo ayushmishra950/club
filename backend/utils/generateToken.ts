@@ -8,6 +8,7 @@ export const generateAccessToken = (userId: string) => {
   );
 };
 
+
 export const generateRefreshToken = (userId: string) => {
   return jwt.sign(
     { id: userId },

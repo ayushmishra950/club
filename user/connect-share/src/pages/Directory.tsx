@@ -7,23 +7,24 @@ import { getAllUser } from "@/service/auth";
 import socket from '@/socket/socket';
 
 const Directory = () => {
+  const user = JSON.parse(localStorage.getItem("user"));
   const [chatOpen, setChatOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const totalUnread = mockChats.reduce((acc, c) => acc + c.unread, 0);
-  const [businesses, setBusinesses] = useState<any[]>([]);
+  const [businesses, setBusinesses] = useState([]);
   const [view, setView] = useState<"grid" | "table">("table");
   const [skills, setSkills] = useState<string[]>([]);
 
   useEffect(() => {
     socket.on("businessVerify", () => {
-      handleGetAllUser();
+      handleGetAllUser(user?._id);
     });
     socket.on("businessUpdate", () => {
-      handleGetAllUser();
+      handleGetAllUser(user?._id);
     });
     socket.on("updateUserList", () => {
-      handleGetAllUser();
+      handleGetAllUser(user?._id);
     })
     return () => {
       socket.off("businessVerify");
@@ -51,18 +52,19 @@ const Directory = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const handleGetAllUser = async () => {
+  const handleGetAllUser = async (userId:string) => {
+    if(!userId) return;
     try {
-      const res = await getAllUser();
+      const res = await getAllUser(userId);
       if (res.status === 200) {
         const allUsers = res?.data?.data || [];
 
         // Flatten all businesses from verified users/accounts
-        const flattened = allUsers.reduce((acc: any[], user: any) => {
+        const flattened = allUsers.reduce((acc, user) => {
           if (user.accountType === "business" && user.businesses) {
             const verifiedBusinesses = user.businesses
-              .filter((biz: any) => biz.isVerified === "verified")
-              .map((biz: any) => ({
+              .filter((biz) => biz.isVerified === "verified")
+              .map((biz) => ({
                 ...biz,
                 ownerId: user._id,
                 ownerName: user.fullName,
@@ -77,7 +79,7 @@ const Directory = () => {
         setBusinesses(flattened);
 
         // Extract unique categories for filter
-        const uniqueCategories = [...new Set(flattened.map((b: any) => b.businessCategory).filter(Boolean))];
+        const uniqueCategories = [...new Set(flattened.map((b) => b.businessCategory).filter(Boolean))];
         setSkills(uniqueCategories as string[]);
       }
     } catch (err) {
@@ -86,8 +88,10 @@ const Directory = () => {
   };
 
   useEffect(() => {
-    handleGetAllUser();
-  }, []);
+    if (user?._id) {
+    handleGetAllUser(user._id);
+    }
+  }, [user?._id]);
 
   return (
     <div className="min-h-screen bg-background">

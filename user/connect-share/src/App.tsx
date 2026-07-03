@@ -37,7 +37,9 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy.tsx";
 import DeleteAccount from "@/pages/DeleteAccount.tsx";
 import ChildSafety from "@/pages/ChildSafety.tsx";
 import BlockedUsers from "@/pages/BlockedUser.tsx";
-
+import ForgetPassword from "@/pages/ForgetPassword.tsx";
+import NewPassword from "@/pages/NewPassword.tsx";
+import AuthSuccess from "@/pages/AuthSuccess.tsx";
 const queryClient = new QueryClient();
 
 
@@ -122,6 +124,7 @@ const App = () => {
           <ConnectionProvider>
 
             <Routes>
+              
               <Route path="/" element={getToken() ? <Navigate to="/home" replace /> : <PublicLayout />}>
                 <Route index element={<Home />} />
                 <Route path="public/about" element={<About />} />
@@ -137,7 +140,7 @@ const App = () => {
               {/* default route */}
               {/* <Route path="/" element={ getToken() ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />} /> */}
 
-             
+             <Route path="/auth-success" element={<AuthSuccess />} />
               {/* PUBLIC ROUTES */}
               <Route path="/login" element={<PublicRoute>
                 <Login />
@@ -145,6 +148,12 @@ const App = () => {
 
               <Route path="/register" element={<PublicRoute>
                 <Register />
+              </PublicRoute>} />
+               <Route path="/forget-password" element={<PublicRoute>
+                <ForgetPassword />
+              </PublicRoute>} />
+              <Route path="/new-password" element={<PublicRoute>
+                <NewPassword />
               </PublicRoute>} />
 
               {/* PROTECTED ROUTES (ALL SECURED) */}

@@ -81,18 +81,17 @@ router.get('/google/callback', (req, res, next) => {
 const isProduction = process.env.NODE_ENV === 'production';
 
 res.cookie('accessToken', accessToken, {
-    httpOnly: true,  // 🔒 Security ke liye true rakhna standard hai
-    secure: isProduction, // ✅ Local par false, Render (https) par automatically true ho jayega
-    sameSite: isProduction ? 'none' : 'lax', // ✅ Live server par cross-site traffic ke liye 'none' zaroori hai
-    domain: isProduction ? '.onrender.com' : 'localhost', // ✅ Production domain setup
+    httpOnly: true,  
+    secure: true,        // Production me Render par HTTPS compulsory hai, isliye TRUE rahega
+    sameSite: 'none',    // ⚠️ Isko string 'none' rakhna mandatory hai cross-site ke liye
     maxAge: 10 * 60 * 1000
+    // Domain property completely omitted (remove kar dein)
 });
 
 res.cookie("userData", JSON.stringify(user), {
     httpOnly: false, 
-    secure: isProduction, // ✅ Render par true
-    sameSite: isProduction ? 'none' : 'lax', // ✅ Render par none
-    domain: isProduction ? '.onrender.com' : 'localhost', 
+    secure: true,        // TRUE rahega
+    sameSite: 'none',    // 'none' rahega
     maxAge: 10 * 60 * 1000
 });
 

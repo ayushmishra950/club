@@ -82,13 +82,13 @@ export default function AuthSuccess() {
                 const urlParams = new URLSearchParams(queryString);
 
                 // 2. URL Parameters se value nikaalein
-                const token = urlParams.get("token");
+                const accessToken = urlParams.get("accessToken");
                 const refreshToken = urlParams.get("refreshToken");
                 const encodedUserData = urlParams.get("user");
 
-                if (token && encodedUserData) {
+                if (accessToken && encodedUserData) {
                     // 3. LocalStorage me data lock karein
-                    localStorage.setItem("accessToken", token);
+                    localStorage.setItem("accessToken", accessToken);
                     
                     if (refreshToken) {
                         localStorage.setItem("refreshToken", refreshToken);

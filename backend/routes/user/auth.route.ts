@@ -86,7 +86,7 @@ console.log("🍏 Google Auth Success! Redirecting via secure URL parameters.");
 
 // 🚀 Fixed URL Redirection layout
 return res.redirect(
-  `${frontendBaseUrl}/#/auth-success?token=${accessToken}&refreshToken=${refreshToken}&user=${encodedUser}`
+  `${frontendBaseUrl}/#/auth-success?accessToken=${accessToken}&user=${encodedUser}`
 );
 
         } catch (jwtError) {

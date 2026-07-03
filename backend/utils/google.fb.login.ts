@@ -20,7 +20,7 @@ passport.use(new GoogleStrategy({
     clientSecret,
     callbackURL
   },
-  async (accessToken, refreshToken, profile, done) => {
+  async (accessToken: string, refreshToken: string, profile: any, done: Function) => {
     try {
       const userEmail = profile.emails?.[0]?.value;
       if (!userEmail) {
@@ -99,7 +99,7 @@ passport.use(new FacebookStrategy({
     callbackURL: process.env.FACEBOOK_CALLBACK_URL!,
     profileFields: ['id', 'displayName', 'emails'] // Request email permission explicitly
   },
-  async (accessToken, refreshToken, profile, done) => {
+  async (accessToken: string, refreshToken: string, profile: any, done: Function) => {
     try {
       let user = await User.findOne({ 
         $or: [{ facebookId: profile.id }, { email: profile.emails?.[0].value }] 
@@ -126,3 +126,24 @@ passport.use(new FacebookStrategy({
 
 
 export default passport;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Senerio App k liye ye hai
+

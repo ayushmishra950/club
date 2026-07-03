@@ -38,7 +38,7 @@ router.get('/google', passport.authenticate('google', {
 } as AuthenticateOptionsGoogle));
 
 router.get('/google/callback', (req, res, next) => {
-    passport.authenticate('google', { session: false }, async(err, user) => {
+    passport.authenticate('google', { session: false }, async(err: any, user: any) => {
         if (err || !user) {
             return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/#/login?error=auth_failed`);
         }

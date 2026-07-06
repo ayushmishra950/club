@@ -10,7 +10,7 @@ import { sendPasswordResetEmail } from '../../utils/nodeMailer.js';
  */ 
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { identifier } = req.body;
+    const { identifier, platform } = req.body;
     console.log("Received identifier:", identifier);
 
     if (!identifier) {
@@ -34,7 +34,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       token: resetToken,
     });
 
-    const baseUrl =  'http://localhost:8080/#';
+    const baseUrl =  platform === "mobile" ? "myapp:/" : `${process.env.RESET_URL}/#`;
     const resetLink = `${baseUrl}/new-password?token=${resetToken}`;
 
     if (user.mobile === identifier) {

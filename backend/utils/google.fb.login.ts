@@ -4,6 +4,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 import User from "../models/user.model.js";
+import bcrypt from 'bcryptjs';
 
 
 
@@ -38,18 +39,32 @@ passport.use(new GoogleStrategy({
       });
 
       // Scenario A: Completely new visitor registration
-      if (!user) {
-        // ⚡ FIXED: unique userId generate karna padega kyuki schema mein REQUIRED hai
-        const generatedUserId = `USR-${profile.id.substring(0, 8)}-${Math.floor(1000 + Math.random() * 9000)}`;
+     // Scenario A: Completely new visitor registration
+if (!user) {
+    // Unique User ID
+    const generatedUserId = `USR-${profile.id.substring(0, 8)}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-        user = await User.create({
-          userId: generatedUserId, // ✅ Added to pass validation
-          googleId: profile.id,
-          fullName: profile.displayName, // ✅ Valid with your schema
-          email: userEmail,
-        });
-        return done(null, user);
-      } 
+    // First name extract
+    const firstName =
+        profile.displayName?.trim().split(" ")[0].toLowerCase() || "user";
+
+    // Default password
+    const defaultPassword = `${firstName}@123`;
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(defaultPassword, salt);
+
+    user = await User.create({
+        userId: generatedUserId,
+        googleId: profile.id,
+        fullName: profile.displayName,
+        email: userEmail,
+        password: hashedPassword,
+    });
+
+    return done(null, user);
+}
 
       // Scenario B: Existing Email user logging via Google for the first time
       if (!user.googleId) {

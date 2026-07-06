@@ -67,11 +67,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-dns.lookup("smtp.gmail.com", { all: true }, (err, addresses) => {
-    console.log(err);
-    console.log(addresses);
-});
-
 // admin route
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/user", adminUserRoutes);

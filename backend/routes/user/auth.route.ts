@@ -190,7 +190,11 @@ router.post('/google-mobile', async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ Mobile Google Auth Error:", error);
+      console.error("❌ Mobile Google Auth Error");
+    console.error(error);
+    console.error(error.message);
+    console.error(error.stack);
+
         return res.status(500).json({ success: false, message: "Internal Server Error during Google Auth" });
     }
 });

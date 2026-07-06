@@ -11,7 +11,6 @@ import { sendPasswordResetEmail } from '../../utils/nodeMailer.js';
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { identifier, platform } = req.body;
-    console.log("Received identifier:", identifier);
 
     if (!identifier) {
       res.status(400).json({ success: false, message: "Identifier is required" });
@@ -44,19 +43,15 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
         }
       // Call Twilio helper service with the 2 required variables
       await sendPasswordResetSMS(user.mobile, resetLink);
-      console.log(`SMS reset link triggered safely to: ${user.mobile}`);
     } else {
         if(!user.email) {
             res.status(400).json({ success: false, message: "User does not have a registered email for email delivery." });
             return;
         }
 
-        console.log("controller:sending mail to the client")
       await sendPasswordResetEmail(user.email, resetLink);
-      console.log(`controller:email reset link generated for: ${user.email}`);
     }
 
-    console.log("controller:eset Link generated:", resetLink);
     
     res.status(200).json({ 
       success: true, 
@@ -77,7 +72,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
     try {
         const { token, newPassword } = req.body;
-
+       console.log("token", token,   "newPassword" , newPassword);
         if (!token || !newPassword) {
             res.status(400).json({ success: false, message: "Token and new password are required" });
             return;
@@ -89,6 +84,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
             res.status(400).json({ success: false, message: "Invalid or expired token" });
             return;
         }
+        console.log("resetEntry", resetEntry);
 
         // Naye password ko hash karein
         const salt = await bcrypt.genSalt(10);
@@ -98,10 +94,11 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
         await User.findByIdAndUpdate(resetEntry.userId, {
             password: hashedPassword,
         });
+  
 
         // Use hone ke baad token ko turant delete karein
         await PasswordReset.deleteOne({ _id: resetEntry._id });
-
+          console.log("password reset successfully.");
         res.status(200).json({
             success: true,
             message: "Password has been reset successfully. You can now login.",

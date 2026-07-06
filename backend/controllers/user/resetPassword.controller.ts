@@ -37,8 +37,6 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     const baseUrl =  'http://localhost:8080/#';
     const resetLink = `${baseUrl}/new-password?token=${resetToken}`;
 
-    console.log("got identifier:", identifier)
-
     if (user.mobile === identifier) {
         if(!user.mobile) {
             res.status(400).json({ success: false, message: "User does not have a registered mobile number for SMS delivery." });
@@ -53,12 +51,12 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        console.log("sending mail to the client")
-      await sendPasswordResetEmail(user.email, resetLink).then(()=>console.log("sent")).catch(error=>console.log("failed due to", error));
-      console.log(`Email reset link generated for: ${user.email}`);
+        console.log("controller:sending mail to the client")
+      await sendPasswordResetEmail(user.email, resetLink);
+      console.log(`controller:email reset link generated for: ${user.email}`);
     }
 
-    console.log("Reset Link generated:", resetLink);
+    console.log("controller:eset Link generated:", resetLink);
     
     res.status(200).json({ 
       success: true, 

@@ -9,6 +9,7 @@ import rateLimit from "express-rate-limit";
 import http from "http";
 import passport from "./utils/google.fb.login.js"
 import session from 'express-session';
+import dns from "dns";
 
 // admin routes 
 import adminAuthRoutes from "./routes/admin/auth.route.js";
@@ -65,6 +66,11 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+dns.lookup("smtp.gmail.com", { all: true }, (err, addresses) => {
+    console.log(err);
+    console.log(addresses);
+});
 
 // admin route
 app.use("/api/admin/auth", adminAuthRoutes);

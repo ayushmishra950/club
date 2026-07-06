@@ -54,7 +54,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
         }
 
         console.log("sending mail to the client")
-      await sendPasswordResetEmail(user.email, resetLink);
+      await sendPasswordResetEmail(user.email, resetLink).then(()=>console.log("sent")).catch(error=>console.log("failed due to", error));
       console.log(`Email reset link generated for: ${user.email}`);
     }
 

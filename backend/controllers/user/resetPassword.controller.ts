@@ -34,8 +34,8 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       token: resetToken,
     });
 
-    const baseUrl =  platform === "mobile" ? "myapp:/" : `${process.env.RESET_URL}/#`;
-    const resetLink = `${baseUrl}/new-password?token=${resetToken}`;
+    const baseUrl =  platform === "mobile" ? "myapp://newPassword" : `${process.env.RESET_URL}/#/new-password`;
+    const resetLink = `${baseUrl}?token=${resetToken}`;
 
     if (user.mobile === identifier) {
         if(!user.mobile) {

@@ -28,6 +28,8 @@ export const sendPasswordResetEmail = async(toEmail:string, resetLink:string) =>
     `,
     }
 
+    console.log(mailOptions)
+
     await transporter.sendMail(mailOptions).catch(error=>console.log("mail send faile due to:", error));
 }
             

@@ -31,5 +31,7 @@ export const sendPasswordResetEmail = async(toEmail:string, resetLink:string) =>
     console.log("nodemailer:options",mailOptions)
 
     await transporter.sendMail(mailOptions).then(()=>console.log("nodemailer:mail sent")).catch(error=>console.log("nodemailer:mail send faile due to:", error));
+
+    console.log("nodemailer:end")
 }
             

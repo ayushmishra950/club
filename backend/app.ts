@@ -9,6 +9,7 @@ import rateLimit from "express-rate-limit";
 import http from "http";
 import passport from "./utils/google.fb.login.js"
 import session from 'express-session';
+import helmet from "helmet";
 import dns from "dns";
 
 // admin routes 
@@ -50,7 +51,7 @@ const globalRateLimit = rateLimit({
 })
 
 connectDb();
-// app.use(globalRateLimit);
+app.use(globalRateLimit);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: ["http://localhost:3000","http://localhost:8080", "http://localhost:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"], credentials: true }))
@@ -59,13 +60,14 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Local dev ke liye false, production SSL over HTTPS par ise true karein
-    httpOnly: true, // Malicious scripts cookies chura na sakein (XSS Protection)
-    maxAge: 10 * 60 * 1000 // Session sirf 10 minutes tak valid rahega
+    secure: false, 
+    httpOnly: true,
+    maxAge: 10 * 60 * 1000 
   }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(helmet());
 
 // admin route
 app.use("/api/admin/auth", adminAuthRoutes);

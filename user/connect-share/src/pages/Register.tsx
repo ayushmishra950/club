@@ -80,7 +80,7 @@ export default function Register() {
                 toast({ title: "Registered Successfully.", description: res?.data?.message });
                 navigate("/login");
             }
-        } catch (err: any) {
+        } catch (err) {
             toast({
                 title: "Registration Failed.",
                 description: err?.response?.data?.message || err?.message,

@@ -54,7 +54,7 @@ export const unblockUser = async (req: Request, res: Response) => {
     // Notify the user over web sockets
     io.to(fromId).emit("unblockUser", { chatId: blockData.chatId, userId: toId, user }); 
              
-    return res.status(200).json({ message: "User unblocked in chat successfully." });
+    return res.status(200).json({ message: "User unblocked in chat successfully.", chatId:blockData?.chatId });
   } // ✅ FIX: Closed the try block cleanly
   catch (err: any) {
     return res.status(500).json({ message: err.message, success: false, error: err });

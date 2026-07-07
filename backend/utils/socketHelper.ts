@@ -37,6 +37,7 @@ export const initSocket = (server: HTTPServer) => {
   io = new IOServer(server, {
     cors: {
       origin: ["http://localhost:3000","http://localhost:8080","exp://192.168.2.5:8081", "http://localhost:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"],
+      credentials : true
     },
   });
 
@@ -262,6 +263,58 @@ export const initSocket = (server: HTTPServer) => {
         console.error("adminMessageSeen error:", error);
       }
     });
+
+    socket.on("userOnline", async (userId) => {
+  try {
+    let user = await User.findById(userId);
+
+    if (user) {
+      await User.findByIdAndUpdate(userId, {
+        isOnline: true,
+      });
+    } else {
+      const admin = await Admin.findById(userId);
+
+      if (admin) {
+        await Admin.findByIdAndUpdate(userId, {
+          isOnline: true,
+        });
+      }
+    }
+
+    socket.broadcast.emit("userOnline", userId);
+
+  } catch (err) {
+    console.log("userOnline Error:", err);
+  }
+});
+
+socket.on("userOffline", async (userId) => {
+  try {
+    let user = await User.findById(userId);
+
+    if (user) {
+      await User.findByIdAndUpdate(userId, {
+        isOnline: false,
+        lastSeen: new Date(),
+      });
+    } else {
+      const admin = await Admin.findById(userId);
+
+      if (admin) {
+        await Admin.findByIdAndUpdate(userId, {
+          isOnline: false,
+          lastSeen: new Date(),
+        });
+      }
+    }
+
+    socket.broadcast.emit("userOffline", userId);
+
+  } catch (err) {
+    console.log("userOffline Error:", err);
+  }
+});
 
     // ================= DISCONNECT =================
     socket.on("disconnect", async () => {

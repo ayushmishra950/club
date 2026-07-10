@@ -98,7 +98,7 @@ function CommentItem({
           {/* Show nested replies ONLY when top-level Reply clicked */}
           {replying && comment.replies && comment.replies.length > 0 && (
             <div className="mt-1">
-              {comment.replies.map((r: any) => (
+              {comment.replies.map((r) => (
                 <CommentItem
                   key={r._id}
                   comment={r}

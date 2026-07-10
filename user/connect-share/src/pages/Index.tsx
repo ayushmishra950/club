@@ -107,7 +107,6 @@ socket.on("unblockUser", (data) => {
     if(!userId) return;
     try {
       const res = await getAllPost(userId);
-      console.log("Posts fetched:", res?.data?.posts);
       if (res.status === 200) {
         dispatch(setPostList(res?.data?.posts));
         setPostListRefresh(false);

@@ -11,6 +11,12 @@ import passport from "./utils/google.fb.login.js"
 import session from 'express-session';
 import helmet from "helmet";
 import dns from "dns";
+import path from "path"; // 1. path मॉड्यूल इंपोर्ट किया
+import { fileURLToPath } from "url"; // ES Modules के लिए ज़रूरी
+
+// ES Modules में __dirname सेट करने के लिए
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // admin routes 
 import adminAuthRoutes from "./routes/admin/auth.route.js";
@@ -29,7 +35,6 @@ import adminSuggestionRoutes from "./routes/admin/suggestion.route.js";
 import adminNotificationRoutes from "./routes/admin/notification.route.js";
 import adminNewsRoutes from "./routes/admin/news.route.js";
 import adminReviewsRoutes from "./routes/admin/review.route.js"
-
 
 // user routes
 import userAuthRoutes from "./routes/user/auth.route.js";
@@ -54,7 +59,7 @@ connectDb();
 // app.use(globalRateLimit);
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: ["http://localhost:3000","http://localhost:8080", "http://localhost:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"], credentials: true }))
+app.use(cors({ origin: [process.env.FRONTEND_USER_LOCAL_URL, process.env.FRONTEND_ADMIN_LOCAL_URL, process.env.FRONTNED_ADMIN_PRODUCTION_URL, process.env.FRONTEND_USER_PRODUCTION_URL], credentials: true }))
 app.use(session({
   secret: process.env.SESSION_SECRET || 'super_secure_random_key_string',
   resave: false,
@@ -100,20 +105,33 @@ app.use("/api/user/review", userReviewRoutes);
 app.use("/api/user/block", userBlockRoutes);
 app.use("/api/user/password", resetPasswordRoutes);
 
+// ==========================================
+// FRONTEND & ADMIN BUILD ROUTING LOGIC (NO-STAR CATCH-ALL)
+// ==========================================
 
-app.get("/", (req, res) => {
-    res.send("server is running.")
-})
+// 1. दोनों बिल्ड्स के एसेट्स (CSS/JS) को सही से सर्व करने के लिए स्टैटिक फोल्डर डिक्लेअर करें
+app.use("/admin", express.static(path.join(__dirname, "admin_build")));
+app.use(express.static(path.join(__dirname, "user_build")));
 
-const port = process.env.PORT;
+// 2. यूनिवर्सल मिडलवेयर जो बचे हुए सभी राउट्स को पकड़ कर कंडीशनली फ़ाइल भेजेगा
+app.use((req, res) => {
+    // अगर यूज़र ने ब्राउज़र में /admin या /admin/login जैसी कोई रिक्वेस्ट की है
+    if (req.path.startsWith("/admin")) {
+        return res.sendFile(path.join(__dirname, "admin_build", "index.html"));
+    }
+    
+    // बाकी सभी सामान्य रिक्वेस्ट्स (जैसे /login, /profile) के लिए
+    return res.sendFile(path.join(__dirname, "user_build", "index.html"));
+});
 
+// ==========================================
+
+const port = process.env.PORT || 5000;
 
 const server = http.createServer(app);
 
 initSocket(server);
 
-
 server.listen(port, () => {
     console.log(`server is running on port ${port}`)
 })
-

@@ -6,11 +6,15 @@ export default function PrivacyPolicy() {
       <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-md p-8">
 
         <h1 className="text-3xl font-bold text-gray-900">
-          Privacy Policy – Club App
+          Privacy Policy – Jain Social Group Online
         </h1>
 
-        <p className="text-sm text-gray-500 mt-2 mb-6">
+        <p className="text-sm text-gray-500 mt-2">
           Effective Date: 11 June 2026
+        </p>
+
+        <p className="text-sm text-gray-500 mb-6">
+          Last Updated: 11 June 2026
         </p>
 
         <Section title="1. Information We Collect">
@@ -39,7 +43,6 @@ export default function PrivacyPolicy() {
           or legal authorities when required by law.
         </Section>
 
-        {/* ✅ UPDATED SECTION */}
         <Section title="6. Data Security & Protection">
           We take the security of your data seriously. We use industry-standard
           security measures including encryption, secure servers, and access controls
@@ -69,9 +72,56 @@ export default function PrivacyPolicy() {
           Users may request account deletion by contacting support.
         </Section>
 
+        {/* ---------------- Developer Information ---------------- */}
+
+        <Section title="10. Developer Information">
+          <strong>Application Name:</strong>
+          {"\n"}
+          Jain Social Group Online
+
+          {"\n\n"}
+
+          <strong>Developer Name:</strong>
+          {"\n"}
+          Priyank Dadhich
+
+          {"\n\n"}
+
+          <strong>Email:</strong>
+          {"\n"}
+          infonicsolutions@gmail.com
+
+          {"\n\n"}
+
+          <strong>Mobile:</strong>
+          {"\n"}
+          +91 80786 44758
+        </Section>
+
+        {/* ---------------- Contact ---------------- */}
+
         <div className="mt-6 border-t pt-4">
-          <p className="font-semibold text-gray-800">Contact Us</p>
-          <p className="text-gray-600">support@clubapp.com</p>
+          <p className="font-semibold text-gray-800 text-lg">
+            Contact Us
+          </p>
+
+          <div className="mt-3 space-y-2 text-gray-600">
+            <p>
+              <strong>Application:</strong> Jain Social Group Online
+            </p>
+
+            <p>
+              <strong>Developer:</strong> Priyank Dadhich
+            </p>
+
+            <p>
+              <strong>Email:</strong> infonicsolutions@gmail.com
+            </p>
+
+            <p>
+              <strong>Mobile:</strong> +91 80786 44758
+            </p>
+          </div>
         </div>
 
       </div>
@@ -80,6 +130,7 @@ export default function PrivacyPolicy() {
 }
 
 /* Reusable Section Component */
+
 function Section({
   title,
   children,
@@ -92,6 +143,7 @@ function Section({
       <h2 className="text-lg font-semibold text-gray-800 mb-2">
         {title}
       </h2>
+
       <p className="text-gray-600 leading-relaxed text-sm whitespace-pre-line">
         {children}
       </p>

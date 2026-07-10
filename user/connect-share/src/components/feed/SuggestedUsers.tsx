@@ -77,7 +77,6 @@ socket.on("unblockUser", (data) => {
       if (!user?._id) return;
       try {
         const res = await getSuggestedUsers(user?._id);
-        console.log("Suggested Users:", res?.data);
         if (res.status === 200) {
           setSuggestedUsers(res?.data);
           setUserListRefresh(false);

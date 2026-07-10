@@ -160,8 +160,9 @@ const Profile = () => {
   };
 
   const handleGetPosts = async () => {
+    if(!user?._id) return;
     try {
-      const res = await getAllPost();
+      const res = await getAllPost(user?._id);
       if (res.status === 200) {
         dispatch(setPostList(res?.data?.posts));
       }
@@ -199,7 +200,7 @@ const Profile = () => {
 
   const handleSendRequest = async (userId: string) => {
     if (!user?._id || !userId) return;
-    let obj = { fromId: user?._id, toId: userId };
+    const obj = { fromId: user?._id, toId: userId };
     try {
       const res = await sendRequest(obj);
       if (res.status === 201) {

@@ -21,6 +21,7 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
     const groupList = useAppSelector((state) => state?.group?.groupList);
     const currentGroup = groupList?.find(g => g._id === groupId);
     const existingMemberIds = currentGroup?.members?.map(m => m._id) || [];
+    const user = JSON.parse(localStorage.getItem("user"));
 
     useEffect(() => {
         if (!isOpen) setSelectedUsers([]);
@@ -55,7 +56,7 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
                 setSelectedUsers([]);
             }
 
-        } catch (err: any) {
+        } catch (err) {
             toast({
                 title: "Error",
                 description: err?.message || "Something went wrong",
@@ -68,8 +69,9 @@ const AddMemberCard = ({ isOpen, onOpenChange, groupId }) => {
     };
 
     const handleGetUsers = async () => {
+        if(!user?._id) return;
         try {
-            const res = await getAllUser();
+            const res = await getAllUser(user?._id);
             if (res.status === 200) {
                 dispatch(setUserList(res?.data?.data));
                 setMemberListRefresh(false);

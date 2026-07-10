@@ -71,7 +71,7 @@ const Groups = () => {
   }, [])
 
   const toggleJoin = async (id: string) => {
-    let obj = { groupId: id, userId: user?._id, fullName: user?.fullName, email: user?.email, profileImage: user?.profileImage };
+    const obj = { groupId: id, userId: user?._id, fullName: user?.fullName, email: user?.email, profileImage: user?.profileImage };
     try {
       const res = await toggleMember(obj);
       if (res.status === 200) {

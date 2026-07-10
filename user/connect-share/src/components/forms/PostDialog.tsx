@@ -35,7 +35,7 @@ const PostDialog = ({
     images: [],
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [preview, setPreview] = useState<any>(null);
+  const [preview, setPreview] = useState<any[]>([]);
   const [isSubmited, setIsSubmited] = useState(false);
   const [errors, setErrors] = useState<any>({})
 
@@ -44,7 +44,15 @@ const PostDialog = ({
 
   useEffect(() => {
     if (initialData && isOpen) {
-      setPreview(initialData?.images);
+
+     setPreview(
+  (initialData?.images || []).map((item) => ({
+    url: item,
+    type: item.match(/\.(mp4|webm|mov)$/i)
+      ? "video"
+      : "image",
+  }))
+);  
       setFormData({
         title: initialData?.title,
         description: initialData?.description,
@@ -62,10 +70,10 @@ const PostDialog = ({
     setPreview(null);
   };
 
-  const handleChange = (e: any) => {
+  const handleChange = (e) => {
     const { name, value, files } = e.target;
 
-    let newFormData = { ...formData };
+    const newFormData = { ...formData };
 
     if (files) {
       const fileArray = Array.from(files);
@@ -74,7 +82,7 @@ const PostDialog = ({
 
       // 🔴 LIMIT CHECK
       if (updatedImages.length > 3) {
-        setErrors((prev: any) => ({
+        setErrors((prev) => ({
           ...prev,
           images: "Maximum 3 images/videos allowed",
         }));
@@ -100,7 +108,7 @@ const PostDialog = ({
         }
       });
 
-      setPreview((prev: any) => [...(prev || []), ...previewUrls]);
+      setPreview((prev) => [...(prev || []), ...previewUrls]);
     } else {
       newFormData[name] = value;
     }
@@ -112,7 +120,7 @@ const PostDialog = ({
       setErrors(errorData);
     }
   };
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmited(true);
 
@@ -120,7 +128,7 @@ const PostDialog = ({
     setErrors(errorData);
     if (Object?.values(errorData)?.length > 0) return;
     try {
-      let obj: any = {
+      const obj = {
         ...formData,
         postId: initialData?._id || null,
         userId: user?._id,
@@ -154,7 +162,7 @@ const PostDialog = ({
         setPostListRefresh(true);
         onOpenChange(false);
       }
-    } catch (err: any) {
+    } catch (err) {
       toast({
         title: "Post Error.",
         description:
@@ -204,7 +212,7 @@ const PostDialog = ({
           </div>
 
           {/* Description */}
-          <div className="my-2">
+          <div className="my-2" >
             <Label>Description</Label>
             <Textarea
               name="description"
@@ -247,7 +255,7 @@ const PostDialog = ({
             <div className="flex-1">
               {preview?.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
-                  {preview.map((item: any, index: number) => {
+                  {preview.map((item, index: number) => {
                     const { url, type } = item;
 
                     return (

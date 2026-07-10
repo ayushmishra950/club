@@ -67,18 +67,10 @@ router.get('/google/callback', (req, res, next) => {
 
             await user.save(); 
 
-            // res.cookie('accessToken', accessToken, {
-            //     httpOnly: false, secure: false, sameSite: 'lax', domain: 'localhost',
-            //     maxAge: 10 * 60 * 1000
-            // });
-            // res.cookie("userData", JSON.stringify(user), {
-            //     httpOnly: false, secure: false, sameSite: 'lax', domain: 'localhost',
-            //     maxAge: 10 * 60 * 1000
-            // });
+
 
           // Cookies ko poori tarah block karke data safely URL query parameters me pass kar rahe hain
-const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:8080';
-
+const frontendBaseUrl = process.env.FRONTEND_USER_PRODUCTION_URL || process.env.FRONTEND_USER_LOCAL_URL;
 // Stringify aur URI safety ensure karne ke liye encodeURIComponent lagaya hai
 const encodedUser = encodeURIComponent(JSON.stringify(user));
 
@@ -91,7 +83,7 @@ return res.redirect(
 
         } catch (jwtError) {
             console.log("❌ JWT Generation Error:", jwtError);
-            return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/#/login?error=token_failed`);
+            return res.redirect(`${process.env.FRONTEND_USER_PRODUCTION_URL || process.env.FRONTEND_USER_LOCAL_URL}/#/login?error=token_failed`);
         }
     })(req, res, next);
 });

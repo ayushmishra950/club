@@ -36,7 +36,7 @@ let io: IOServer;
 export const initSocket = (server: HTTPServer) => {
   io = new IOServer(server, {
     cors: {
-      origin: ["http://localhost:3000","http://localhost:8080","exp://192.168.2.5:8081", "http://localhost:8081", "http://localhost:8082", "https://club-admin-bb8a.onrender.com", "https://club-frontend-user.onrender.com"],
+      origin: [process.env.FRONTEND_USER_SOCKET_LOCAL_URL, process.env.FRONTEND_ADMIN_SOCKET_LOCAL_URL, process.env.FRONTEND_USER_APP_LOCAL_URL, process.env.FRONTEND_USER_SOCKET_PRODUCTION_URL,process.env.FRONTEND_ADMIN_SOCKET_PRODUCTION_URL,process.env.FRONTEND_USER_APP_PRODUCTION_URL],
       credentials : true
     },
   });

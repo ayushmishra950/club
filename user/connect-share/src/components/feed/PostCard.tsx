@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import ShareModal from "./ShareCard";
 import DeleteCard from "@/components/card/DeleteCard";
 import socket from '@/socket/socket';
+import PostDialog from "../forms/PostDialog";
 
 
 export function PostCard({ post }) {
@@ -26,7 +27,10 @@ export function PostCard({ post }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deletePostData, setDeletePostData] = useState(null);
-
+  const [showMenu, setShowMenu] = useState(false);
+ const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
+  const [initialData, setInitialData] = useState(null);
+  const [postListRefresh, setPostListRefresh] = useState(false);
   const { getStatus } = useConnections();
   const status = getStatus(post?.user?.id);
   const navigate = useNavigate();
@@ -137,6 +141,7 @@ export function PostCard({ post }) {
 
   return (
     <>
+          <PostDialog isOpen={isPostDialogOpen} onOpenChange={setIsPostDialogOpen} initialData={initialData} setPostListRefresh={setPostListRefresh} />
       <DeleteCard
         isOpen={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
@@ -178,11 +183,26 @@ export function PostCard({ post }) {
         </div>
 
         {/* Edit/Delete */}
-        <div className={`flex items-center gap-1 ${post?.createdBy?._id === user?._id ? "cursor-pointer" : ""}`} onClick={() => {if(post?.createdBy?._id === user?._id){setDeletePostData(post);setDeleteDialogOpen(true)};}}>
+        <div className={`relative flex items-center gap-1 ${post?.createdBy?._id === user?._id ? "cursor-pointer" : ""}`} onClick={() => {if(post?.createdBy?._id === user?._id){setShowMenu((prev) => !prev)}}}>
           <button className="p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground">
             <MoreVertical className="h-5 w-5" />
           </button>
+            {showMenu && (
+     <div className="absolute right-0 top-10 w-36 rounded-md border bg-white shadow-lg z-50">
+    <button
+      className="w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-600"
+      onClick={() => { setInitialData(post); setIsPostDialogOpen(true); setShowMenu(false); }} >
+      Edit 
+    </button>
+     <button
+      className="w-full px-4 py-2 text-left hover:bg-gray-100 text-red-600"
+      onClick={() => { setDeletePostData(post); setDeleteDialogOpen(true); setShowMenu(false); }} >
+      Delete
+    </button>
+  </div>
+  )}
         </div>
+      
       </div>
 
       {/* Post Text */}

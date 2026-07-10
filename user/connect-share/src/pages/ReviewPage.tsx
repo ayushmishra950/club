@@ -21,7 +21,7 @@ export default function ReviewPage() {
     
 
     useEffect(() => {
-        socket.on("updateReview", (data: any) => {
+        socket.on("updateReview", (data) => {
             console.log("updateReview", data);
             dispatch(setNewReview(data));
         });
@@ -48,7 +48,7 @@ export default function ReviewPage() {
                 setConfirmDialogOpen(false);
                 setText("");
             }
-        } catch (error: any) {
+        } catch (error) {
             console.log(error);
             toast({ title: "Review send failed.", description: error?.response?.data?.message || error?.message, variant: "destructive" })
         }
@@ -75,7 +75,7 @@ export default function ReviewPage() {
             if (res.status === 200) {
                 dispatch(setReviewList(res?.data?.reviews));
             }
-        } catch (error: any) {
+        } catch (error) {
             console.log(error);
         }
     };

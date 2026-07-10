@@ -8,7 +8,7 @@
     "strict": false,           
     "noImplicitAny": false,   
     "skipLibCheck": true,   
-    "outDir": "./dist"
+    "outDir": "admin_buildbuildbuild"
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules"]

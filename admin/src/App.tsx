@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, BrowserRouter, Route, Routes } from "react-router-dom";
+import { HashRouter, BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -40,6 +40,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const user = JSON.parse(localStorage.getItem("user"));
+  const accessToken = localStorage.getItem("accessToken");
 
   useEffect(() => {
     if (user && user?._id) {
@@ -69,8 +70,7 @@ const App = () => {
             <Route path="/admin/login" element={<AdminLogin />} />
 
             {/* Dashboard */}
-            <Route path="/dashboard" element={<DashboardLayout />}>
-              <Route index element={<DashboardHome />} />
+              <Route path="/dashboard" element={ accessToken ? ( <DashboardLayout /> ) : ( <Navigate to="/admin/login" replace /> ) }>              <Route index element={<DashboardHome />} />
               <Route path="members" element={<MembersPage />} />
               <Route path="events" element={<EventsPage />} />
               <Route path="announcements" element={<AnnouncementsPage />} />

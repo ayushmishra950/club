@@ -42,7 +42,7 @@ export default function SuggestionPage() {
       const res = await markSuggestionAsRead(id);
       if (res.status === 200) {
         dispatch(setUpdateSuggestion(res.data.data));
-        setSelectedSuggestion((prev: any) => prev?._id === id ? res.data.data : prev);
+        setSelectedSuggestion((prev) => prev?._id === id ? res.data.data : prev);
       }
     } catch (err) {
       console.error("Failed to mark suggestion as read", err);
@@ -58,17 +58,17 @@ export default function SuggestionPage() {
   useEffect(() => {
     socket.on("updateSuggestionStatus", (data) => {
       dispatch(setUpdateSuggestion(data));
-      setSelectedSuggestion((prev: any) => prev?._id === data._id ? data : prev);
+      setSelectedSuggestion((prev) => prev?._id === data._id ? data : prev);
     });
 
     socket.on("suggestionReply", (data) => {
       dispatch(setUpdateSuggestion(data));
-      setSelectedSuggestion((prev: any) => prev?._id === data._id ? data : prev);
+      setSelectedSuggestion((prev) => prev?._id === data._id ? data : prev);
     });
 
     socket.on("suggestionRead", (data) => {
       dispatch(setUpdateSuggestion(data));
-      setSelectedSuggestion((prev: any) => prev?._id === data._id ? data : prev);
+      setSelectedSuggestion((prev) => prev?._id === data._id ? data : prev);
     });
 
     return () => {
@@ -92,7 +92,7 @@ export default function SuggestionPage() {
           setSuggestionList(res?.data?.data)
         );
       }
-    } catch (err: any) {
+    } catch (err) {
       toast({
         title: "Error",
         description:
@@ -135,7 +135,7 @@ export default function SuggestionPage() {
           setNewSuggestion(res?.data?.data)
         );
       }
-    } catch (err: any) {
+    } catch (err) {
       toast({
         title: "Error",
         description:
@@ -169,7 +169,7 @@ export default function SuggestionPage() {
         dispatch(setUpdateSuggestion(res.data.data));
         setSelectedSuggestion(res.data.data);
       }
-    } catch (err: any) {
+    } catch (err) {
       toast({
         title: "Error",
         description: "Failed to send reply",
@@ -229,7 +229,7 @@ export default function SuggestionPage() {
               </p>
             </div>
           ) : suggestionList?.length > 0 ? (
-            suggestionList.map((item: any) => (
+            suggestionList.map((item) => (
               <div
                 key={item._id}
                 onClick={() =>
@@ -324,7 +324,7 @@ export default function SuggestionPage() {
                 {/* Replies */}
                 <div className="space-y-4">
                   {selectedSuggestion?.adminReplies?.length > 0 ? (
-                    selectedSuggestion.adminReplies.map((r: any, i: number) => {
+                    selectedSuggestion.adminReplies.map((r, i: number) => {
                       const replyUserId = typeof r.userId === "object" ? r.userId?._id : r.userId;
                       const isMe = replyUserId === user?._id;
 

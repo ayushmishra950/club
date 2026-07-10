@@ -59,7 +59,7 @@ const Events = () => {
   };
 
   const interestedCandidate = async (eventId) => {
-    let obj = { eventId: eventId, userId: user?._id };
+    const obj = { eventId: eventId, userId: user?._id };
     try {
       const res = await interestedOrNotInterestedFromEvent(obj);
       if (res.status === 200) {

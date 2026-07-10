@@ -58,7 +58,7 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
         type: file.type,
       }));
 
-      let obj = { ...formData, files: [...formData.files, ...files] };
+      const obj = { ...formData, files: [...formData.files, ...files] };
       setFormData(obj);
       if (isSubmitted) {
         const validationErrors = validateGroupForm(obj);
@@ -71,7 +71,7 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    let obj = { ...formData, [name]: value };
+    const obj = { ...formData, [name]: value };
     setFormData(obj);
 
     if (isSubmitted) {
@@ -136,7 +136,7 @@ const GroupDialog = ({ isOpen, onOpenChange, initialData, setGroupListRefresh })
         onOpenChange(false);
         resetForm();
       }
-    } catch (err: any) {
+    } catch (err) {
       console.log(err);
       toast({
         title: "Error",

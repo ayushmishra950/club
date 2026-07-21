@@ -50,13 +50,9 @@ import userBlockRoutes from "./routes/user/block.route.js";
 import resetPasswordRoutes from "./routes/user/resetPassword.route.js";
 
 const app = express();
-const globalRateLimit = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 1000
-})
+
 
 connectDb();
-// app.use(globalRateLimit);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: [process.env.FRONTEND_USER_LOCAL_URL, process.env.FRONTEND_ADMIN_LOCAL_URL, process.env.FRONTNED_ADMIN_PRODUCTION_URL, process.env.FRONTEND_USER_PRODUCTION_URL], credentials: true }))

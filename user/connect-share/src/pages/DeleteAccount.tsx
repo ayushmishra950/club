@@ -6,76 +6,161 @@ export default function DeleteAccount() {
       <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-md p-8">
 
         <h1 className="text-3xl font-bold text-gray-900">
-          Delete Account & Data Policy – Club App
+          Delete Account & Data Policy – Jain Social Group Online
         </h1>
 
-        <p className="text-sm text-gray-500 mt-2 mb-6">
-          Last updated: 11 June 2026
+        <p className="text-sm text-gray-500 mt-2">
+          Effective Date: 11 June 2026
         </p>
 
-        <Section title="How Account Deletion Works">
-          When you request to delete your Club App account, your account is
-          immediately deactivated. You will no longer be able to use app
-          features such as posts, chat, groups, or events.
+        <p className="text-sm text-gray-500 mb-6">
+          Last Updated: 11 June 2026
+        </p>
+
+        <Section title="1. How Account Deletion Works">
+          When you request to delete your Jain Social Group Online account,
+          your account is immediately deactivated. You will no longer be able
+          to access your profile or use features such as posts, chat,
+          notifications, business listings, friend requests, or events.
 
           {"\n\n"}
 
-          After deactivation, your account enters a retention period of 30 days.
-          During this time, you may request reactivation by contacting support.
+          Your account will enter a retention period of up to 30 days.
+          During this period, you may contact our support team to request
+          account reactivation.
         </Section>
 
-        <Section title="How to Request Account Deletion or Help">
-          You can request account deletion or support by contacting us:
+        <Section title="2. How to Request Account Deletion">
+          You can request account deletion by contacting our support team.
 
           {"\n\n"}
 
-          📧 Email:{" "}
-          <span className="font-semibold text-gray-800">
-            support@clubapp.com
-          </span>
-
-          {"\n\n"}
-
-          Please include:
+          <strong>Email:</strong>
           {"\n"}
-          • Registered email or username  
-          • Your request (delete or reactivation)
-        </Section>
+          infonicsolutions@gmail.com  
 
-        <Section title="What Happens to Your Data">
-          When your account is deleted, the following data is affected:
+          {"\n\n"}
+
+          Please include the following details:
 
           {"\n"}
-          • Profile information is deactivated immediately  
-          • Posts, images, videos, and comments are removed from public view  
-          • Chat messages and connections are disabled  
-          • Associated account activity is suspended  
+          • Registered Email Address
+
+          {"\n"}
+          • Registered Mobile Number (if available)
+
+          {"\n"}
+          • Username (if applicable)
+
+          {"\n"}
+          • Request Type (Account Deletion / Reactivation)
+        </Section>
+
+        <Section title="3. What Happens to Your Data">
+          Once your deletion request is received:
 
           {"\n\n"}
 
-          Some data may be retained temporarily for security, legal, or abuse
-          prevention purposes.
-        </Section>
+          • Your profile becomes inaccessible.
 
-        <Section title="30-Day Recovery Period">
-          If your account has been deactivated, you can request reactivation
-          within 30 days by contacting our support team.
+          {"\n"}
+          • Your posts, photos, videos, and comments are removed from public view.
+
+          {"\n"}
+          • Your chat access is disabled.
+
+          {"\n"}
+          • Friend connections and social interactions are deactivated.
+
+          {"\n"}
+          • Notifications are stopped.
+
+          {"\n"}
+          • Business listings associated with your account may be disabled.
 
           {"\n\n"}
 
-          After 30 days, your account and associated data will be permanently
-          deleted and cannot be recovered.
+          Certain information may be retained temporarily where required for
+          legal obligations, fraud prevention, dispute resolution, or security
+          purposes.
         </Section>
 
-        <Section title="Important Note">
-          Account deletion is handled in a secure and controlled manner.
-          Immediate access is disabled after deletion request, and final
-          deletion occurs after the retention period.
+        <Section title="4. 30-Day Recovery Period">
+          If you change your mind, you may request account reactivation within
+          30 days from the date of your deletion request.
+
+          {"\n\n"}
+
+          After the 30-day retention period expires, your account and associated
+          personal data will be permanently deleted and cannot be restored.
+        </Section>
+
+        <Section title="5. Important Information">
+          Account deletion permanently removes your access to Jain Social Group
+          Online after the retention period.
+
+          {"\n\n"}
+
+          Please ensure that you have backed up any important information before
+          requesting account deletion.
+
+          {"\n\n"}
+
+          Some records may be retained only where required by applicable laws,
+          regulatory requirements, or to protect the security and integrity of
+          our platform.
+        </Section>
+
+        <Section title="6. Developer Information">
+          <strong>Application Name:</strong>
+
+          {"\n"}
+          Jain Social Group Online
+
+          {"\n\n"}
+
+          <strong>Developer Name:</strong>
+
+          {"\n"}
+          Priyank Dadhich
+
+          {"\n\n"}
+
+          <strong>Email:</strong>
+
+          {"\n"}
+          infonicsolutions@gmail.com
+
+          {"\n\n"}
+
+          <strong>Mobile:</strong>
+
+          {"\n"}
+          +91 80786 44758
         </Section>
 
         <div className="mt-6 border-t pt-4">
-          <p className="font-semibold text-gray-800">Contact Support</p>
-          <p className="text-gray-600">support@clubapp.com</p>
+          <p className="font-semibold text-gray-800 text-lg">
+            Contact Support
+          </p>
+
+          <div className="mt-3 space-y-2 text-gray-600">
+            <p>
+              <strong>Application:</strong> Jain Social Group Online
+            </p>
+
+            <p>
+              <strong>Developer:</strong> Priyank Dadhich
+            </p>
+
+            <p>
+              <strong>Email:</strong> infonicsolutions@gmail.com
+            </p>
+
+            <p>
+              <strong>Mobile:</strong> +91 80786 44758
+            </p>
+          </div>
         </div>
 
       </div>
@@ -84,6 +169,7 @@ export default function DeleteAccount() {
 }
 
 /* Reusable Section Component */
+
 function Section({
   title,
   children,
@@ -96,6 +182,7 @@ function Section({
       <h2 className="text-lg font-semibold text-gray-800 mb-2">
         {title}
       </h2>
+
       <p className="text-gray-600 leading-relaxed text-sm whitespace-pre-line">
         {children}
       </p>

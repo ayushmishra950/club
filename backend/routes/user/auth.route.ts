@@ -183,61 +183,69 @@ router.post('/google-mobile', async (req, res) => {
 
 
 
-console.log(process.env.APPLE_BUNDLE_ID)
-
-
 
 
 
 router.post('/apple-mobile', async (req, res) => {
     try {
-        // Frontend se identityToken, firstName aur lastName receive karenge
         const { identityToken, firstName, lastName } = req.body;
-        console.log(req.body)
+        console.log("➡️ Payload Received:", req.body);
 
         if (!identityToken) {
             return res.status(400).json({ success: false, message: "identityToken is required" });
         }
 
-        // 1. Apple ke public keys aur token ko verify karein
+        // 1. Apple Token Verify karein
         const applePayload = await appleSigninAuth.verifyIdToken(identityToken, {
-            // AAPKA iOS APP BUNDLE ID YAHAN AAYEGA (e.g., 'com.yourname.yourapp')
             audience: process.env.APPLE_BUNDLE_ID, 
-            ignoreExpiration: false, // Expired tokens ko block karega
+            ignoreExpiration: false, 
         });
 
-        const appleId = applePayload.sub; // Unique Apple User ID (Hamesha milti hai)
-        const userEmail = applePayload.email; // Apple ID ka Email (Pehli baar ya hidden format me milti hai)
+        const appleId = applePayload.sub; 
+        const userEmail = applePayload.email; 
 
-        // 2. Database me User check karein (Apple ID ya Email ke zariye)
+        // 2. Database me User check karein
         let user = await User.findOne({ 
             $or: [{ appleId: appleId }, { email: userEmail }] 
         });
 
-        // Full name handle karne ke liye format (Agar frontend se aaya ho)
-        const fullName = firstName ? `${firstName} ${lastName || ''}`.trim() : 'Apple User';
+        // --- NAME LOGIC FIXED ---
+        // Agar frontend se name aaya hai toh use karein, nahi toh email ka pehla part nikallein
+        let fullName = 'Apple User';
+        if (firstName) {
+            fullName = `${firstName} ${lastName || ''}`.trim();
+        } else if (userEmail) {
+            fullName = userEmail.split('@')[0]; // e.g. priyank@infonic... se 'priyank' nikal lega
+        }
 
         // Scenario A: Naya user register karna
         if (!user) {
+            console.log("🆕 Creating New User in Database...");
             const generatedUserId = `USR-${appleId.substring(0, 8)}-${Math.floor(1000 + Math.random() * 9000)}`;
+            
+            // --- PASSWORD LOGIC FIXED ---
+            // Aapke Google login logic jaisa, ek simple default ya random password generate karein
+            const defaultPassword = `${fullName.toLowerCase().replace(/\s+/g, '')}@123`;
+
             user = await User.create({
                 userId: generatedUserId,
                 appleId: appleId,
-                fullName: fullName, // Frontend se pehli baar mila hua naam save hoga
-                email: userEmail,
+                fullName: fullName, 
+                email: userEmail || `${generatedUserId}@apple.com`, // Email na hone par fallback email
+                password: defaultPassword, // 🌟 Yeh dene se 'password is required' wali error solve ho jayegi
             });
         } 
-        // Scenario B: Puraana user jo pehli baar Apple se login kar raha hai
+        // Scenario B: Puraana user jo pehli baar Apple se link ho raha hai
         else if (!user.appleId) {
+            console.log("🔄 Linking Apple ID to Existing User...");
             user.appleId = appleId;
-            // Agar purane user ke paas email nahi tha, to apple wala email update kar dein
             if (!user.email && userEmail) {
                 user.email = userEmail;
             }
             await user.save();
         }
 
-        // 3. Custom Access aur Refresh Tokens generate karein (Aapke Google logic jaisa)
+        // 3. Custom Access aur Refresh Tokens generate karein
         const accessToken = jwt.sign(
             { id: user._id }, 
             process.env.JWT_SECRET || "fallback_secret_key", 
@@ -250,7 +258,6 @@ router.post('/apple-mobile', async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        // Array safe check for refreshTokens
         if (Array.isArray(user.refreshTokens)) {
             user.refreshTokens.push(refreshToken);
         } else {
@@ -258,7 +265,8 @@ router.post('/apple-mobile', async (req, res) => {
         }
         await user.save();
 
-        // 4. Response me token aur user data JSON format me bhejein
+        console.log("✅ Apple Login Successful for User ID:", user._id);
+
         return res.status(200).json({
             status: 200,
             success: true,
@@ -279,6 +287,7 @@ router.post('/apple-mobile', async (req, res) => {
         });
     }
 });
+
 
 
 export default router;

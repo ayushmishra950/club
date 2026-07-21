@@ -28,7 +28,7 @@ interface IBusiness {
 /* ---------------- USER INTERFACE ---------------- */
 export interface IUser extends Document {
   userId: string;
-  
+  appleId:string;
   fullName: string;
   email?: string;
   mobile?: string;
@@ -115,7 +115,7 @@ const BusinessSchema = new Schema<IBusiness>(
 const UserSchema = new Schema<IUser>(
   {
     userId: { type: String, unique: true, trim: true, required: true },
-
+    appleId: { type: String, unique: true, sparse: true },
     fullName: { type: String, required: true, trim: true },
     email: { type: String, lowercase: true, trim: true },
     mobile: { type: String, trim: true },
@@ -188,7 +188,6 @@ const UserSchema = new Schema<IUser>(
     },
     pushToken:String,
     googleId: { type: String, unique: true, sparse: true },
-    facebookId: { type: String, unique: true, sparse: true }
   },
   { timestamps: true }
 );

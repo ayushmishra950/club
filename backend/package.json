@@ -32,6 +32,7 @@
     "@types/nodemon": "^1.19.6",
     "@types/socket.io": "^3.0.1",
     "@types/xlsx": "^0.0.35",
+    "apple-signin-auth": "^2.0.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",

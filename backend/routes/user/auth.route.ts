@@ -6,7 +6,7 @@ import passport from 'passport';
 import { AuthenticateOptionsGoogle } from 'passport-google-oauth20';
 import jwt from 'jsonwebtoken';
 import User from "../../models/user.model.js";
-// const { OAuth2Client } = require('google-auth-library');
+import appleSigninAuth from 'apple-signin-auth';
 import {OAuth2Client} from "google-auth-library";
 const  authRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000, 
@@ -61,7 +61,6 @@ router.get('/google/callback', (req, res, next) => {
           if (Array.isArray(user.refreshTokens)) {
   user.refreshTokens.push(refreshToken);
 } else {
-  // Fallback if it is not an array yet
   user.refreshTokens = [refreshToken];
 }
 
@@ -69,18 +68,14 @@ router.get('/google/callback', (req, res, next) => {
 
 
 
-          // Cookies ko poori tarah block karke data safely URL query parameters me pass kar rahe hain
 const frontendBaseUrl = process.env.FRONTEND_USER_PRODUCTION_URL || process.env.FRONTEND_USER_LOCAL_URL;
-// Stringify aur URI safety ensure karne ke liye encodeURIComponent lagaya hai
 const encodedUser = encodeURIComponent(JSON.stringify(user));
 
 console.log("🍏 Google Auth Success! Redirecting via secure URL parameters.");
 
-// 🚀 Fixed URL Redirection layout
 return res.redirect(
   `${frontendBaseUrl}/#/auth-success?accessToken=${accessToken}&user=${encodedUser}`
 );
-
         } catch (jwtError) {
             console.log("❌ JWT Generation Error:", jwtError);
             return res.redirect(`${process.env.FRONTEND_USER_PRODUCTION_URL || process.env.FRONTEND_USER_LOCAL_URL}/#/login?error=token_failed`);
@@ -109,15 +104,14 @@ router.post('/google-mobile', async (req, res) => {
             return res.status(400).json({ success: false, message: "idToken is required" });
         }
 
-        // 1. Google ke server se token ko verify karein
         const ticket = await client.verifyIdToken({
             idToken: idToken,
-            audience: process.env.GOOGLE_CLIENT_ID, // Aapki Web Client ID yahan aayegi
+            audience: process.env.GOOGLE_CLIENT_ID,
         });
 
         const payload = ticket.getPayload();
         if(!payload) return res.status(400).json({ success: false, message: "Invalid token payload" });
-        const googleId = payload['sub']; // Unique Google ID
+        const googleId = payload['sub']; 
         const userEmail = payload['email'];
         const fullName = payload['name'];
         const isGoogleEmailVerified = payload['email_verified'] === true;
@@ -126,12 +120,10 @@ router.post('/google-mobile', async (req, res) => {
             return res.status(400).json({ success: false, message: "No email associated with this Google profile" });
         }
 
-        // 2. Database me User check karein (Bilkul aapke passport logic ki tarah)
         let user = await User.findOne({ 
             $or: [{ googleId: googleId }, { email: userEmail }] 
         });
 
-        // Scenario A: Naya user register karna
         if (!user) {
             const generatedUserId = `USR-${googleId.substring(0, 8)}-${Math.floor(1000 + Math.random() * 9000)}`;
             user = await User.create({
@@ -141,7 +133,6 @@ router.post('/google-mobile', async (req, res) => {
                 email: userEmail,
             });
         } 
-        // Scenario B: Puraana user jo pehli baar Google se aa raha hai
         else if (!user.googleId) {
             if (isGoogleEmailVerified) {
                 user.googleId = googleId;
@@ -151,7 +142,6 @@ router.post('/google-mobile', async (req, res) => {
             }
         }
 
-        // 3. Custom Access aur Refresh Tokens generate karein (Aapke callback route se copied)
         const accessToken = jwt.sign(
             { id: user._id }, 
             process.env.JWT_SECRET || "fallback_secret_key", 
@@ -164,7 +154,6 @@ router.post('/google-mobile', async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        // Array safe check (Jo humne pehle discuss kiya tha)
         if (Array.isArray(user.refreshTokens)) {
             user.refreshTokens.push(refreshToken);
         } else {
@@ -172,13 +161,12 @@ router.post('/google-mobile', async (req, res) => {
         }
         await user.save();
 
-        // 4. Response me data JSON format me bhejein (Cookies me nahi!)
         return res.status(200).json({
             status: 200,
             message: "Google login successful",
             accessToken: accessToken,
             refreshToken: refreshToken,
-            data: user // Isme user ki poori object (`_id` wagera) jayegi
+            data: user
         });
 
     } catch (error) {
@@ -191,6 +179,105 @@ router.post('/google-mobile', async (req, res) => {
     }
 });
 
+
+
+
+
+
+
+
+
+
+
+router.post('/apple-mobile', async (req, res) => {
+    try {
+        // Frontend se identityToken, firstName aur lastName receive karenge
+        const { identityToken, firstName, lastName } = req.body;
+
+        if (!identityToken) {
+            return res.status(400).json({ success: false, message: "identityToken is required" });
+        }
+
+        // 1. Apple ke public keys aur token ko verify karein
+        const applePayload = await appleSigninAuth.verifyIdToken(identityToken, {
+            // AAPKA iOS APP BUNDLE ID YAHAN AAYEGA (e.g., 'com.yourname.yourapp')
+            audience: process.env.APPLE_BUNDLE_ID, 
+            ignoreExpiration: false, // Expired tokens ko block karega
+        });
+
+        const appleId = applePayload.sub; // Unique Apple User ID (Hamesha milti hai)
+        const userEmail = applePayload.email; // Apple ID ka Email (Pehli baar ya hidden format me milti hai)
+
+        // 2. Database me User check karein (Apple ID ya Email ke zariye)
+        let user = await User.findOne({ 
+            $or: [{ appleId: appleId }, { email: userEmail }] 
+        });
+
+        // Full name handle karne ke liye format (Agar frontend se aaya ho)
+        const fullName = firstName ? `${firstName} ${lastName || ''}`.trim() : 'Apple User';
+
+        // Scenario A: Naya user register karna
+        if (!user) {
+            const generatedUserId = `USR-${appleId.substring(0, 8)}-${Math.floor(1000 + Math.random() * 9000)}`;
+            user = await User.create({
+                userId: generatedUserId,
+                appleId: appleId,
+                fullName: fullName, // Frontend se pehli baar mila hua naam save hoga
+                email: userEmail,
+            });
+        } 
+        // Scenario B: Puraana user jo pehli baar Apple se login kar raha hai
+        else if (!user.appleId) {
+            user.appleId = appleId;
+            // Agar purane user ke paas email nahi tha, to apple wala email update kar dein
+            if (!user.email && userEmail) {
+                user.email = userEmail;
+            }
+            await user.save();
+        }
+
+        // 3. Custom Access aur Refresh Tokens generate karein (Aapke Google logic jaisa)
+        const accessToken = jwt.sign(
+            { id: user._id }, 
+            process.env.JWT_SECRET || "fallback_secret_key", 
+            { expiresIn: '10m' }
+        );
+
+        const refreshToken = jwt.sign(
+            { id: user._id }, 
+            process.env.REFRESH_JWT_SECRET || "fallback_refresh_key", 
+            { expiresIn: '7d' }
+        );
+
+        // Array safe check for refreshTokens
+        if (Array.isArray(user.refreshTokens)) {
+            user.refreshTokens.push(refreshToken);
+        } else {
+            user.refreshTokens = [refreshToken];
+        }
+        await user.save();
+
+        // 4. Response me token aur user data JSON format me bhejein
+        return res.status(200).json({
+            status: 200,
+            success: true,
+            message: "Apple login successful",
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            data: user
+        });
+
+    } catch (error: any) {
+        console.error("❌ Mobile Apple Auth Error");
+        console.error(error.message);
+        
+        return res.status(500).json({ 
+            success: false, 
+            message: "Internal Server Error during Apple Auth",
+            error: error.message 
+        });
+    }
+});
 
 
 export default router;

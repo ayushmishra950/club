@@ -183,7 +183,7 @@ router.post('/google-mobile', async (req, res) => {
 
 
 
-
+console.log(process.env.APPLE_BUNDLE_ID)
 
 
 
@@ -193,6 +193,7 @@ router.post('/apple-mobile', async (req, res) => {
     try {
         // Frontend se identityToken, firstName aur lastName receive karenge
         const { identityToken, firstName, lastName } = req.body;
+        console.log(req.body)
 
         if (!identityToken) {
             return res.status(400).json({ success: false, message: "identityToken is required" });

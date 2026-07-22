@@ -10,6 +10,8 @@ export interface IMessage extends Document {
   updatedAt: Date;
   postId?: mongoose.Types.ObjectId;
   status:"sent" | "delivered" | "seen";
+  deletedFor?: mongoose.Types.ObjectId[]; // all message delete karne k liye
+  isDeleted?: boolean; // single message delete karne k liye
 }
 
 const MessageSchema = new Schema<IMessage>(
@@ -42,6 +44,16 @@ const MessageSchema = new Schema<IMessage>(
         ref: "User",
       },
     ],
+    deletedFor:[
+ {
+   type:mongoose.Schema.Types.ObjectId,
+   ref:"User"
+ }
+],
+isDeleted:{
+  type:Boolean,
+  default:false
+},
 
     status: {
   type: String,

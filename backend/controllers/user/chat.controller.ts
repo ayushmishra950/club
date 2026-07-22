@@ -128,62 +128,15 @@ export const createOrGetChat = async (req: Request, res: Response) => {
 };
 
 
-
-// // ✅ 2. Send Message
-// export const sendMessage = async (req: Request, res: Response) => {
-//   try {
-//     const { chatId, senderId, text } = req.body;
-//     const io = getIO();
-//     const files = (req as any).files;
-//     const file = files?.image?.[0];
-
-
-//     if (!chatId || !senderId || !text) {
-//       return res.status(400).json({ message: "All fields are required." });
-//     }
-
-//     let imageUrl = null;
-//     if(file && file?.buffer){
-//       imageUrl = await uploadToCloudinary(file.buffer, file.mimetype, "gallery")
-//     }
-
-//     const message = await Message.create({
-//       chatId,
-//       sender: senderId,
-//       text: text || null,
-//       seenBy: [senderId],
-//       status: "delivered",
-//       images:[imageUrl]
-//     });
-
-//     // Update last message
-//    const chat = await Chat.findByIdAndUpdate(chatId, {
-//       lastMessage: message._id,
-//     });
-
-//       await message.populate("sender", "fullName profileImage");
-
-//     io.emit("messageRefresh", message);
-//     io.emit("messageAdminRefresh", {newMessage:message,groupId:chat?.groupId })
-
-
-
-//     res.status(201).json({ message: "message sent successfully.", data: message });
-//   } catch (err: any) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-
-
 // ✅ 3. Get Messages of a Chat
 export const getMessages = async (req: Request, res: Response) => {
   try {
-    const { chatId } = req.params;
+    const { chatId, userId } = req.query;
 
     if (!chatId) return res.status(400).json({ message: "chatId is required." });
+    if (!userId || typeof userId !== "string") return res.status(400).json({ message: "userId is required." });
 
-    const messages = await Message.find({ chatId })
+    const messages = await Message.find({ chatId, deletedFor : {$ne : userId}, isDeleted:false })
       .populate("sender", "fullName profileImage").populate("postId")
       .sort({ createdAt: 1 });
 
@@ -241,42 +194,6 @@ export const sendMessage = async (req: Request, res: Response) => {
     return res.status(500).json({ message: err.message });
   }
 };
-
-
-
-// ✅ 4. Get All Chats of User (Chat List - Instagram style)
-// export const getUserChats = async (req: Request, res: Response) => {
-//   try {
-//     const { userId } = req.params;
-
-//     if (!userId) {
-//       return res.status(400).json({ message: "userId is required." });
-//     }
-//     const user = await User.findById(userId);
-//     if(!user) return res.status(404).json({message:"user not found."});
-//     if(user?.isDeleted) return res.status(403).json({message:"Your Account is scheduled for deletion."})
-
-//     const chats = await Chat.find({
-//       members: userId,
-//     })
-//       .populate({ path: "members", match: { isDeleted: false }, select: "fullName profileImage"})
-//       .populate({ path: "lastMessage", populate: { path: "sender", match:{isDeleted:false}, select: "fullName" } })
-//       .sort({ updatedAt: -1 });
-
-//       const validChats = chats.filter((chat) => {
-//   if (!chat.isGroup) {
-//     return chat.members.length >= 2;
-//   }
-//   return chat.members.length >= 2;
-// });
-
-//     res.status(200).json({ chats: validChats });
-//   } catch (err: any) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-
 
 // ✅ 5. Mark Messages as Seen
 export const markAsSeen = async (req: Request, res: Response) => {
@@ -523,4 +440,84 @@ export const unBlockUserInChat = async(req:Request, res:Response) => {
   catch(err:any){
     res.status(500).json({message:err.message, success:false, error:err})
   }
+};
+
+
+
+
+
+
+
+
+
+// y function all or single dono tarah k message ko delete karta hai but sirf ek taraf s yani for me only.
+
+export const deleteMessageForMe = async(req:Request,res:Response)=>{
+try{
+const {messageId,userId}=req.body;
+
+if(!messageId || !userId){
+
+return res.status(400).json({success:false,message:"messageId and userId required"});}
+
+const message = await Message.findById(messageId);
+
+
+
+if(!message){
+return res.status(404).json({success:false,message:"Message not found"});
+}
+
+const alreadyDeleted =message.deletedFor.some((id)=>id.toString() === userId);
+
+if(!alreadyDeleted){message.deletedFor.push(new mongoose.Types.ObjectId(userId));}
+
+await message.save();
+
+return res.status(200).json({success:true,message:"Message deleted for you successfully"});
+
+}
+catch(error:any){
+return res.status(500).json({success:false,message:error.message});
+}
+};
+
+
+// y function message ko everyone yani dono taraf s delete karta hai but y ek bar m single message ko hi delete karta hai 
+
+export const deleteMessageForEveryone = async(req:Request,res:Response)=>{
+try{
+
+const {messageId,userId}=req.body;
+
+if(!messageId || !userId){
+return res.status(400).json({success:false,message:"messageId and userId required"});
+}
+
+const message = await Message.findById(messageId);
+
+if(!message){
+return res.status(404).json({success:false,message:"Message not found"});
+}
+
+if(message.sender?.toString()!== userId){
+return res.status(403).json({success:false,message:"You can delete only your own message"});
+}
+
+message.isDeleted=true;
+
+message.text="This message was deleted";
+
+message.images=[];
+
+await message.save();
+
+return res.status(200).json({success:true,message:"Message deleted for everyone"});
+
+}
+catch(error:any){
+
+return res.status(500).json({success:false,message:error.message});
+
+}
 };

@@ -47,6 +47,7 @@ import userAnnouncementRoutes from "./routes/user/announcement.route.js";
 import userSuggestionRoutes from "./routes/user/suggestion.route.js";
 import userReviewRoutes from "./routes/user/review.route.js";
 import userBlockRoutes from "./routes/user/block.route.js";
+import userReportRoutes from "./routes/user/report.routes.js";
 import resetPasswordRoutes from "./routes/user/resetPassword.route.js";
 
 const app = express();
@@ -100,6 +101,7 @@ app.use("/api/user/suggestion", userSuggestionRoutes);
 app.use("/api/user/review", userReviewRoutes);
 app.use("/api/user/block", userBlockRoutes);
 app.use("/api/user/password", resetPasswordRoutes);
+app.use("/api/user/report", userReportRoutes);
 
 // ==========================================
 // FRONTEND & ADMIN BUILD ROUTING LOGIC (NO-STAR CATCH-ALL)

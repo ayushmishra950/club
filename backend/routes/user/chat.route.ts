@@ -1,5 +1,5 @@
 import express from "express";
-import { getChatUsers,deleteMessageForMe, deleteMessageForEveryone,blockUserInChat,unBlockUserInChat, rejectGroupInvite, acceptGroupInvite, createOrGetChat, sendMessage, getMessages, markAsSeen } from "../../controllers/user/chat.controller.js"
+import { getChatUsers,deleteMessageForMe,deleteAllMessagesForMe, deleteMessageForEveryone,blockUserInChat,unBlockUserInChat, rejectGroupInvite, acceptGroupInvite, createOrGetChat, sendMessage, getMessages, markAsSeen } from "../../controllers/user/chat.controller.js"
 import upload from "../../middlewares/upload.js";
 
 const router = express.Router();
@@ -15,5 +15,6 @@ router.patch("/user/block", blockUserInChat);
 router.patch("/user/unblock", unBlockUserInChat);
 router.patch("/user/deleteMessageForMe", deleteMessageForMe);
 router.patch("/user/deleteMessageForEveryone", deleteMessageForEveryone);
+router.patch("/user/deleteAllMessagesForMe", deleteAllMessagesForMe);
 
 export default router;  

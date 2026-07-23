@@ -450,7 +450,7 @@ export const unBlockUserInChat = async(req:Request, res:Response) => {
 
 
 
-// y function all or single dono tarah k message ko delete karta hai but sirf ek taraf s yani for me only.
+// y function single dono tarah k message ko delete karta hai but sirf ek taraf s yani for me only.
 
 export const deleteMessageForMe = async(req:Request,res:Response)=>{
 try{
@@ -461,8 +461,6 @@ if(!messageId || !userId){
 return res.status(400).json({success:false,message:"messageId and userId required"});}
 
 const message = await Message.findById(messageId);
-
-
 
 if(!message){
 return res.status(404).json({success:false,message:"Message not found"});
@@ -520,4 +518,47 @@ catch(error:any){
 return res.status(500).json({success:false,message:error.message});
 
 }
+};
+
+
+
+
+
+
+
+export const deleteAllMessagesForMe = async (req: Request, res: Response) => {
+  try {
+    const { chatId, userId } = req.body;
+
+    if (!chatId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "chatId and userId required",
+      });
+    }
+
+    await Message.updateMany(
+      {
+        chatId,
+        deletedFor: {
+          $ne: new mongoose.Types.ObjectId(userId),
+        },
+      },
+      {
+        $push: {
+          deletedFor: new mongoose.Types.ObjectId(userId),
+        },
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "All messages deleted for you successfully",
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
